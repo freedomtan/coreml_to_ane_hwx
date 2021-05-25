@@ -38,4 +38,4 @@ And get results like
 # Credits
 @geohot reverse-engineered lots ANE related information, including HWX format. See [ane code](https://github.com/geohot/tinygrad/tree/master/ane) in tinygrad and his hacking videos.
 
-@geekwish provided useful Espresso related information in his [ANETools](https://github.com/antgroup-arclab/ANETools)
+@geekwish provided useful Espresso related information in his [ANETools](https://github.com/antgroup-arclab/ANETools).

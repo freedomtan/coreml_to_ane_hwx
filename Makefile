@@ -7,8 +7,8 @@ TARGETS=coreml2hwx
 
 all: ${TARGETS}
 
-coreml2hwx: coreml2hwx.o
-	${CC} -o $@ $< ${FRAMEWORKS} ${LIBS}
+coreml2hwx: coreml2hwx.o coreml_util.o
+	${CC} -o $@ $^ ${FRAMEWORKS} ${LIBS}
 
 clean:
 	rm -rf ${TARGETS} *.o

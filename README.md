@@ -56,6 +56,7 @@ who do not have meta information, we still can dump information with ANECCompile
 2021-06-14 15:00:24.063 mlmodelc2hwx[36034:2122508] result at /tmp/hwx_output/zh/model.hwx
 2021-06-14 15:00:24.063 mlmodelc2hwx[36034:2122508] other debug information at /tmp/hwx_output/zh/
 ```
+In the DOT graph files in /tmp/hwx_output/zh/, we can see easily see the Chinese handwritten recongition CNN model takes a 48x48 bitmap and outputs a 29,321 array.  
 
 # Credits
 @geohot reverse-engineered lots ANE related information, including HWX format. See [ane code](https://github.com/geohot/tinygrad/tree/master/ane) in tinygrad and his hacking videos.

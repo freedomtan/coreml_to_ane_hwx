@@ -35,6 +35,28 @@ And get results like
 2021-05-24 18:47:40.064 coreml2hwx[44933:4104983] other debug information at /tmp/hwx_output/MobileNetV2/
 ```
 
+# mlmodelc to hwx
+There are many compiled CoreML models in macOS and iOS. Some have meta infomation; some do not. For those
+who do not have meta information, we still can dump information with ANECCompile/Zin compiler.
+
+```
+./mlmodelc2hwx /System/Library/PrivateFrameworks/CoreHandwriting.framework/Versions/A/Resources/zh.bundle debug
+2021-06-14 15:00:23.145 mlmodelc2hwx[36034:2122508] espresso model in mlmodelc directory: /System/Library/PrivateFrameworks/CoreHandwriting.framework/Versions/A/Resources/zh.bundle/model.espresso.net 
+2021-06-14 15:00:24.063 mlmodelc2hwx[36034:2122508] options:
+{
+    InputNetworks =     (
+                {
+            NetworkPlistName = "net.plist";
+            NetworkPlistPath = "/tmp/espresso_ir_dump/";
+        }
+    );
+    OutputFileName = "model.hwx";
+    OutputFilePath = "/tmp/hwx_output/zh/";
+}
+2021-06-14 15:00:24.063 mlmodelc2hwx[36034:2122508] result at /tmp/hwx_output/zh/model.hwx
+2021-06-14 15:00:24.063 mlmodelc2hwx[36034:2122508] other debug information at /tmp/hwx_output/zh/
+```
+
 # Credits
 @geohot reverse-engineered lots ANE related information, including HWX format. See [ane code](https://github.com/geohot/tinygrad/tree/master/ane) in tinygrad and his hacking videos.
 

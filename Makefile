@@ -13,5 +13,8 @@ coreml2hwx: coreml2hwx.o coreml_util.o
 mlmodelc2hwx: mlmodelc2hwx.o coreml_util.o
 	${CC} -o $@ $^ ${FRAMEWORKS} ${LIBS}
 
+ane_hwx.pdf: ane_hwx.tex
+	pdflatex $^
+
 clean:
-	rm -rf ${TARGETS} *.o
+	rm -rf ${TARGETS} *.o ane_hwx.aux ane_hwx.log ane_hwx.pdf

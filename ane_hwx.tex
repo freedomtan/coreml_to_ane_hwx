@@ -1,0 +1,540 @@
+\documentclass{article}
+\usepackage[a0paper]{geometry}
+\usepackage{bytefield}
+\usepackage{graphicx}
+
+\begin{document}
+\begin{bytefield}[bitwidth=2.5em, rightcurly=., rightcurlyspace=0pt]{32}
+  \bitheader{0-31} \\
+  \begin{rightwordgroup}{0x000, aneTD.Header[0]}
+    \bitbox{16}{TID} &
+    \bitbox{8}{NID} &
+    \bitbox{1}{\rotatebox{90}{\tiny{LNID}}} &
+    \bitbox{1}{\rotatebox{90}{\tiny{EON}}} &
+    \bitbox{6}{} 
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x004, aneTD.Header[1]}
+    \bitbox{16}{ExeCycles} &
+    \bitbox{9}{NextSize} &
+    \bitbox{7}{} 
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x008, aneTD.Header[2]}
+    \bitbox{24}{LogEvents} &
+    \bitbox{8}{} 
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x00c, aneTD.Header[3]}
+    \bitbox{24}{Exceptions} &
+    \bitbox{8}{} 
+  \end{rightwordgroup} \\
+  
+  \begin{rightwordgroup}{0x010, aneTD.Header[4]}
+    \bitbox{24}{DebugLogEvents} &
+    \bitbox{8}{} 
+  \end{rightwordgroup} \\
+  
+  \begin{rightwordgroup}{0x014, aneTD.Header[5]}
+    \bitbox{24}{DebugExceptions} &
+    \bitbox{8}{} 
+  \end{rightwordgroup} \\
+
+  \bytefieldsetup{bitheight=12ex}% \\
+  \begin{rightwordgroup}{0x018, aneTD.Header[6]}
+    \bitbox{8}{} & 
+    \bitbox{1}{\rotatebox{90}{\tiny{DisallowAbort}}} &
+    \bitbox{1}{\rotatebox{90}{\tiny{TDSkip}}} &
+    \bitbox{1}{\rotatebox{0}{KPC}} &
+    \bitbox{1}{\rotatebox{0}{SPL}} &
+    \bitbox{1}{\rotatebox{0}{TSR}} &
+    \bitbox{1}{\rotatebox{0}{SPC}} &
+    \bitbox{1}{\rotatebox{0}{DPC}} &
+    \bitbox{1}{\rotatebox{0}{TSE}} &
+    \bitbox{6}{NextPriority} &
+    \bitbox{2}{} &
+    \bitbox{1}{\rotatebox{0}{TDE}} &
+    \bitbox{3}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny{SrcLoc}}} &
+    \bitbox{1}{\rotatebox{90}{\tiny{DstLoc}}} &
+    \bitbox{1}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny{TQDis}}} &
+  \end{rightwordgroup} \\
+  
+  \begin{rightwordgroup}{0x01c, aneTD.Header[7]}
+    \bitbox{32}{NextPointer} &
+  \end{rightwordgroup} \\
+  
+  \bytefieldsetup{bitheight=6ex}% \\
+  \begin{rightwordgroup}{0x020, aneTD.Header[8]}
+    \bitbox{5}{RBase0} &
+    \bitbox{1}{\rotatebox{90}{\tiny{RBE0}}} &
+    \bitbox{5}{RBase1} &
+    \bitbox{1}{\rotatebox{90}{\tiny{RBE1}}} &
+    \bitbox{5}{WBase} &
+    \bitbox{1}{\rotatebox{90}{\tiny{WBE}}} &
+    \bitbox{5}{TBase} &
+    \bitbox{1}{\rotatebox{90}{\tiny{TBE}}} &
+    \bitbox{3}{ENE} &
+    \bitbox{5}{} &
+  \end{rightwordgroup} \\
+  
+  \bytefieldsetup{bitheight=6ex}% \\
+  \begin{rightwordgroup}{0x024, aneTD.Header[9]}
+    \bitbox{5}{KBase0} &
+    \bitbox{1}{\rotatebox{90}{\tiny{KBE0}}} &
+    \bitbox{5}{KBase1} &
+    \bitbox{1}{\rotatebox{90}{\tiny{KBE1}}} &
+    \bitbox{5}{KBase2} &
+    \bitbox{1}{\rotatebox{90}{\tiny{KBE2}}} &
+    \bitbox{5}{KBase3} &
+    \bitbox{1}{\rotatebox{90}{\tiny{KBE3}}} &
+    \bitbox{8}{} &
+  \end{rightwordgroup} \\
+
+  \wordbox[]{1}{$\vdots$} \\[1ex]
+  
+  \bytefieldsetup{bitheight=20ex}% \\    
+  \begin{rightwordgroup}{0x034, aneRegs.KernelDMASrc.CoeffDMAConfig[0]}
+    \bitbox{1}{En} &
+    \bitbox{3}{} &
+    \bitbox{2}{CrH} &
+    \bitbox{4}{CacheHint} &
+    \bitbox{17}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny{PrefetchParticipateEn}}} &
+    \bitbox{4}{} &
+  \end{rightwordgroup} \\
+  
+  \bytefieldsetup{bitheight=20ex}% \\    
+  \begin{rightwordgroup}{0x038, aneRegs.KernelDMASrc.CoeffDMAConfig[1]}
+    \bitbox{1}{En} &
+    \bitbox{3}{} &
+    \bitbox{2}{CrH} &
+    \bitbox{4}{CacheHint} &
+    \bitbox{17}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny{PrefetchParticipateEn}}} &
+    \bitbox{4}{} &
+  \end{rightwordgroup} \\
+
+  \wordbox[]{1}{$\vdots$} \\[1ex]
+  
+  \bytefieldsetup{bitheight=20ex}% \\    
+  \begin{rightwordgroup}{0x070, aneRegs.KernelDMASrc.CoeffDMAConfig[15]}
+    \bitbox{1}{En} &
+    \bitbox{3}{} &
+    \bitbox{2}{CrH} &
+    \bitbox{4}{CacheHint} &
+    \bitbox{17}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny{PrefetchParticipateEn}}} &
+    \bitbox{4}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x074, aneRegs.KernelDMASrc.CoeffBaseAddr[0]}
+    \bitbox{6}{} &
+    \bitbox{26}{Addr} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x078, aneRegs.KernelDMASrc.CoeffBaseAddr[1]}
+    \bitbox{6}{} &
+    \bitbox{26}{Addr} &
+  \end{rightwordgroup} \\
+
+  \wordbox[]{1}{$\vdots$} \\[1ex]
+  
+  \begin{rightwordgroup}{0x0b0, aneRegs.KernelDMASrc.CoeffBaseAddr[15]}
+    \bitbox{6}{} &
+    \bitbox{26}{Addr} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x0b4, aneRegs.KernelDMASrc.CoeffBfrSize[0]}
+    \bitbox{6}{} &
+    \bitbox{26}{MemBfrSize} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x0b8, aneRegs.KernelDMASrc.CoeffBfrSize[1]}
+    \bitbox{6}{} &
+    \bitbox{26}{MemBfrSize} &
+  \end{rightwordgroup} \\
+  
+  \wordbox[]{1}{$\vdots$} \\[1ex]
+
+  \begin{rightwordgroup}{0x0f0, aneRegs.KernelDMASrc.CoeffBfrSize[15]}
+    \bitbox{6}{} &
+    \bitbox{26}{MemBfrSize} &
+  \end{rightwordgroup} \\
+  
+  \wordbox[]{1}{$\vdots$} \\[1ex]
+  
+  \begin{rightwordgroup}{0x128, aneRegs.Common.InDim}
+    \bitbox{16}{Win} &
+    \bitbox{16}{Hin} &
+  \end{rightwordgroup} \\
+
+  \wordbox{1}{} \\
+  
+  \bytefieldsetup{bitheight=6ex}% \\  
+  \begin{rightwordgroup}{0x130, aneRegs.Common.ChCfg}
+    \bitbox{2}{\rotatebox{0}{InFmt}} &
+    \bitbox{2}{\rotatebox{0}{OutFmt}} &
+    \bitbox{28}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x134, aneRegs.Common.Cin}
+    \bitbox{17}{Cin} &
+    \bitbox{15}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x138, aneRegs.Common.Cout}
+    \bitbox{17}{Cout} &
+    \bitbox{15}{} &
+  \end{rightwordgroup} \\
+
+
+  \begin{rightwordgroup}{0x13c, aneRegs.Common.OutDim}
+    \bitbox{15}{Wout} &
+    \bitbox{1}{} &
+    \bitbox{15}{Hout} &
+    \bitbox{1}{} &
+  \end{rightwordgroup} \\
+  
+  \wordbox{1}{} \\
+
+  \begin{rightwordgroup}{0x144, aneRegs.Common.ConvCfg}
+    \bitbox{5}{Kw} &
+    \bitbox{5}{Kh} &
+    \bitbox{3}{OCGSize} &
+    \bitbox{2}{Sx} &
+    \bitbox{2}{Sy} &
+    \bitbox{5}{Px} &
+    \bitbox{5}{Py} &
+    \bitbox{2}{Ox} &
+    \bitbox{2}{Oy} &
+    \bitbox{1}{} &
+  \end{rightwordgroup} \\
+
+  \wordbox{1}{} \\
+
+  \bytefieldsetup{bitheight=12ex}% \\  
+  \begin{rightwordgroup}{0x14c, aneRegs.Common.GroupConvCfg}
+    \bitbox{13}{NumGroups} &
+    \bitbox{1}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny UnicastEn}} &
+    \bitbox{1}{\rotatebox{90}{\tiny ElemMultMode}} &
+    \bitbox{16}{UnicastCin} &
+  \end{rightwordgroup} \\
+
+
+  \begin{rightwordgroup}{0x150, aneRegs.Common.TileCfg}
+    \bitbox{16}{TileHeight} &
+    \bitbox{16}{} &
+  \end{rightwordgroup} \\
+
+  \wordbox{1}{} \\
+  \wordbox{1}{} \\
+  
+  \bytefieldsetup{bitheight=16ex}% \\  
+  \begin{rightwordgroup}{0x15c, aneRegs.Common.Cfg}
+    \bitbox{2}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny SmallSourceMode}} &
+    \bitbox{5}{} &
+    \bitbox{3}{ShPref} &
+    \bitbox{1}{} &
+    \bitbox{3}{ShMin} &
+    \bitbox{1}{} &
+    \bitbox{3}{ShMax} &
+    \bitbox{3}{ActiveNE} &
+    \bitbox{1}{\rotatebox{90}{\tiny ContextSwitchIn}} &
+    \bitbox{1}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny ContextSwitchOut}} &
+    \bitbox{1}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny AccDoubleBufEn}} &
+    \bitbox{5}{} &    
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x160, aneRegs.Common.TaskInfo}
+    \bitbox{16}{TaskID} &
+    \bitbox{4}{TaskQ} &
+    \bitbox{8}{TaskNID} &
+    \bitbox{4}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x164, aneRegs.Common.DPE}
+    \bitbox{4}{Category} &
+    \bitbox{28}{} &
+  \end{rightwordgroup} \\
+
+  \wordbox{1}{} \\
+
+  \begin{rightwordgroup}{0x16c, aneRegs.TileDMASrc.DMAConfig}
+    \bitbox{1}{{EN}} &
+    \bitbox{3}{} &
+    \bitbox{2}{CrH} &
+    \bitbox{4}{CacheHint} &
+    \bitbox{4}{CacheHintReuse} &
+    \bitbox{4}{CacheHintNoReuse} &
+    \bitbox{4}{DependencyMode} &
+    \bitbox{10}{} &
+  \end{rightwordgroup} \\
+
+  \wordbox{1}{} \\
+
+  \begin{rightwordgroup}{0x174, aneRegs.TileDMASrc.BaseAddr}
+    \bitbox{6}{} &
+    \bitbox{26}{Addr} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x178, aneRegs.TileDMASrc.RowStride}
+    \bitbox{6}{} &
+    \bitbox{26}{Stride} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x17c, aneRegs.TileDMASrc.PlaneStride}
+    \bitbox{6}{} &
+    \bitbox{26}{PlaneStride} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x180, aneRegs.TileDMASrc.DepthStride}
+    \bitbox{6}{} &
+    \bitbox{26}{Stride} &
+  \end{rightwordgroup} \\
+  
+  \begin{rightwordgroup}{0x184, aneRegs.TileDMASrc.GroupStride}
+    \bitbox{6}{} &
+    \bitbox{26}{Stride} &
+  \end{rightwordgroup} \\
+
+
+  \wordbox[]{1}{$\vdots$} \\[1ex]
+
+
+  \begin{rightwordgroup}{0x1a4, aneRegs.TileDMASrc.Fmt}
+    \bitbox{2}{FmtMode} &
+    \bitbox{2}{} &
+    \bitbox{2}{Truncate} &
+    \bitbox{2}{} &
+    \bitbox{1}{Shift} &
+    \bitbox{3}{} &
+    \bitbox{2}{MemFmt} &
+    \bitbox{2}{} &
+    \bitbox{3}{OffsetCh} &
+    \bitbox{5}{} &
+    \bitbox{4}{Interleave} &
+    \bitbox{4}{CmpVec} &
+  \end{rightwordgroup} \\
+  
+  \wordbox[]{1}{$\vdots$} \\[1ex]
+
+  \begin{rightwordgroup}{0x1bc, aneRegs.TileDMASrc.PixelOffset[0]}
+    \bitbox{16}{Offset} &
+    \bitbox{16}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x1c0, aneRegs.TileDMASrc.PixelOffset[1]}
+    \bitbox{16}{Offset} &
+    \bitbox{16}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x1c4, aneRegs.TileDMASrc.PixelOffset[2]}
+    \bitbox{16}{Offset} &
+    \bitbox{16}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x1c8, aneRegs.TileDMASrc.PixelOffset[3]}
+    \bitbox{16}{Offset} &
+    \bitbox{16}{} &
+  \end{rightwordgroup} \\
+  
+  \wordbox[]{1}{$\vdots$} \\[1ex]
+  
+  \bytefieldsetup{bitheight=12ex}% \\  
+  \begin{rightwordgroup}{0x1e0, aneRegs.L2.L2Cfg}
+    \bitbox{1}{\rotatebox{90}{\tiny InputRelu}} &
+    \bitbox{2}{\rotatebox{90}{\tiny PaddingMode}} &
+    \bitbox{29}{} &
+  \end{rightwordgroup} \\
+
+  \bytefieldsetup{bitheight=12ex}% \\
+  \begin{rightwordgroup}{0x1e4, aneRegs.L2.SourceCfg}
+    \bitbox{2}{\rotatebox{90}{\tiny SoureType}} &
+    \bitbox{2}{\rotatebox{90}{\tiny Dependent}} &
+    \bitbox{1}{\rotatebox{90}{\tiny AliasConvSrc}} &
+    \bitbox{1}{\rotatebox{90}{\tiny AliasConvRslt}} &
+    \bitbox{2}{\rotatebox{0}{DMAFmt}} &
+    \bitbox{4}{\rotatebox{0}{DMAInterleave}} &
+    \bitbox{4}{\rotatebox{0}{DMACmpVec}} &
+    \bitbox{3}{\rotatebox{0}{DMAOffsetCh}} &
+    \bitbox{1}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny AliasPlanarSrc}} &
+    \bitbox{1}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny AliasPlanarRslt}} &
+    \bitbox{9}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x1e8, aneRegs.L2.SourceBase}
+    \bitbox{4}{} &
+    \bitbox{17}{\rotatebox{0}{Addr}} &
+    \bitbox{11}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x1ec, aneRegs.L2.SourceChannelStride}
+    \bitbox{4}{} &
+    \bitbox{17}{\rotatebox{0}{Stride}} &
+    \bitbox{11}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x1f0, aneRegs.L2.SourceRowStride}
+    \bitbox{4}{} &
+    \bitbox{17}{\rotatebox{0}{Stride}} &
+    \bitbox{11}{} &
+  \end{rightwordgroup} \\
+  
+  \wordbox[]{1}{$\vdots$} \\[1ex]
+
+  \bytefieldsetup{bitheight=12ex}% \\
+  \begin{rightwordgroup}{0x210, aneRegs.L2.ResultCfg}
+    \bitbox{2}{\rotatebox{90}{\tiny ResultType}} &
+    \bitbox{2}{\rotatebox{90}{\tiny L2BfrMode}} &
+    \bitbox{1}{\rotatebox{90}{\tiny AliasConvSrc}} &
+    \bitbox{1}{\rotatebox{90}{\tiny AliasConvRslt}} &
+    \bitbox{2}{\rotatebox{0}{DMAFmt}} &
+    \bitbox{4}{\rotatebox{0}{DMAInterleave}} &
+    \bitbox{4}{\rotatebox{0}{DMACmpVec}} &
+    \bitbox{3}{\rotatebox{0}{DMAOffsetCh}} &
+    \bitbox{1}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny AliasPlanarSrc}} &
+    \bitbox{1}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny AliasPlanarRslt}} &
+    \bitbox{9}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x214, aneRegs.L2.ResultBase}
+    \bitbox{4}{} &
+    \bitbox{17}{\rotatebox{0}{Addr}} &
+    \bitbox{11}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x218, aneRegs.L2.ConvResultChannelStride}
+    \bitbox{4}{} &
+    \bitbox{17}{\rotatebox{0}{Stride}} &
+    \bitbox{11}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x21c, aneRegs.L2.ConvResultRowStride}
+    \bitbox{4}{} &
+    \bitbox{17}{\rotatebox{0}{Stride}} &
+    \bitbox{11}{} &
+  \end{rightwordgroup} \\
+
+  \wordbox[]{1}{$\vdots$} \\[1ex]
+  
+  \bytefieldsetup{bitheight=16ex}% \\
+  \begin{rightwordgroup}{0x240, aneRegs.NE.KernelCfg}
+    \bitbox{2}{\rotatebox{90}{\tiny KernelFmt}} &
+    \bitbox{1}{\rotatebox{90}{\tiny PallettizedEn}} &
+    \bitbox{1}{}
+    \bitbox{4}{PallettizeBits} &
+    \bitbox{1}{\rotatebox{90}{\tiny SparseFmt}} &
+    \bitbox{1}{}
+    \bitbox{1}{\rotatebox{90}{\tiny GroupKenelReuse}} &
+    \bitbox{21}{} &
+  \end{rightwordgroup} \\
+  
+  \bytefieldsetup{bitheight=12ex}% \\
+  \begin{rightwordgroup}{0x244, aneRegs.NE.MACCfg}
+    \bitbox{4}{\rotatebox{0}{OpMode}} &
+    \bitbox{1}{\rotatebox{90}{\tiny KernelMode}} &
+    \bitbox{1}{\rotatebox{90}{\tiny BiasMode}} &
+    \bitbox{1}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny MatrixBiasEn}} &
+    \bitbox{1}{} &
+    \bitbox{4}{BinaryPoint} &
+    \bitbox{1}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny PostScaleMode}} &
+    \bitbox{1}{} &
+    \bitbox{2}{\rotatebox{90}{\tiny NonlinearMode}} &
+    \bitbox{14}{} &
+  \end{rightwordgroup} \\
+  
+  \begin{rightwordgroup}{0x248, aneRegs.NE.MatrixVectorBias}
+    \bitbox{16}{\rotatebox{0}{MatrixVectorBias}} &
+    \bitbox{16}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x24c, aneRegs.NE.AccBias}
+    \bitbox{16}{\rotatebox{0}{AccBias}} &
+    \bitbox{5}{\rotatebox{0}{AccBiasShift}} &
+    \bitbox{11}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x250, aneRegs.NE.PostScale}
+    \bitbox{16}{\rotatebox{0}{PostScale}} &
+    \bitbox{5}{\rotatebox{0}{PostScaleRightShift}} &
+    \bitbox{11}{} &
+  \end{rightwordgroup} \\
+
+  \wordbox{1}{} \\
+
+  \bytefieldsetup{bitheight=12ex}% \\
+  \begin{rightwordgroup}{0x258, aneRegs.TileDMADst.DMAConfig}
+    \bitbox{1}{{\rotatebox{0}{EN}}} &
+    \bitbox{3}{} &
+    \bitbox{2}{CrH} &
+    \bitbox{4}{CacheHint} &
+    \bitbox{14}{} &
+    \bitbox{2}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny L2BfrMode}} &
+    \bitbox{1}{\rotatebox{90}{\tiny BypassEOW}} &
+    \bitbox{4}{} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x25c, aneRegs.TileDMADst.BaseAddr}
+    \bitbox{6}{} &
+    \bitbox{26}{Addr} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x260, aneRegs.TileDMADst.RowStride}
+    \bitbox{6}{} &
+    \bitbox{26}{Stride} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x264, aneRegs.TileDMADst.PlaneStride}
+    \bitbox{6}{} &
+    \bitbox{26}{PlaneStride} &
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x268, aneRegs.TileDMADst.DepthStride}
+    \bitbox{6}{} &
+    \bitbox{26}{Stride} &
+  \end{rightwordgroup} \\
+  
+  \begin{rightwordgroup}{0x26c, aneRegs.TileDMADst.GroupStride}
+    \bitbox{6}{} &
+    \bitbox{26}{Stride} &
+  \end{rightwordgroup} \\
+
+  \bytefieldsetup{bitheight=12ex}% \\
+  \begin{rightwordgroup}{0x270, aneRegs.TileDMADst.Fmt}
+    \bitbox{2}{FmtMode} &
+    \bitbox{2}{} &
+    \bitbox{2}{Truncate} &
+    \bitbox{2}{} &
+    \bitbox{1}{Shift} &
+    \bitbox{3}{} &
+    \bitbox{2}{MemFmt} &
+    \bitbox{2}{} &
+    \bitbox{3}{OffsetCh} &
+    \bitbox{1}{} &
+    \bitbox{1}{\rotatebox{90}{\tiny ZeroPadLast}} &
+    \bitbox{1}{\rotatebox{90}{\tiny ZeroPadFirstt}}&
+    \bitbox{1}{\rotatebox{90}{\tiny CmpVecFill}} &
+    \bitbox{1}{} &
+    \bitbox{4}{Interleave} &
+    \bitbox{4}{CmpVec} &
+  \end{rightwordgroup} \\
+  \bytefieldsetup{bitheight=3ex}% \\
+  
+  \wordbox[]{1}{$\vdots$} \\[1ex]
+  
+\end{bytefield}
+
+\end{document}

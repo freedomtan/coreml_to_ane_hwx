@@ -43,5 +43,5 @@ for m in /System/Library/Frameworks/Vision.framework/Resources/*.espresso.net;do
 to dump all the `Vision.framework` models.
 
 [1] https://machinelearning.apple.com/research/on-device-scene-analysis
-[2] https://en.wikipedia.org/wiki/LZFSE
 
+[2] https://en.wikipedia.org/wiki/LZFSE

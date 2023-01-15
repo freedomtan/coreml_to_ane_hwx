@@ -42,6 +42,36 @@ for m in /System/Library/Frameworks/Vision.framework/Resources/*.espresso.net;do
 ```
 to dump all the `Vision.framework` models.
 
+## C program using espresso C API
+
+With the following C functions from the Espresso framework, we can dump input and output tensors and dims
+
+```C
+extern uint64_t espresso_get_input_blob_name(uint64_t, uint64_t, uint64_t);
+extern uint64_t espresso_get_output_blob_name(uint64_t, uint64_t, uint64_t);
+extern int64_t espresso_network_query_blob_dimensions(uint64_t, uint64_t, char*,
+                                                      uint64_t);
+```
+For example, with 
+```
+$ ./espresso_dims   /System/Library/Frameworks/Vision.framework/Resources/SceneNet_v5.10.0_vhh2692239_fe1.3_sc3.3_sa2.4_ae2.4_so2.4_od1.5_fp1.5.espresso.net 
+```
+we got
+```
+network file: /System/Library/Frameworks/Vision.framework/Resources/SceneNet_v5.10.0_vhh2692239_fe1.3_sc3.3_sa2.4_ae2.4_so2.4_od1.5_fp1.5.espresso.net
+  input (0) = image (360, 360, 3, 1)
+  output (0) = inner/sceneprint (1, 1, 768, 1)
+  output (1) = classification/labels (1, 1, 1374, 1)
+  output (2) = aesthetics/scores (1, 1, 2, 1)
+  output (3) = aesthetics/attributes (1, 1, 21, 1)
+  output (4) = detection/scores (90, 90, 30, 1)
+  output (5) = detection/coordinates (90, 90, 4, 1)
+  output (6) = fingerprint/embedding (6, 6, 4, 1)
+  output (7) = objectness/map (68, 68, 1, 1)
+  output (8) = saliency/map (68, 68, 1, 1)
+
+```
+
 [1] https://machinelearning.apple.com/research/on-device-scene-analysis
 
 [2] https://en.wikipedia.org/wiki/LZFSE

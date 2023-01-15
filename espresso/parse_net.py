@@ -85,7 +85,7 @@ for n in nodes:
         print("  input:", n, shape)
 
     if len(nodes[n].tops) == 0 or (nodes[n].is_output == 1):
-        if len(nodes[n].tops) == 0: # and (nodes[n].is_output == 1):
+        if len(nodes[n].tops) == 0:
           if not (n in output_dict):
             shape = shape_dict['layer_shapes'][n]
             print("  output: ", n, shape)
@@ -95,18 +95,3 @@ for n in nodes:
             shape = shape_dict['layer_shapes'][nodes[n].tops[0]]
             print("  output: ", nodes[n].tops[0], shape)
             output_dict[nodes[n].tops[0]] = shape
-        #elif len(nodes[n].tops) == 0 and (nodes[n].is_output == 0):
-        #  if not (n in output_dict):
-        #    shape = shape_dict['layer_shapes'][n]
-        #    print("  output: ", n, shape)
-        #    output_dict[n] = shape
-
-        #if (n not in shape_dict['layer_shapes']):
-        #  shape = shape_dict['layer_shapes'][nodes[n].bottoms[0]]
-          # print("  output: ", nodes[n].bottoms[0], shape)
-        #  print("  output: ", nodes[n].tops[0], shape)
-          #pass
-        #else:
-        #  if len(nodes[n].tops) == 0 and (not (nodes[nodes[n].bottoms[0]].is_output == 1)):
-        #    shape = shape_dict['layer_shapes'][n]
-        #    print("  output: ", n, shape)

@@ -1,4 +1,4 @@
-* get input/output tensor names and shapes from espresso.{net,shape}
+# get input/output tensor names and shapes from espresso.{net,shape}
 
 In modern macOS and iOS, most Core ML models are in *.espresso.{net,shape,weights}. Yes, there are some in mlmodelc format and 
 some are .hwx only, but they are relative few. For example, on macOS Ventura, we can find a scene detection network model
@@ -49,8 +49,7 @@ With the following C functions from the Espresso framework, we can dump input an
 ```C
 extern uint64_t espresso_get_input_blob_name(uint64_t, uint64_t, uint64_t);
 extern uint64_t espresso_get_output_blob_name(uint64_t, uint64_t, uint64_t);
-extern int64_t espresso_network_query_blob_dimensions(uint64_t, uint64_t, char*,
-                                                      uint64_t);
+extern int64_t espresso_network_query_blob_dimensions(uint64_t, uint64_t, char*, uint64_t);
 ```
 For example, with 
 ```

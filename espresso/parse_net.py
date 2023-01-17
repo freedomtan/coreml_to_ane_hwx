@@ -1,7 +1,9 @@
 import json
 import sys
+import os
 
 import liblzfse
+import networkx as nx
 
 def read_espresso_file(file):
     compressed=False
@@ -56,8 +58,8 @@ for n in net_dict['layers']:
                 #print("adding", b)
             # dont layers with is_output == 1 as bottom layers
             if not (nodes[b].is_output == 1):
-              nodes[k].bottoms.append(b)
-              nodes[b].tops.append(k)
+                nodes[k].bottoms.append(b)
+                nodes[b].tops.append(k)
             #print(b)
 
     # connecting with 'top' layers 
@@ -69,8 +71,8 @@ for n in net_dict['layers']:
                 #print("adding", t)
             # ignore layers with top == itself
             if not (k == t):
-              nodes[k].tops.append(t)
-              nodes[t].bottoms.append(k)
+                nodes[k].tops.append(t)
+                nodes[t].bottoms.append(k)
             #print("t.tops:", nodes[t].name, nodes[t].tops)
             
 output_dict = {}
@@ -86,12 +88,26 @@ for n in nodes:
 
     if len(nodes[n].tops) == 0 or (nodes[n].is_output == 1):
         if len(nodes[n].tops) == 0:
-          if not (n in output_dict):
-            shape = shape_dict['layer_shapes'][n]
-            print("  output: ", n, shape)
-            output_dict[n] = shape
+              if not (n in output_dict):
+                    shape = shape_dict['layer_shapes'][n]
+                    print("  output: ", n, shape)
+                    output_dict[n] = shape
         else:
-          if not (nodes[n].tops[0] in output_dict):
-            shape = shape_dict['layer_shapes'][nodes[n].tops[0]]
-            print("  output: ", nodes[n].tops[0], shape)
-            output_dict[nodes[n].tops[0]] = shape
+              if not (nodes[n].tops[0] in output_dict):
+                    shape = shape_dict['layer_shapes'][nodes[n].tops[0]]
+                    print("  output: ", nodes[n].tops[0], shape)
+                    output_dict[nodes[n].tops[0]] = shape
+
+
+G = nx.DiGraph()
+
+for n in nodes:
+    for b in nodes[n].bottoms:
+        G.add_edges_from([(f'{b} ({nodes[b].type})', f'{nodes[n].name} ({nodes[n].type})')])
+    for t in nodes[n].tops:
+        G.add_edges_from([(f'{nodes[n].name} ({nodes[n].type})', f'{t} ({nodes[t].type})')])
+
+p = nx.drawing.nx_pydot.to_pydot(G)
+
+network_base = os.path.basename(NET_FILE.replace('espresso.net', 'espresso.pdf'))
+p.write_pdf(f'/tmp/{network_base}')

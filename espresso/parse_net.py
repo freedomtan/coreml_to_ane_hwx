@@ -1,4 +1,4 @@
-import json
+import json5 as json
 import sys
 import os
 
@@ -86,7 +86,9 @@ for n in nodes:
     if len(nodes[n].tops) == 0 or (nodes[n].is_output == 1):
         if len(nodes[n].tops) ==  0:
             if not (n in output_dict):
-                shape = shape_dict['layer_shapes'][n]
+                shape = None
+                if (n in shape_dict['layer_shapes']):
+                   shape = shape_dict['layer_shapes'][n]
                 print("  output: ", n, shape)
                 output_dict[n] = shape
         else:

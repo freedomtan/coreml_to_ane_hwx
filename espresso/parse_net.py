@@ -98,14 +98,26 @@ for n in nodes:
                     print("  output: ", nodes[n].tops[0], shape)
                     output_dict[nodes[n].tops[0]] = shape
 
+def layer_shape(layer_name):
+    shape = None
+    if layer_name in shape_dict['layer_shapes']:
+        s = shape_dict['layer_shapes'][layer_name]
+        if '_rank' in s:
+            rank, w, h, k, n = s['_rank'], s['w'], s['h'], s['k'], s['n']
+        else:
+            rank, w, h, k, n = 4, s['w'], s['h'], s['k'], s['n']
+        # return (rank, (w, h, k, n))
+        shape = f'({rank}, ({w}, {h}, {k}, {n}))'
+    return shape
+
+def name_shape_type(layer_name):
+    return f'{layer_name} ({layer_shape(layer_name)}, {nodes[layer_name].type})'
 
 G = nx.DiGraph()
 
 for n in nodes:
     for b in nodes[n].bottoms:
-        G.add_edges_from([(f'{b} ({nodes[b].type})', f'{nodes[n].name} ({nodes[n].type})')])
-    for t in nodes[n].tops:
-        G.add_edges_from([(f'{nodes[n].name} ({nodes[n].type})', f'{t} ({nodes[t].type})')])
+        G.add_edge(name_shape_type(b), name_shape_type(nodes[n].name))
 
 p = nx.drawing.nx_pydot.to_pydot(G)
 

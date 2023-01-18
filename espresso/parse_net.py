@@ -56,11 +56,8 @@ for n in net_dict['layers']:
             if not b in nodes:
                 nodes[b] = Node(b)
                 #print("adding", b)
-            # dont layers with is_output == 1 as bottom layers
-            if not (nodes[b].is_output == 1):
-                nodes[k].bottoms.append(b)
-                nodes[b].tops.append(k)
-            #print(b)
+            nodes[k].bottoms.append(b)
+            nodes[b].tops.append(k)
 
     # connecting with 'top' layers 
     if not n['top'] == '':
@@ -87,16 +84,20 @@ for n in nodes:
         print("  input:", n, shape)
 
     if len(nodes[n].tops) == 0 or (nodes[n].is_output == 1):
-        if len(nodes[n].tops) == 0:
-              if not (n in output_dict):
-                    shape = shape_dict['layer_shapes'][n]
-                    print("  output: ", n, shape)
-                    output_dict[n] = shape
+        if len(nodes[n].tops) ==  0:
+            if not (n in output_dict):
+                shape = shape_dict['layer_shapes'][n]
+                print("  output: ", n, shape)
+                output_dict[n] = shape
         else:
-              if not (nodes[n].tops[0] in output_dict):
-                    shape = shape_dict['layer_shapes'][nodes[n].tops[0]]
-                    print("  output: ", nodes[n].tops[0], shape)
-                    output_dict[nodes[n].tops[0]] = shape
+            top_n = n
+            if not (n in shape_dict['layer_shapes']):
+              top_n = nodes[n].tops[0]
+
+            if not (top_n in output_dict):
+                shape = shape_dict['layer_shapes'][top_n]
+                print("  output: ", top_n, shape)
+                output_dict[top_n] = shape
 
 def layer_shape(layer_name):
     shape = None
@@ -111,7 +112,7 @@ def layer_shape(layer_name):
     return shape
 
 def name_shape_type(layer_name):
-    return f'{layer_name} ({layer_shape(layer_name)}, {nodes[layer_name].type})'
+    return f'"{layer_name} ({layer_shape(layer_name)}, {nodes[layer_name].type})"'
 
 G = nx.DiGraph()
 

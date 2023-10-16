@@ -2,7 +2,7 @@
 a quick and dirty little program to convert Apple CoreML model to ANE hwx file
 
 # CoreML model
-CoreML format is publicly available, https://mlmodel.readme.io/reference/model
+CoreML format is publicly available, https://apple.github.io/coremltools/mlmodel/index.html
 
 # HWX
 HWX is a proprietary modified Mach-O file format to pass models to AppleH11ANEInterface, an I/O Kit kernel driver in macOS and iOS when Apple Neural Engine is available.
@@ -59,6 +59,6 @@ who do not have meta information, we still can dump information with ANECCompile
 In the DOT graph files in /tmp/hwx_output/zh/, we can see easily see the Chinese handwritten recongition CNN model takes a 48x48 bitmap and outputs a 29,321 array.  
 
 # Credits
-@geohot reverse-engineered lots ANE related information, including HWX format. See [ane code](https://github.com/geohot/tinygrad/tree/master/ane) in tinygrad and his hacking videos.
+@geohot reverse-engineered lots ANE related information, including HWX format. See [ane code](https://github.com/geohot/tinygrad/tree/master/extra/accel/ane) in tinygrad and his hacking videos.
 
 @geekwish provided useful Espresso related information in his [ANETools](https://github.com/antgroup-arclab/ANETools).

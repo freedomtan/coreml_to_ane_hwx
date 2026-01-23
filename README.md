@@ -59,6 +59,6 @@ who do not have meta information, we still can dump information with ANECCompile
 In the DOT graph files in /tmp/hwx_output/zh/, we can see easily see the Chinese handwritten recongition CNN model takes a 48x48 bitmap and outputs a 29,321 array.  
 
 # Credits
-@geohot reverse-engineered lots ANE related information, including HWX format. See [ane code](https://github.com/geohot/tinygrad/tree/master/extra/accel/ane) in tinygrad and his hacking videos.
+@geohot reverse-engineered lots ANE related information, including HWX format. See [ane code](https://github.com/tinygrad/tinygrad/tree/v0.10.3/extra/accel/ane) in tinygrad and his hacking videos.
 
 @geekwish provided useful Espresso related information in his [ANETools](https://github.com/antgroup-arclab/ANETools).

@@ -18,7 +18,7 @@ Choose a platform dependent .hwx model, e.g.,
 on a M1 MacBook Pro, I can run
 
 ```
-$ ./run_hwx_with_ane_client /System/Library//PrivateFrameworks/VideoProcessing.framework/Versions/A/Resources/cnn_frame_enhancer_320p.H13.espresso.hwx 
+$ ./run_hwx_with_ane_client /System/Library/PrivateFrameworks/VideoProcessing.framework/Versions/A/Resources/cnn_frame_enhancer_320p.H13.espresso.hwx
 ```
 
 And get results like
@@ -393,6 +393,9 @@ And get results like
 ) ; sharedEvents=(null) ; transactionHandle=(null)}
 2025-02-21 16:19:32.859 run_hwx_with_ane_client[52577:18421917] error: <_ANEErrors: 0x6000024d8010>
 ```
+
+# on iPhones?
+Yes, the `void test_ane_client(char *model_path)` works on iPhones.
 
 # _ANE classes and methods in AppleNeuralEngine 
 To get more detailed classes and methods, Objective-C `class-dump` tools, such

@@ -55,9 +55,6 @@
          procedureIndex:(id)index;
 @end
 
-@interface _ANEErrors : NSObject
-@end
-
 IOSurface *create_iosurface_from_dict(NSDictionary *dict, NSString *name) {
   id ios = [IOSurface alloc];
 
@@ -161,11 +158,11 @@ void test_ane_client(char *model_path) {
     @"kANEFModelType" : @"kANEFModelPreCompiled",
   };
 
-  id e = [[_ANEErrors alloc] init];
+  NSError *e = nil;
   [ac loadModel:am options:optionDict qos:21 error:&e];
   NSLog(@"model: %@", am);
-  NSLog(@"loading error: %@", e);
   NSLog(@"is connections %@", [ac connections]);
+  if (e) NSLog(@"loading error: %@", e);
 
   id attr = [am modelAttributes];
 
@@ -272,7 +269,7 @@ void test_ane_client(char *model_path) {
     NSLog(@"request: %@", request);
     for (int i = 0; i < 5; i++)
       [ac evaluateWithModel:am options:optionDict request:request qos:0x21 error:&e];
-    NSLog(@"error: %@", e);
+    if (e) NSLog(@"evaluate error: %@", e);
   }
 }
 

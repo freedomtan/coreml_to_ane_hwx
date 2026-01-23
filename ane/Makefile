@@ -5,6 +5,7 @@ CFLAGS=-Wall -O2 ${FRAMEWORKS} -g
 CXXFLAGS=-Wall -O2 ${FRAMEWORKS} -std=c++20 
 CXXFLAGS=-Wall -O2 ${FRAMEWORKS} -std=c++20 -x objective-c++
 CXXFLAGS=-Wall -O2 -g ${FRAMEWORKS} -std=c++20 -x objective-c++
+TARGETS=run_hwx_with_ane_client
 
 all: ${TARGETS}
 

@@ -412,7 +412,8 @@ AppleNeuralEngine`-[_ANEClient evaluateWithModel:options:request:qos:error:]
 could be found in the Espresso private framework.
 
 [1] https://github.com/blacktop/ipsw
+
 [2] https://github.com/nst/RuntimeBrowser
 
 # Credits
-@geohot reverse-engineered lots ANE related information, including HWX format. See [ane code](https://github.com/geohot/tinygrad/tree/master/extra/accel/ane) in tinygrad and his hacking videos.
+@geohot reverse-engineered lots ANE related information, including HWX format. See [ane code](https://github.com/tinygrad/tinygrad/tree/v0.10.3/extra/accel/ane) in tinygrad and his hacking videos.

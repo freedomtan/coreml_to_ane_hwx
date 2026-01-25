@@ -166,8 +166,10 @@
   \wordbox[]{1}{$\vdots$} \\[1ex]
   
   \begin{rightwordgroup}{0x128, aneRegs.Common.InDim}
-    \bitbox{16}{Win} &
-    \bitbox{16}{Hin} &
+    \bitbox{15}{Win} &
+    \bitbox{1}{} &
+    \bitbox{15}{Hin} &
+    \bitbox{1}{} &
   \end{rightwordgroup} \\
 
   \wordbox{1}{} \\
@@ -175,8 +177,9 @@
   \bytefieldsetup{bitheight=6ex}% \\  
   \begin{rightwordgroup}{0x130, aneRegs.Common.ChCfg}
     \bitbox{2}{\rotatebox{0}{InFmt}} &
+    \bitbox{2}{} &
     \bitbox{2}{\rotatebox{0}{OutFmt}} &
-    \bitbox{28}{} &
+    \bitbox{26}{} &
   \end{rightwordgroup} \\
 
   \begin{rightwordgroup}{0x134, aneRegs.Common.Cin}
@@ -207,9 +210,9 @@
     \bitbox{2}{Sy} &
     \bitbox{5}{Px} &
     \bitbox{5}{Py} &
+    \bitbox{1}{} &
     \bitbox{2}{Ox} &
     \bitbox{2}{Oy} &
-    \bitbox{1}{} &
   \end{rightwordgroup} \\
 
   \wordbox{1}{} \\
@@ -525,7 +528,7 @@
     \bitbox{3}{OffsetCh} &
     \bitbox{1}{} &
     \bitbox{1}{\rotatebox{90}{\tiny ZeroPadLast}} &
-    \bitbox{1}{\rotatebox{90}{\tiny ZeroPadFirstt}}&
+    \bitbox{1}{\rotatebox{90}{\tiny ZeroPadFirst}}&
     \bitbox{1}{\rotatebox{90}{\tiny CmpVecFill}} &
     \bitbox{1}{} &
     \bitbox{4}{Interleave} &

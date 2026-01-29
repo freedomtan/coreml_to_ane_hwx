@@ -7,6 +7,163 @@
 #define HWX_MAGIC 0xbeefface
 #define LC_ANE_MAPPED_REGION 0x40
 
+typedef struct __attribute__((packed)) {
+  uint16_t tid;             // 0x000
+  uint8_t nid;              // 0x002
+  uint8_t lnid_eon;         // 0x003: LNID (bit 0), EON (bit 1)
+  uint16_t exe_cycles;      // 0x004
+  uint16_t next_size_pad;   // 0x006: NextSize (9 bits), Pad (7 bits)
+  uint32_t log_events : 24; // 0x008
+  uint32_t pad0 : 8;
+  uint32_t exceptions : 24; // 0x00c
+  uint32_t pad1 : 8;
+  uint32_t debug_log_events : 24; // 0x010
+  uint32_t pad2 : 8;
+  uint32_t debug_exceptions : 24; // 0x014
+  uint32_t pad3 : 8;
+  uint32_t flags;        // 0x018
+  uint32_t next_pointer; // 0x01c
+} ane_td_header_t;
+
+const char *get_ch_fmt_name(uint32_t fmt) {
+  switch (fmt) {
+  case 0:
+    return "UINT8";
+  case 1:
+    return "INT8";
+  case 2:
+    return "FLOAT16";
+  case 3:
+    return "INT32";
+  default:
+    return "Unknown";
+  }
+}
+
+void decode_ane_td(const uint8_t *ptr, size_t total_len) {
+  uint32_t offset = 0;
+  int task_idx = 0;
+
+  while (offset + sizeof(ane_td_header_t) <= total_len) {
+    const ane_td_header_t *td = (const ane_td_header_t *)(ptr + offset);
+    printf("      [ANE Task %d @ 0x%x]\n", task_idx++, offset);
+    printf("        TID: 0x%04x NID: 0x%02x LNID: %d EON: %d\n", td->tid,
+           td->nid, td->lnid_eon & 1, (td->lnid_eon >> 1) & 1);
+    printf("        ExeCycles: %u NextSize: %u\n", td->exe_cycles,
+           td->next_size_pad & 0x1FF);
+    printf("        Flags: 0x%08x NextPointer: 0x%08x\n", td->flags,
+           td->next_pointer);
+
+    // Decode some common registers if they fit in the section
+    if (offset + 0x140 <= total_len) {
+      const uint32_t *regs = (const uint32_t *)(ptr + offset);
+      // InDim: 0x128
+      uint32_t indim = regs[0x128 / 4];
+      uint16_t win = indim & 0x7FFF;
+      uint16_t hin = (indim >> 16) & 0x7FFF;
+
+      // ChCfg: 0x130
+      uint32_t chcfg = regs[0x130 / 4];
+      const char *infmt_name = get_ch_fmt_name(chcfg & 0x3);
+      const char *outfmt_name = get_ch_fmt_name((chcfg >> 4) & 0x3);
+
+      // Cin: 0x134, Cout: 0x138
+      uint32_t cin = regs[0x134 / 4] & 0x1FFFF;
+      uint32_t cout = regs[0x138 / 4] & 0x1FFFF;
+
+      // OutDim: 0x13c
+      uint32_t outdim = regs[0x13c / 4];
+      uint16_t wout = outdim & 0x7FFF;
+      uint16_t hout = (outdim >> 16) & 0x7FFF;
+
+      printf("        %u x %u x %u (%s) -> %u x %u x %u (%s)\n", win, hin, cin,
+             infmt_name, wout, hout, cout, outfmt_name);
+
+      // ConvCfg: 0x144
+      uint32_t convcfg = regs[0x144 / 4];
+      uint8_t kw = convcfg & 0x1F;
+      uint8_t kh = (convcfg >> 5) & 0x1F;
+
+      if (kw != 0 || kh != 0) {
+        uint8_t sx = (convcfg >> 13) & 0x3;
+        uint8_t sy = (convcfg >> 15) & 0x3;
+        uint8_t px = (convcfg >> 17) & 0x1F;
+        uint8_t py = (convcfg >> 22) & 0x1F;
+        printf("        ConvCfg: K=%ux%u S=%ux%u P=%ux%u\n", kw, kh, sx, sy, px,
+               py);
+
+        // GroupConvCfg: 0x14c
+        uint32_t groupcfg = regs[0x14c / 4];
+        uint16_t num_groups = groupcfg & 0x1FFF;
+        uint16_t unicast_cin = (groupcfg >> 16) & 0xFFFF;
+        printf("        GroupConvCfg: Groups=%u UnicastEn=%d ElemMult=%d "
+               "UnicastCin=%u\n",
+               num_groups, (groupcfg >> 14) & 1, (groupcfg >> 15) & 1,
+               unicast_cin);
+      }
+
+      // Show NE and L2 details for all layers
+      uint32_t common_cfg = regs[0x15c / 4];
+      uint32_t active_ne = (common_cfg >> 18) & 0x7;
+      printf("        ActiveNE: %u\n", active_ne);
+
+      uint32_t maccfg = regs[0x244 / 4];
+      uint8_t op_mode = maccfg & 0xF;
+      uint8_t nl_mode = (maccfg >> 16) & 0x3;
+      printf(
+          "        NE MACCfg: OpMode=%u NLMode=%u KernelMode=%d BiasMode=%d\n",
+          op_mode, nl_mode, (maccfg >> 4) & 1, (maccfg >> 5) & 1);
+
+      uint32_t l2cfg = regs[0x1e0 / 4];
+      printf("        L2Cfg: InputRelu=%d PaddingMode=%u\n", l2cfg & 1,
+             (l2cfg >> 1) & 0x3);
+
+      // Show L2 Source and Result Cfg
+      if (offset + 0x218 <= total_len) {
+        // regs is already defined and points to the start of the current task's
+        // registers
+
+        uint32_t scfg = regs[0x1e4 / 4];
+        printf("        SourceCfg: Type=%u Dep=%u Fmt=%u Intrlv=%u CmpV=%u "
+               "OffCh=%u\n",
+               scfg & 0x3, (scfg >> 2) & 0x3, (scfg >> 6) & 0x3,
+               (scfg >> 8) & 0xF, (scfg >> 12) & 0xF, (scfg >> 16) & 0x7);
+
+        uint32_t rcfg = regs[0x210 / 4];
+        printf("        ResultCfg: Type=%u Bfr=%u Fmt=%u Intrlv=%u CmpV=%u "
+               "OffCh=%u\n",
+               rcfg & 0x3, (rcfg >> 2) & 0x3, (rcfg >> 6) & 0x3,
+               (rcfg >> 8) & 0xF, (rcfg >> 12) & 0xF, (rcfg >> 16) & 0x7);
+      }
+    }
+
+    if (td->next_pointer == 0 || td->next_pointer <= offset)
+      break;
+    offset = td->next_pointer;
+  }
+}
+
+void hex_dump(const char *label, const uint8_t *ptr, size_t len) {
+  printf("      %s (%zu bytes):\n", label, len);
+  for (size_t i = 0; i < len; i += 16) {
+    printf("        %04lx: ", i);
+    for (size_t j = 0; j < 16; j++) {
+      if (i + j < len)
+        printf("%02x ", ptr[i + j]);
+      else
+        printf("   ");
+    }
+    printf(" |");
+    for (size_t j = 0; j < 16; j++) {
+      if (i + j < len) {
+        char c = ptr[i + j];
+        printf("%c", (c >= 32 && c <= 126) ? c : '.');
+      }
+    }
+    printf("|\n");
+  }
+}
+
 const char *get_cmd_name(uint32_t cmd) {
   switch (cmd) {
   case LC_SEGMENT:
@@ -119,8 +276,8 @@ const char *get_cmd_name(uint32_t cmd) {
   }
 }
 
-void print_macho_headers(NSData *data, BOOL dump_all_symbols,
-                         BOOL dump_threads) {
+void print_macho_headers(NSData *data, BOOL dump_all_symbols, BOOL dump_threads,
+                         BOOL dump_hexdump) {
   if (data.length < sizeof(struct mach_header_64)) {
     printf("Error: File too small.\n");
     return;
@@ -185,6 +342,22 @@ void print_macho_headers(NSData *data, BOOL dump_all_symbols,
           printf("      Size: 0x%llx\n", sect->size);
           printf("      Offset: 0x%x\n", sect->offset);
           printf("      Flags: 0x%x\n", sect->flags);
+
+          if (strcmp(seg->segname, "__TEXT") == 0) {
+            if (sect->offset + sect->size <= data.length) {
+              const uint8_t *section_ptr =
+                  (const uint8_t *)data.bytes + sect->offset;
+              size_t section_size = (size_t)sect->size;
+
+              if (strcmp(sect->sectname, "__text") == 0 ||
+                  strcmp(sect->sectname, "__TEXT") == 0) {
+                decode_ane_td(section_ptr, section_size);
+                if (dump_hexdump) {
+                  hex_dump(sect->sectname, section_ptr, section_size);
+                }
+              }
+            }
+          }
 
           sect++;
         }
@@ -317,8 +490,9 @@ int main(int argc, char *const argv[]) {
     int ch;
     BOOL dump_all = NO;
     BOOL dump_threads = NO;
+    BOOL dump_hexdump = NO;
 
-    while ((ch = getopt(argc, argv, "st")) != -1) {
+    while ((ch = getopt(argc, argv, "stx")) != -1) {
       switch (ch) {
       case 's':
         dump_all = YES;
@@ -326,9 +500,12 @@ int main(int argc, char *const argv[]) {
       case 't':
         dump_threads = YES;
         break;
+      case 'x':
+        dump_hexdump = YES;
+        break;
       case '?':
       default:
-        printf("Usage: %s [-s] [-t] <path_to_hwx>\n", getprogname());
+        printf("Usage: %s [-s] [-t] [-x] <path_to_hwx>\n", getprogname());
         return 1;
       }
     }
@@ -336,7 +513,7 @@ int main(int argc, char *const argv[]) {
     argv += optind;
 
     if (argc < 1) {
-      printf("Usage: %s [-s] [-t] <path_to_hwx>\n", getprogname());
+      printf("Usage: %s [-s] [-t] [-x] <path_to_hwx>\n", getprogname());
       return 1;
     }
 
@@ -348,7 +525,7 @@ int main(int argc, char *const argv[]) {
       return 1;
     }
 
-    print_macho_headers(data, dump_all, dump_threads);
+    print_macho_headers(data, dump_all, dump_threads, dump_hexdump);
   }
   return 0;
 }

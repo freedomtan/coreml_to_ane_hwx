@@ -94,6 +94,11 @@
 
   \wordbox[]{1}{$\vdots$} \\[1ex]
   
+  \begin{rightwordgroup}{0x028, aneRegs.KernelDMASrc}
+    \bitbox{6}{length} &
+    \bitbox{26}{KernelDMASrc address base} &
+  \end{rightwordgroup} \\
+
   \bytefieldsetup{bitheight=20ex}% \\    
   \begin{rightwordgroup}{0x034, aneRegs.KernelDMASrc.CoeffDMAConfig[0]}
     \bitbox{1}{En} &
@@ -165,6 +170,11 @@
   
   \wordbox[]{1}{$\vdots$} \\[1ex]
   
+  \begin{rightwordgroup}{0x124, aneRegs.Common}
+    \bitbox{6}{length} &
+    \bitbox{26}{common address base} &
+  \end{rightwordgroup} \\
+
   \begin{rightwordgroup}{0x128, aneRegs.Common.InDim}
     \bitbox{15}{Win} &
     \bitbox{1}{} &
@@ -268,6 +278,11 @@
 
   \wordbox{1}{} \\
 
+  \begin{rightwordgroup}{0x168, aneRegs.TileDMASrc}
+    \bitbox{6}{length} &
+    \bitbox{26}{TileDMASrc address base} &
+  \end{rightwordgroup} \\
+
   \begin{rightwordgroup}{0x16c, aneRegs.TileDMASrc.DMAConfig}
     \bitbox{1}{{EN}} &
     \bitbox{3}{} &
@@ -348,7 +363,12 @@
   \end{rightwordgroup} \\
   
   \wordbox[]{1}{$\vdots$} \\[1ex]
-  
+
+  \begin{rightwordgroup}{0x1dc, aneRegs.L2}
+    \bitbox{6}{length} &
+    \bitbox{26}{L2 address base} &
+  \end{rightwordgroup} \\
+
   \bytefieldsetup{bitheight=12ex}% \\  
   \begin{rightwordgroup}{0x1e0, aneRegs.L2.L2Cfg}
     \bitbox{1}{\rotatebox{90}{\tiny InputRelu}} &
@@ -429,7 +449,19 @@
   \end{rightwordgroup} \\
 
   \wordbox[]{1}{$\vdots$} \\[1ex]
-  
+
+  \begin{rightwordgroup}{0x228, aneRegs.??}
+    \bitbox{6}{length} &
+    \bitbox{26}{?? address base} &
+  \end{rightwordgroup} \\
+
+  \wordbox[]{1}{$\vdots$} \\[1ex]
+
+  \begin{rightwordgroup}{0x23c, aneRegs.NE}
+    \bitbox{6}{length} &
+    \bitbox{26}{NE address base} &
+  \end{rightwordgroup} \\
+
   \bytefieldsetup{bitheight=16ex}% \\
   \begin{rightwordgroup}{0x240, aneRegs.NE.KernelCfg}
     \bitbox{2}{\rotatebox{90}{\tiny KernelFmt}} &
@@ -475,7 +507,10 @@
     \bitbox{11}{} &
   \end{rightwordgroup} \\
 
-  \wordbox{1}{} \\
+  \begin{rightwordgroup}{0x254, aneRegs.TileDMADst}
+    \bitbox{6}{length} &
+    \bitbox{26}{TileDMADst address base} &
+  \end{rightwordgroup} \\
 
   \bytefieldsetup{bitheight=12ex}% \\
   \begin{rightwordgroup}{0x258, aneRegs.TileDMADst.DMAConfig}

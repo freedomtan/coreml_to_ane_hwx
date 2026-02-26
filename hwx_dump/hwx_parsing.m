@@ -25,6 +25,30 @@ typedef struct __attribute__((packed)) {
   uint32_t next_pointer; // 0x01c
 } ane_td_header_t;
 
+typedef struct __attribute__((packed)) {
+  uint16_t tid;             // 0x000
+  uint32_t task_size : 11;  // 0x002 bits 0-10 (Header[0] bits 16-26)
+  uint32_t pad0 : 5;        // 0x002 bits 11-15 (Header[0] bits 27-31)
+  uint16_t exe_cycles;      // 0x004
+  uint16_t pad1;            // 0x006
+  uint32_t log_events : 24; // 0x008
+  uint32_t pad2 : 8;
+  uint32_t exceptions : 24; // 0x00c
+  uint32_t pad3 : 8;
+  uint32_t debug_log_events : 24; // 0x010
+  uint32_t pad4 : 8;
+  uint32_t debug_exceptions : 24; // 0x014
+  uint32_t pad5 : 8;
+  uint32_t live_outs; // 0x018
+  uint32_t tsr : 1;   // 0x01c bit 0
+  uint32_t tde : 1;   // 0x01c bit 1
+  uint32_t pad6 : 14; // 0x01c bits 2-15
+  uint32_t ene : 3;   // 0x01c bits 16-18
+  uint32_t pad7 : 13; // 0x01c bits 19-31
+  uint16_t tdid;
+  uint16_t pad8;
+} ane_m4_header_t;
+
 const char *get_ch_fmt_name(uint32_t fmt) {
   switch (fmt) {
   case 0:
@@ -140,6 +164,96 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
     if (td->next_pointer == 0 || td->next_pointer <= offset)
       break;
     offset = td->next_pointer;
+  }
+}
+
+void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
+  printf("\n[M4] Detected M4 HWX Format (CPU Subtype 0x7)\n");
+
+  uint32_t offset = 0;
+  int task_idx = 0;
+
+  while (offset + sizeof(ane_m4_header_t) <= total_len) {
+    const ane_m4_header_t *m4h = (const ane_m4_header_t *)(ptr + offset);
+
+    if (m4h->task_size == 0) {
+      offset += 16;
+      continue;
+    }
+
+    // Basic Validation: Logic IDs are generally small (tid < 0x1000)
+    if (m4h->tid > 0x1000) {
+      printf("      [M4 Parser] Found likely end of tasks at offset 0x%x (TID: "
+             "0x%04x)\n",
+             offset, m4h->tid);
+      break;
+    }
+
+    uint32_t size_bytes = m4h->task_size * 4;
+    printf("      [ANE Task %d @ 0x%x] (Size: 0x%x bytes)\n", task_idx++,
+           offset, size_bytes);
+
+    printf("        TID: 0x%04x ExeCycles: %u ENE: %u\n", m4h->tid,
+           m4h->exe_cycles, m4h->ene);
+    printf("        LogEvents: 0x%06x Exceptions: 0x%06x\n", m4h->log_events,
+           m4h->exceptions);
+    printf("        LiveOuts: 0x%08x TSR: %d TDE: %d\n", m4h->live_outs,
+           m4h->tsr, m4h->tde);
+
+    // Phase 4: Verbose Register Logging
+    const uint32_t *words = (const uint32_t *)(ptr + offset);
+    int num_words = size_bytes / 4;
+    int i = 9; // Skip 9-word header
+
+    while (i < num_words) {
+      uint32_t header = words[i++];
+      uint32_t word_addr = header & 0x7FFF;
+      uint16_t num_regs = 0;
+
+      if ((header >> 31) == 0) {
+        // Sequential / Burst Mode
+        num_regs = (header >> 15) & 0x3F;
+        printf("        [Sequential] Base 0x%04x, Count %u (%u regs)\n",
+               word_addr << 2, num_regs, num_regs + 1);
+        for (int j = 0; j <= num_regs && i <= num_words; j++) {
+          printf("          0x%04x: 0x%08x\n", (word_addr + j) << 2,
+                 words[i++]);
+        }
+      } else {
+        // Masked / Scattered Mode
+        uint16_t mask = (header >> 15) & 0xFFFF;
+        num_regs = __builtin_popcount(mask);
+        printf("        [Masked] Base 0x%04x, Mask 0x%04x (%d regs)\n",
+               word_addr << 2, mask, num_regs + 1);
+
+        // V11 Masked commands always include the base register value first
+        if (i < num_words) {
+          printf("          0x%04x: 0x%08x\n", word_addr << 2, words[i++]);
+        }
+
+        // Then follow the registers indicated by the 16-bit mask
+        for (int bit = 0; bit < 16 && i < num_words; bit++) {
+          if ((mask >> bit) & 1) {
+            printf("          0x%04x: 0x%08x\n", (word_addr + bit + 1) << 2,
+                   words[i++]);
+          }
+        }
+      }
+#if 0
+      // MANDATORY: Skip one 4-byte dummy word after every register block
+      if (i < num_words) {
+        i++;
+      }
+#endif
+    }
+    printf("        Stream Parse: OK (End index %d/%d)\n", i, num_words);
+
+    if (offset + size_bytes > total_len)
+      break;
+
+    // Advance with 16-byte alignment
+    uint32_t aligned_size = (size_bytes + 15) & ~15;
+    offset += aligned_size;
   }
 }
 
@@ -351,7 +465,11 @@ void print_macho_headers(NSData *data, BOOL dump_all_symbols, BOOL dump_threads,
 
               if (strcmp(sect->sectname, "__text") == 0 ||
                   strcmp(sect->sectname, "__TEXT") == 0) {
-                decode_ane_td(section_ptr, section_size);
+                if (header->cpusubtype == 0x7) {
+                  decode_ane_td_m4(section_ptr, section_size);
+                } else {
+                  decode_ane_td(section_ptr, section_size);
+                }
                 if (dump_hexdump) {
                   hex_dump(sect->sectname, section_ptr, section_size);
                 }

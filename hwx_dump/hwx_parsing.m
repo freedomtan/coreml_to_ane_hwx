@@ -52,13 +52,13 @@ typedef struct __attribute__((packed)) {
 const char *get_ch_fmt_name(uint32_t fmt) {
   switch (fmt) {
   case 0:
-    return "UINT8";
-  case 1:
     return "INT8";
+  case 1:
+    return "UINT8";
   case 2:
     return "FLOAT16";
   case 3:
-    return "INT32";
+    return "Unknown";
   default:
     return "Unknown";
   }
@@ -200,10 +200,13 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
     printf("        LiveOuts: 0x%08x TSR: %d TDE: %d\n", m4h->live_outs,
            m4h->tsr, m4h->tde);
 
+    uint32_t reg_values[0x8000] = {0};
+    bool reg_valid[0x8000] = {false};
+
     // Phase 4: Verbose Register Logging
     const uint32_t *words = (const uint32_t *)(ptr + offset);
     int num_words = size_bytes / 4;
-    int i = 9; // Skip 9-word header
+    int i = 9; // Skip 9-word header (36 bytes)
 
     while (i < num_words) {
       uint32_t header = words[i++];
@@ -213,40 +216,130 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
       if ((header >> 31) == 0) {
         // Sequential / Burst Mode
         num_regs = (header >> 15) & 0x3F;
-        printf("        [Sequential] Base 0x%04x, Count %u (%u regs)\n",
-               word_addr << 2, num_regs, num_regs + 1);
-        for (int j = 0; j <= num_regs && i <= num_words; j++) {
-          printf("          0x%04x: 0x%08x\n", (word_addr + j) << 2,
-                 words[i++]);
+        for (int j = 0; j <= num_regs && i < num_words; j++) {
+          uint32_t current_addr = word_addr + j;
+          if (current_addr < 0x8000) {
+            reg_values[current_addr] = words[i];
+            reg_valid[current_addr] = true;
+          }
+          i++;
         }
       } else {
         // Masked / Scattered Mode
-        uint16_t mask = (header >> 15) & 0xFFFF;
+        uint32_t mask = (header >> 15) & 0xFFFF; // 16-bit mask
         num_regs = __builtin_popcount(mask);
-        printf("        [Masked] Base 0x%04x, Mask 0x%04x (%d regs)\n",
-               word_addr << 2, mask, num_regs + 1);
 
         // V11 Masked commands always include the base register value first
         if (i < num_words) {
-          printf("          0x%04x: 0x%08x\n", word_addr << 2, words[i++]);
+          uint32_t current_addr = word_addr;
+          if (current_addr < 0x8000) {
+            reg_values[current_addr] = words[i];
+            reg_valid[current_addr] = true;
+          }
+          i++;
         }
 
         // Then follow the registers indicated by the 16-bit mask
         for (int bit = 0; bit < 16 && i < num_words; bit++) {
           if ((mask >> bit) & 1) {
-            printf("          0x%04x: 0x%08x\n", (word_addr + bit + 1) << 2,
-                   words[i++]);
+            uint32_t current_addr = word_addr + bit + 1;
+            if (current_addr < 0x8000) {
+              reg_values[current_addr] = words[i];
+              reg_valid[current_addr] = true;
+            }
+            i++;
           }
         }
       }
-#if 0
-      // MANDATORY: Skip one 4-byte dummy word after every register block
-      if (i < num_words) {
-        i++;
-      }
-#endif
     }
     printf("        Stream Parse: OK (End index %d/%d)\n", i, num_words);
+
+    // Decode Common Registers from Map M4 Style
+    if (reg_valid[1] || reg_valid[2] || reg_valid[3] || reg_valid[5] ||
+        reg_valid[6] || reg_valid[7] || reg_valid[9]) {
+
+      uint32_t win = reg_valid[1] ? reg_values[1] : 0;
+      uint32_t hin = reg_valid[2] ? reg_values[2] : 0;
+      uint32_t cin = reg_valid[3] ? reg_values[3] : 0;
+      uint32_t din = reg_valid[4] ? reg_values[4] : 0;
+
+      uint32_t wout = reg_valid[5] ? reg_values[5] : 0;
+      uint32_t hout = reg_valid[6] ? reg_values[6] : 0;
+      uint32_t cout = reg_valid[7] ? reg_values[7] : 0;
+      uint32_t dout = reg_valid[8] ? reg_values[8] : 0;
+
+      uint32_t batch = reg_valid[9] ? reg_values[9] : 0;
+
+      printf("        InDim : B=%u W=%u H=%u C=%u D=%u\n", batch, win, hin, cin,
+             din);
+      printf("        OutDim: B=%u W=%u H=%u C=%u D=%u\n", batch, wout, hout,
+             cout, dout);
+    }
+
+    if (reg_valid[0]) {
+      uint32_t chcfg = reg_values[0];
+      const char *infmt_name = get_ch_fmt_name(chcfg & 0x3);
+      const char *outfmt_name = get_ch_fmt_name((chcfg >> 4) & 0x3);
+      printf("        Format: In=%s Out=%s (raw: 0x%08x)\n", infmt_name,
+             outfmt_name, chcfg);
+    }
+
+    if (reg_valid[10]) {
+      uint32_t convcfg = reg_values[10];
+      uint8_t kw = convcfg & 0x3F;
+      uint8_t kh = (convcfg >> 6) & 0x3F;
+      uint8_t sx = (convcfg >> 13) & 0x3;
+      uint8_t sy = (convcfg >> 15) & 0x3;
+      uint8_t px = (convcfg >> 17) & 0x1F;
+      uint8_t py = (convcfg >> 22) & 0x1F;
+      uint8_t ox = (convcfg >> 28) & 0x3;
+      uint8_t oy = (convcfg >> 30) & 0x3;
+      printf(
+          "        M4 ConvCfg: K=%ux%u S=%ux%u P=%ux%u O=%ux%u (raw: 0x%08x)\n",
+          kw, kh, sx, sy, px, py, ox, oy, convcfg);
+    }
+
+    if (reg_valid[13]) {
+      printf("        TileHeight: %u\n", reg_values[13]);
+    }
+
+    if (reg_valid[15]) {
+      uint32_t common_cfg = reg_values[15];
+      uint32_t active_ne = (common_cfg >> 19) & 0x7;
+      bool out_transpose = (common_cfg >> 28) & 1;
+      printf("        ActiveNE: %u OutTranspose: %d (raw: 0x%08x)\n", active_ne,
+             out_transpose, common_cfg);
+    }
+
+    if (reg_valid[16]) {
+      uint32_t ocg = reg_values[16];
+      uint8_t ocg_size = ocg & 0x7;
+      printf("        OCGSize: %u (raw: 0x%08x)\n", ocg_size, ocg);
+    }
+
+    if (reg_valid[17]) {
+      uint32_t patch = reg_values[17];
+      uint8_t pw = patch & 0xF;
+      uint8_t ph = (patch >> 4) & 0x1F;
+      printf("        Patch: %ux%u (raw: 0x%08x)\n", pw, ph, patch);
+    }
+
+    if (reg_valid[0x4900 / 4]) {
+      uint32_t ne_kernel_cfg = reg_values[0x4900 / 4];
+      uint8_t kernel_fmt = ne_kernel_cfg & 0x0003;
+      printf("        KernelFmt: %s (raw: 0x%08x)\n",
+             get_ch_fmt_name(kernel_fmt), ne_kernel_cfg);
+    }
+
+    if (1) { // Dump key M4 registers
+      printf("        Parsed M4 Registers:\n");
+      for (int r = 0; r < 0x200; r++) { // Only print base registers
+        if (reg_valid[r]) {
+          printf("          0x%04x (word %d): 0x%08x\n", r * 4, r,
+                 reg_values[r]);
+        }
+      }
+    }
 
     if (offset + size_bytes > total_len)
       break;

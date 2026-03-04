@@ -49,6 +49,289 @@ typedef struct __attribute__((packed)) {
   uint16_t pad8;
 } ane_m4_header_t;
 
+typedef struct __attribute__((packed)) {
+  // Word 0 (0x000)
+  struct {
+    uint32_t infmt : 4;
+    uint32_t outfmt : 4;
+    uint32_t pad0_0 : 24;
+  } ch_cfg;
+
+  // Word 1-8
+  struct {
+    uint32_t w_in : 17;
+    uint32_t pad0 : 15;
+  } win;
+  struct {
+    uint32_t h_in : 17;
+    uint32_t pad0 : 15;
+  } hin;
+  struct {
+    uint32_t c_in : 17;
+    uint32_t pad0 : 15;
+  } cin;
+  struct {
+    uint32_t d_in : 17;
+    uint32_t pad0 : 15;
+  } din;
+  struct {
+    uint32_t w_out : 17;
+    uint32_t pad0 : 15;
+  } wout;
+  struct {
+    uint32_t h_out : 17;
+    uint32_t pad0 : 15;
+  } hout;
+  struct {
+    uint32_t c_out : 17;
+    uint32_t pad0 : 15;
+  } cout;
+  struct {
+    uint32_t d_out : 17;
+    uint32_t pad0 : 15;
+  } dout;
+
+  // Word 9 (0x024)
+  struct {
+    uint32_t num_groups : 13;
+    uint32_t pad0 : 19;
+  } group_cfg;
+
+  // Word 10 (0x028)
+  struct {
+    uint32_t kw : 6;
+    uint32_t kh : 6;
+    uint32_t pad10_0 : 1;
+    uint32_t sx : 2;
+    uint32_t sy : 2;
+    uint32_t px : 5;
+    uint32_t py : 5;
+    uint32_t pad10_1 : 1;
+    uint32_t ox : 2;
+    uint32_t oy : 2;
+  } conv_cfg_0;
+
+  // Word 11-14
+  uint32_t conv_cfg_3d; // 0x02c (Word 11)
+
+  // Word 12 (0x030)
+  struct {
+    uint32_t pad0 : 14;
+    uint32_t unicast_en : 1;
+    uint32_t pad1 : 1;
+    uint32_t unicast_cin : 16;
+  } unicast_cfg;
+
+  // Word 13 (0x034)
+  struct {
+    uint32_t height : 17;
+    uint32_t pad0 : 15;
+  } tile_height;
+
+  // Word 14 (0x038)
+  struct {
+    uint32_t pad0 : 16;
+    uint32_t overlap : 5;
+    uint32_t pad_top : 5;
+    uint32_t pad_bottom : 5;
+    uint32_t pad1 : 1;
+  } tile_overlap;
+
+  // Word 15 (0x03C)
+  struct {
+    uint32_t pad0 : 2;
+    uint32_t small_src_mode : 2;
+    uint32_t task_type : 4;
+    uint32_t pad1 : 11;
+    uint32_t active_ne : 3;
+    uint32_t pad2 : 1;
+    uint32_t l2_barrier : 1;
+    uint32_t pad3 : 4;
+    uint32_t out_trans : 1;
+    uint32_t pad4 : 3;
+  } maccfg;
+
+  // Word 16 (0x40)
+  struct {
+    uint32_t ocg_size : 3;
+    uint32_t pad0 : 29;
+  } conv_cfg_1;
+
+  // Word 17 (0x044)
+  struct {
+    uint32_t w : 4;
+    uint32_t h : 5;
+    uint32_t pad0 : 23;
+  } patch_dim;
+
+  // Word 18 (0x048)
+  struct {
+    uint32_t src1_w_bcast : 1;
+    uint32_t src1_h_bcast : 1;
+    uint32_t src1_d_bcast : 1;
+    uint32_t src1_c_bcast : 1;
+    uint32_t src2_w_bcast : 1;
+    uint32_t src2_h_bcast : 1;
+    uint32_t src2_d_bcast : 1;
+    uint32_t src2_c_bcast : 1;
+    uint32_t src1_trans : 1;
+    uint32_t src2_trans : 1;
+    uint32_t out_trans : 1;
+    uint32_t pad0 : 21;
+  } pe_routing;
+
+  uint32_t nid; // 0x04C (Word 19)
+
+  // Word 20 (0x050)
+  struct {
+    uint32_t category : 4;
+    uint32_t pad0 : 28;
+  } dpe;
+
+  uint32_t val_21; // 0x054 (Word 21)
+  uint32_t val_22; // 0x058 (Word 22)
+
+} ane_m4_common_t;
+
+// [0x4900] Neural Engine (NE) Block (M4 specific mapping)
+typedef struct {
+  // Word 0 (0x4900)
+  struct {
+    uint32_t kernel_fmt : 2;
+    uint32_t palettized_en : 1;
+    uint32_t pad0 : 1;
+    uint32_t palettized_bits : 4;
+    uint32_t sparse_fmt : 1;
+    uint32_t pad1 : 6;
+    uint32_t sparse_binary : 1;
+    uint32_t alignment_fmt : 1;
+    uint32_t pad2 : 4;
+    uint32_t sparse_block_size : 3;
+    uint32_t asym_quant_en : 1;
+    uint32_t pad3 : 7;
+  } kernel_cfg;
+
+  // Word 1 (0x4904)
+  struct {
+    uint32_t op_mode : 3;
+    uint32_t kernel_mode : 1;
+    uint32_t ne_bias_en : 1;
+    uint32_t passthrough_en : 1;
+    uint32_t matrix_bias_en : 1;
+    uint32_t pad0 : 1;
+    uint32_t binary_point : 6;
+    uint32_t post_scale_en : 1;
+    uint32_t pad1 : 1;
+    uint32_t non_linear_mode : 2;
+    uint32_t padding_mode : 1;
+    uint32_t max_pool_mode : 1;
+    uint32_t pad2 : 12;
+  } mac_cfg;
+
+  // Word 2 (0x4908)
+  struct {
+    uint32_t matrix_vector_bias : 16;
+    uint32_t pad0 : 16;
+  } matrix_bias;
+
+  // Word 3 (0x490C)
+  struct {
+    uint32_t acc_bias : 21;
+    uint32_t pad0 : 11;
+  } acc_bias;
+
+  // Word 4 (0x4910)
+  struct {
+    uint32_t post_scale : 21;
+    uint32_t pad0 : 11;
+  } post_scale;
+
+  uint32_t raw_4914; // Word 5
+  uint32_t raw_4918; // Word 6
+  uint32_t raw_491c; // Word 7
+  uint32_t raw_4920; // Word 8
+
+} ane_m4_ne_t;
+
+// [0x4500] Planar Engine (PE) Block (M4 specific mapping)
+typedef struct {
+  // Word 0 (0x4500)
+  struct {
+    uint32_t op : 6;
+    uint32_t pad0 : 13;
+    uint32_t en : 1;
+    uint32_t pad1 : 12;
+  } op_mode;
+
+  uint32_t bias_1;   // Word 1 (0x4504)
+  uint32_t scale_1;  // Word 2 (0x4508)
+  uint32_t raw_450c; // Word 3 (0x450c)
+  uint32_t bias_2;   // Word 4 (0x4510)
+  uint32_t scale_2;  // Word 5 (0x4514)
+} ane_m4_pe_t;
+
+// [0x4100] L2 Cache Control Block (M4 specific mapping)
+typedef struct {
+  uint32_t l2cfg;   // Word 0
+  uint32_t src1cfg; // Word 1
+  uint32_t src2cfg; // Word 2
+  uint32_t pad0;    // Word 3
+
+  // Dense 17-bit packed tensor block (Bits 4:20)
+  struct {
+    uint32_t base : 17;
+    uint32_t pad0 : 15;
+    uint32_t channel_stride : 17;
+    uint32_t pad1 : 15;
+    uint32_t row_stride : 17;
+    uint32_t pad2 : 15;
+    uint32_t depth_stride : 17;
+    uint32_t pad3 : 15;
+    uint32_t group_stride : 17;
+    uint32_t pad4 : 15;
+  } src1; // Words 4-8
+
+  struct {
+    uint32_t base : 17;
+    uint32_t pad0 : 15;
+    uint32_t channel_stride : 17;
+    uint32_t pad1 : 15;
+    uint32_t row_stride : 17;
+    uint32_t pad2 : 15;
+    uint32_t depth_stride : 17;
+    uint32_t pad3 : 15;
+    uint32_t group_stride : 17;
+    uint32_t pad4 : 15;
+  } src2; // Words 9-13
+
+  struct {
+    uint32_t base : 17;
+    uint32_t pad0 : 15;
+    uint32_t channel_stride : 17;
+    uint32_t pad1 : 15;
+    uint32_t depth_stride : 17;
+    uint32_t pad2 : 15;
+    uint32_t group_stride : 17;
+    uint32_t pad3 : 15;
+  } srcidx; // Words 14-17 (No RowStride)
+
+  uint32_t resultcfg; // Word 18
+
+  struct {
+    uint32_t base : 17;
+    uint32_t pad0 : 15;
+    uint32_t channel_stride : 17;
+    uint32_t pad1 : 15;
+    uint32_t row_stride : 17;
+    uint32_t pad2 : 15;
+    uint32_t depth_stride : 17;
+    uint32_t pad3 : 15;
+    uint32_t group_stride : 17;
+    uint32_t pad4 : 15;
+  } result; // Words 19-23
+
+} ane_m4_l2_t;
+
 const char *get_ch_fmt_name(uint32_t fmt) {
   switch (fmt) {
   case 0:
@@ -255,88 +538,244 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
     printf("        Stream Parse: OK (End index %d/%d)\n", i, num_words);
 
     // Decode Common Registers from Map M4 Style
-    if (reg_valid[1] || reg_valid[2] || reg_valid[3] || reg_valid[5] ||
-        reg_valid[6] || reg_valid[7] || reg_valid[9]) {
-
-      uint32_t win = reg_valid[1] ? reg_values[1] : 0;
-      uint32_t hin = reg_valid[2] ? reg_values[2] : 0;
-      uint32_t cin = reg_valid[3] ? reg_values[3] : 0;
-      uint32_t din = reg_valid[4] ? reg_values[4] : 0;
-
-      uint32_t wout = reg_valid[5] ? reg_values[5] : 0;
-      uint32_t hout = reg_valid[6] ? reg_values[6] : 0;
-      uint32_t cout = reg_valid[7] ? reg_values[7] : 0;
-      uint32_t dout = reg_valid[8] ? reg_values[8] : 0;
-
-      uint32_t batch = reg_valid[9] ? reg_values[9] : 0;
-
-      printf("        InDim : B=%u W=%u H=%u C=%u D=%u\n", batch, win, hin, cin,
-             din);
-      printf("        OutDim: B=%u W=%u H=%u C=%u D=%u\n", batch, wout, hout,
-             cout, dout);
+    ane_m4_common_t common;
+    bool has_common = false;
+    for (int j = 0; j < 23; j++) {
+      if (reg_valid[j]) {
+        has_common = true;
+        ((uint32_t *)&common)[j] = reg_values[j];
+      } else {
+        ((uint32_t *)&common)[j] = 0;
+      }
     }
 
-    if (reg_valid[0]) {
-      uint32_t chcfg = reg_values[0];
-      const char *infmt_name = get_ch_fmt_name(chcfg & 0x3);
-      const char *outfmt_name = get_ch_fmt_name((chcfg >> 4) & 0x3);
-      printf("        Format: In=%s Out=%s (raw: 0x%08x)\n", infmt_name,
-             outfmt_name, chcfg);
+    if (has_common) {
+      uint32_t batch = common.group_cfg.num_groups;
+      printf("        InDim : B=%u W=%u H=%u C=%u D=%u\n", batch,
+             common.win.w_in, common.hin.h_in, common.cin.c_in,
+             common.din.d_in);
+      printf("        OutDim: B=%u W=%u H=%u C=%u D=%u\n", batch,
+             common.wout.w_out, common.hout.h_out, common.cout.c_out,
+             common.dout.d_out);
+
+      if (reg_valid[0]) {
+        const char *infmt_name = get_ch_fmt_name(common.ch_cfg.infmt);
+        const char *outfmt_name = get_ch_fmt_name(common.ch_cfg.outfmt);
+        printf("        Format: In=%s Out=%s\n", infmt_name, outfmt_name);
+      }
+
+      if (reg_valid[10]) {
+        printf("        ConvCfg0: K=%ux%u S=%ux%u P=%ux%u O=%ux%u\n",
+               common.conv_cfg_0.kw, common.conv_cfg_0.kh, common.conv_cfg_0.sx,
+               common.conv_cfg_0.sy, common.conv_cfg_0.px, common.conv_cfg_0.py,
+               common.conv_cfg_0.ox, common.conv_cfg_0.oy);
+      }
+
+      if (reg_valid[13]) {
+        printf("        TileHeight: %u\n", common.tile_height.height);
+      }
+
+      if (reg_valid[17]) {
+        printf("        Patch: %ux%u\n", common.patch_dim.w,
+               common.patch_dim.h);
+      }
+
+      if (reg_valid[11]) {
+        printf("        ConvCfg3D: 0x%08x\n", common.conv_cfg_3d);
+      }
+
+      if (reg_valid[12]) {
+        printf("        UnicastCfg: En=%d Cin=%u\n",
+               common.unicast_cfg.unicast_en, common.unicast_cfg.unicast_cin);
+      }
+
+      if (reg_valid[14]) {
+        printf("        TileOverlap: Overlap=%u PadTop=%u PadBottom=%u\n",
+               common.tile_overlap.overlap, common.tile_overlap.pad_top,
+               common.tile_overlap.pad_bottom);
+      }
+
+      if (reg_valid[15]) {
+        printf("        MacCfg: TaskType=%u ActiveNE=%u SmallSrcMode=%u "
+               "L2Barrier=%u OutTrans=%u\n",
+               common.maccfg.task_type, common.maccfg.active_ne,
+               common.maccfg.small_src_mode, common.maccfg.l2_barrier,
+               common.maccfg.out_trans);
+      }
+      if (reg_valid[16]) {
+        printf("        ConvCfg1  : OCGSize=%u\n", common.conv_cfg_1.ocg_size);
+      }
+
+      if (reg_valid[18]) {
+        printf("        PERouting: S1WB=%d S1HB=%d S1DB=%d S1CB=%d S2WB=%d "
+               "S2HB=%d S2DB=%d S2CB=%d S1T=%d S2T=%d OT=%d\n",
+               common.pe_routing.src1_w_bcast, common.pe_routing.src1_h_bcast,
+               common.pe_routing.src1_d_bcast, common.pe_routing.src1_c_bcast,
+               common.pe_routing.src2_w_bcast, common.pe_routing.src2_h_bcast,
+               common.pe_routing.src2_d_bcast, common.pe_routing.src2_c_bcast,
+               common.pe_routing.src1_trans, common.pe_routing.src2_trans,
+               common.pe_routing.out_trans);
+      }
+
+      if (reg_valid[19]) {
+        printf("        NID: 0x%08x\n", common.nid);
+      }
+
+      if (reg_valid[20]) {
+        printf("        DPE: Cat=%u\n", common.dpe.category);
+      }
+
+      if (reg_valid[21]) {
+        printf("        Val21: 0x%08x\n", common.val_21);
+      }
+
+      if (reg_valid[22]) {
+        printf("        Val22: 0x%08x\n", common.val_22);
+      }
     }
 
-    if (reg_valid[10]) {
-      uint32_t convcfg = reg_values[10];
-      uint8_t kw = convcfg & 0x3F;
-      uint8_t kh = (convcfg >> 6) & 0x3F;
-      uint8_t sx = (convcfg >> 13) & 0x3;
-      uint8_t sy = (convcfg >> 15) & 0x3;
-      uint8_t px = (convcfg >> 17) & 0x1F;
-      uint8_t py = (convcfg >> 22) & 0x1F;
-      uint8_t ox = (convcfg >> 28) & 0x3;
-      uint8_t oy = (convcfg >> 30) & 0x3;
-      printf(
-          "        M4 ConvCfg: K=%ux%u S=%ux%u P=%ux%u O=%ux%u (raw: 0x%08x)\n",
-          kw, kh, sx, sy, px, py, ox, oy, convcfg);
+    // Decode 0x4900 NE Block
+    bool ne_has_valid = false;
+    for (int i = 0x4900 / 4; i < 0x4900 / 4 + 32; i++) {
+      if (reg_valid[i])
+        ne_has_valid = true;
     }
 
-    if (reg_valid[13]) {
-      printf("        TileHeight: %u\n", reg_values[13]);
+    if (ne_has_valid) {
+      ane_m4_ne_t ne = *(ane_m4_ne_t *)&reg_values[0x4900 / 4];
+      printf("        --- Neural Engine Config ---\n");
+
+      if (reg_valid[0x4900 / 4]) {
+        printf("        KernelCfg: Fmt=%s Palettized=%d (%dbit) SparseFmt=%d "
+               "AsymQuant=%d\n",
+               get_ch_fmt_name(ne.kernel_cfg.kernel_fmt),
+               ne.kernel_cfg.palettized_en, ne.kernel_cfg.palettized_bits,
+               ne.kernel_cfg.sparse_fmt, ne.kernel_cfg.asym_quant_en);
+      }
+
+      if (reg_valid[0x4904 / 4]) {
+        printf(
+            "        MACCfg: OpMode=%d KernelMode=%d BiasEn=%d Passthrough=%d "
+            "MVBiasEn=%d BinaryPoint=%u PostScaleEn=%d NonLinear=%d\n",
+            ne.mac_cfg.op_mode, ne.mac_cfg.kernel_mode, ne.mac_cfg.ne_bias_en,
+            ne.mac_cfg.passthrough_en, ne.mac_cfg.matrix_bias_en,
+            ne.mac_cfg.binary_point, ne.mac_cfg.post_scale_en,
+            ne.mac_cfg.non_linear_mode);
+      }
+
+      if (reg_valid[0x4908 / 4]) {
+        printf("        MatrixBias: 0x%04x\n",
+               ne.matrix_bias.matrix_vector_bias);
+      }
+
+      if (reg_valid[0x490c / 4]) {
+        printf("        AccBias: 0x%06x\n", ne.acc_bias.acc_bias);
+      }
+
+      if (reg_valid[0x4910 / 4]) {
+        printf("        PostScale: %u\n", ne.post_scale.post_scale);
+      }
+
+      if (reg_valid[0x4920 / 4]) {
+        printf("        Raw[0x4920]: 0x%08x\n", ne.raw_4920);
+      }
     }
 
-    if (reg_valid[15]) {
-      uint32_t common_cfg = reg_values[15];
-      uint32_t active_ne = (common_cfg >> 19) & 0x7;
-      bool out_transpose = (common_cfg >> 28) & 1;
-      printf("        ActiveNE: %u OutTranspose: %d (raw: 0x%08x)\n", active_ne,
-             out_transpose, common_cfg);
+    // Decode 0x4500 PE Block
+    bool pe_has_valid = false;
+    for (int i = 0x4500 / 4; i < 0x4500 / 4 + 25; i++) {
+      if (reg_valid[i])
+        pe_has_valid = true;
     }
 
-    if (reg_valid[16]) {
-      uint32_t ocg = reg_values[16];
-      uint8_t ocg_size = ocg & 0x7;
-      printf("        OCGSize: %u (raw: 0x%08x)\n", ocg_size, ocg);
+    if (pe_has_valid) {
+      ane_m4_pe_t pe = *(ane_m4_pe_t *)&reg_values[0x4500 / 4];
+      printf("        --- Planar Engine Config ---\n");
+
+      if (reg_valid[0x4500 / 4]) {
+        printf("        PEOpMode: Op=%d En=%d\n", pe.op_mode.op, pe.op_mode.en);
+      }
+      if (reg_valid[0x4504 / 4]) {
+        printf("        PEBias1: 0x%08x\n", pe.bias_1);
+      }
+      if (reg_valid[0x4508 / 4]) {
+        printf("        PEScale1: 0x%08x\n", pe.scale_1);
+      }
+      if (reg_valid[0x4510 / 4]) {
+        printf("        PEBias2: 0x%08x\n", pe.bias_2);
+      }
+      if (reg_valid[0x4514 / 4]) {
+        printf("        PEScale2: 0x%08x\n", pe.scale_2);
+      }
     }
 
-    if (reg_valid[17]) {
-      uint32_t patch = reg_values[17];
-      uint8_t pw = patch & 0xF;
-      uint8_t ph = (patch >> 4) & 0x1F;
-      printf("        Patch: %ux%u (raw: 0x%08x)\n", pw, ph, patch);
+    // Decode 0x4100 L2 Block
+    bool l2_has_valid = false;
+    for (int i = 0x4100 / 4; i < 0x4100 / 4 + 32; i++) {
+      if (reg_valid[i])
+        l2_has_valid = true;
     }
 
-    if (reg_valid[0x4900 / 4]) {
-      uint32_t ne_kernel_cfg = reg_values[0x4900 / 4];
-      uint8_t kernel_fmt = ne_kernel_cfg & 0x0003;
-      printf("        KernelFmt: %s (raw: 0x%08x)\n",
-             get_ch_fmt_name(kernel_fmt), ne_kernel_cfg);
+    if (l2_has_valid) {
+      ane_m4_l2_t l2 = *(ane_m4_l2_t *)&reg_values[0x4100 / 4];
+      printf("        --- L2 Cache Control ---\n");
+
+      if (reg_valid[0x4110 / 4]) {
+        printf("        Src1 : Base=0x%05x ChanS=0x%05x RowS=0x%05x "
+               "DepthS=0x%05x GroupS=0x%05x\n",
+               l2.src1.base, l2.src1.channel_stride, l2.src1.row_stride,
+               l2.src1.depth_stride, l2.src1.group_stride);
+      }
+      if (reg_valid[0x4124 / 4]) {
+        printf("        Src2 : Base=0x%05x ChanS=0x%05x RowS=0x%05x "
+               "DepthS=0x%05x GroupS=0x%05x\n",
+               l2.src2.base, l2.src2.channel_stride, l2.src2.row_stride,
+               l2.src2.depth_stride, l2.src2.group_stride);
+      }
+      if (reg_valid[0x4138 / 4]) {
+        printf("        SrcIdx: Base=0x%05x ChanS=0x%05x DepthS=0x%05x "
+               "GroupS=0x%05x\n",
+               l2.srcidx.base, l2.srcidx.channel_stride, l2.srcidx.depth_stride,
+               l2.srcidx.group_stride);
+      }
+      if (reg_valid[0x414c / 4]) {
+        printf("        Result: Base=0x%05x ChanS=0x%05x RowS=0x%05x "
+               "DepthS=0x%05x GroupS=0x%05x\n",
+               l2.result.base, l2.result.channel_stride, l2.result.row_stride,
+               l2.result.depth_stride, l2.result.group_stride);
+      }
     }
 
-    if (1) { // Dump key M4 registers
-      printf("        Parsed M4 Registers:\n");
-      for (int r = 0; r < 0x200; r++) { // Only print base registers
-        if (reg_valid[r]) {
-          printf("          0x%04x (word %d): 0x%08x\n", r * 4, r,
-                 reg_values[r]);
+    if (1) { // Dump key M4 registers mapped to discrete blocks
+      printf("        --- HW Block Register State ---\n");
+
+      struct {
+        const char *name;
+        uint32_t startAddr;
+      } blocks[] = {
+          {"[0x0000] Common Module", 0x0000},
+          {"[0x4100] L2 Cache Control", 0x4100},
+          {"[0x4500] Planar Engine (PE)", 0x4500},
+          {"[0x4900] Neural Engine Core (NE)", 0x4900},
+          {"[0x4D00] TileDMA Source", 0x4D00},
+          {"[0x5100] TileDMA Destination", 0x5100},
+          {"[0x5500] KernelDMA Source", 0x5500},
+          {"[0x5900] CacheDMA & Telemetry", 0x5900},
+      };
+
+      for (int b = 0; b < 8; b++) {
+        bool printed_header = false;
+        uint32_t word_start = blocks[b].startAddr / 4;
+        uint32_t word_end = word_start + 0x100; // Look ahead 0x400 bytes
+
+        for (uint32_t r = word_start; r < word_end; r++) {
+          if (reg_valid[r]) {
+            if (!printed_header) {
+              printf("        %s:\n", blocks[b].name);
+              printed_header = true;
+            }
+            printf("          0x%04x: 0x%08x\n", r * 4, reg_values[r]);
+          }
         }
       }
     }

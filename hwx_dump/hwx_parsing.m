@@ -52,9 +52,10 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
   // Word 0 (0x000)
   struct {
-    uint32_t infmt : 4;
-    uint32_t outfmt : 4;
-    uint32_t pad0_0 : 24;
+    uint32_t infmt : 2;
+    uint32_t pad0_0 : 2;
+    uint32_t outfmt : 2;
+    uint32_t pad0_1 : 26;
   } ch_cfg;
 
   // Word 1-8
@@ -192,6 +193,286 @@ typedef struct __attribute__((packed)) {
   uint32_t val_22; // 0x058 (Word 22)
 
 } ane_m4_common_t;
+
+const char *get_m4_reg_name(uint32_t addr) {
+  if (addr < 23 * 4) {
+    static const char *common_names[] = {
+        "ChCfg",    "Win",       "Hin",        "Cin",        "Din",
+        "Wout",     "Hout",      "Cout",       "Dout",       "Batch",
+        "ConvCfg0", "ConvCfg3D", "UnicastCfg", "TileHeight", "TileOverlap",
+        "MacCfg",   "ConvCfg1",  "PatchDim",   "PERouting",  "NID",
+        "DPE",      "Val21",     "Val22"};
+    return common_names[addr / 4];
+  }
+  // L2 0x4100
+  if (addr >= 0x4100 && addr <= 0x41A4) {
+    uint32_t off = addr - 0x4100;
+    if (off == 0x00)
+      return "L2BfrCfg";
+    if (off == 0x04)
+      return "L2Src1Cfg";
+    if (off == 0x08)
+      return "L2Src2Cfg";
+    if (off >= 0x10 && off <= 0x20) {
+      static const char *s1[] = {"L2Src1BaseAddr", "L2Src1PlaneStride",
+                                 "L2Src1RowStride", "L2Src1DepthStride",
+                                 "L2Src1GroupStride"};
+      return s1[(off - 0x10) / 4];
+    }
+    if (off >= 0x24 && off <= 0x34) {
+      static const char *s2[] = {"L2Src2BaseAddr", "L2Src2PlaneStride",
+                                 "L2Src2RowStride", "L2Src2DepthStride",
+                                 "L2Src2GroupStride"};
+      return s2[(off - 0x24) / 4];
+    }
+    if (off >= 0x38 && off <= 0x44) {
+      static const char *si[] = {"L2SrcIdxBaseAddr", "L2SrcIdxPlaneStride",
+                                 "L2SrcIdxDepthStride", "L2SrcIdxGroupStride"};
+      return si[(off - 0x38) / 4];
+    }
+    if (off == 0x48)
+      return "L2ResultCfg";
+    if (off >= 0x4C && off <= 0x5C) {
+      static const char *res[] = {"L2ResultBaseAddr", "L2ResultPlaneStride",
+                                  "L2ResultRowStride", "L2ResultDepthStride",
+                                  "L2ResultGroupStride"};
+      return res[(off - 0x4C) / 4];
+    }
+    if (off == 0x64)
+      return "L2ResultWrapCfg";
+    if (off == 0x74)
+      return "L2ResultWrapIndex";
+    if (off == 0x9C)
+      return "L2ResultWrapAddrOff1";
+    if (off == 0xA0)
+      return "L2ResultWrapAddrOff2";
+  }
+  // PE 0x4500
+  if (addr >= 0x4500 && addr <= 0x4514) {
+    uint32_t off = addr - 0x4500;
+    static const char *pe_names[] = {"PEOpMode", "PEBias1", "PEScale1",
+                                     "PERaw3",   "PEBias2", "PEScale2"};
+    return pe_names[off / 4];
+  }
+  // NE 0x4900
+  if (addr >= 0x4900 && addr <= 0x4910) {
+    uint32_t off = addr - 0x4900;
+    static const char *ne_names[] = {"KernelCfg", "MACCfg", "MatrixBias",
+                                     "AccBias", "PostScale"};
+    return ne_names[off / 4];
+  }
+  // CE/CacheDMA 0x5900
+  if (addr >= 0x5900 && addr <= 0x5930) {
+    uint32_t off = addr - 0x5900;
+    static const char *cdma_names[] = {
+        "CacheDMAConfig",  "CacheDMAPre0",  "CacheDMAPre1",  "CacheDMAPad3",
+        "CacheDMAPad4",    "CacheDMAPad5",  "CacheDMAPre2",  "CacheDMAPre3",
+        "CacheDMATerm0",   "CacheDMATerm1", "CacheDMATerm2", "CacheDMATerm3",
+        "TelemetryBackOff"};
+    if (off / 4 < 13)
+      return cdma_names[off / 4];
+  }
+  // TileDMA Src 0x4D00
+  if (addr >= 0x4D00 && addr <= 0x4DB4) {
+    uint32_t off = addr - 0x4D00;
+    if (off == 0x00)
+      return "Src1DMAConfig";
+    if (off == 0x04)
+      return "Src2DMAConfig";
+    if (off == 0x08)
+      return "Src1Wrap";
+    if (off == 0x0C)
+      return "Src2Wrap";
+    if (off == 0x18)
+      return "Src1RowStride";
+    if (off == 0x1C)
+      return "Src1PlaneStride";
+    if (off == 0x20)
+      return "Src1DepthStride";
+    if (off == 0x24)
+      return "Src1GroupStride";
+    if (off == 0x68)
+      return "Src1Fmt";
+    if (off >= 0x98 && off <= 0xA4)
+      return "Src1PixelOff";
+    if (off >= 0xA8 && off <= 0xB4)
+      return "Src2PixelOff";
+  }
+  // TileDMA Dst 0x5100
+  if (addr >= 0x5100 && addr <= 0x5138) {
+    uint32_t off = addr - 0x5100;
+    if (off == 0x00)
+      return "DstDMAConfig";
+    if (off == 0x10)
+      return "DstRowStride";
+    if (off == 0x14)
+      return "DstPlaneStride";
+    if (off == 0x18)
+      return "DstDepthStride";
+    if (off == 0x1C)
+      return "DstGroupStride";
+    if (off == 0x38)
+      return "DstFmt";
+  }
+  // KernelDMA Src 0x5500
+  if (addr >= 0x5500 && addr <= 0x5650) {
+    uint32_t off = addr - 0x5500;
+    if (off == 0x08)
+      return "KDMA_Prefetch";
+    if (off == 0x18)
+      return "KDMA_StrideX";
+    if (off == 0x1C)
+      return "KDMA_StrideY";
+    if (off >= 0x20 && off <= 0x5C)
+      return "CoeffCfg";
+    if (off >= 0x60 && off <= 0x9C)
+      return "CoeffBase";
+    if (off >= 0xA0 && off <= 0xDC)
+      return "CoeffSize";
+    if (off == 0xE0)
+      return "BiasCfg";
+    if (off == 0xF0)
+      return "PostScaleCfg";
+    if (off == 0x100)
+      return "PaletteCfg";
+    if (off == 0x110)
+      return "NonLinearCfg";
+  }
+  return NULL;
+}
+
+// [0x5500] KernelDMA Source Block
+typedef struct {
+  uint32_t pad0[2];  // Word 0-1
+  uint32_t prefetch; // Word 2 (0x5508)
+  uint32_t pad1[3];  // Word 3-5
+  uint32_t stridex;  // Word 6 (0x5518)
+  uint32_t stridey;  // Word 7 (0x551C)
+
+  struct {
+    uint32_t en : 1;
+    uint32_t pad0 : 3;
+    uint32_t cache_hint : 4;
+    uint32_t pad1 : 8;
+    uint32_t user_tag : 8;
+    uint32_t pad2 : 8;
+  } coeff_cfg[16]; // Word 8-23 (0x5520-0x555C)
+
+  uint32_t coeff_base[16]; // Word 24-39 (0x5560-0x559C)
+  uint32_t coeff_size[16]; // Word 40-55 (0x55A0-0x55DC)
+
+  struct {
+    uint32_t en : 1;
+    uint32_t pad0 : 3;
+    uint32_t cache_hint : 4;
+    uint32_t pad1 : 8;
+    uint32_t user_tag : 8;
+    uint32_t pad2 : 8;
+  } bias_cfg; // Word 56 (0x55E0)
+
+  uint32_t pad2[3];
+
+  struct {
+    uint32_t en : 1;
+    uint32_t pad0 : 3;
+    uint32_t cache_hint : 4;
+    uint32_t pad1 : 8;
+    uint32_t user_tag : 8;
+    uint32_t pad2 : 8;
+  } post_scale_cfg; // Word 60 (0x55F0)
+
+  uint32_t pad3[3];
+
+  struct {
+    uint32_t en : 1;
+    uint32_t pad0 : 3;
+    uint32_t cache_hint : 4;
+    uint32_t pad1 : 8;
+    uint32_t user_tag : 8;
+    uint32_t pad2 : 8;
+  } palette_cfg; // Word 64 (0x5600)
+
+  uint32_t pad4[3];
+
+  struct {
+    uint32_t en : 1;
+    uint32_t pad0 : 3;
+    uint32_t cache_hint : 4;
+    uint32_t pad1 : 8;
+    uint32_t user_tag : 8;
+    uint32_t pad2 : 8;
+  } non_linear_cfg; // Word 68 (0x5610)
+} __attribute__((packed)) ane_m4_kerneldma_src_t;
+
+typedef struct {
+  uint32_t config; // 0x5900: bits[3:2]: TaskSync, [6:4]: EarlyTerm, [16:31]:
+                   // Footprint
+  uint32_t
+      pre0; // 0x5904: [9:0]: BWLimit, [19:16]: Sieve2, [23:20]: TelemetryAgeOut
+  uint32_t pre1; // 0x5908: [13:0]: Sieve1
+  uint32_t pad0[3];
+  uint32_t pre2_term; // 0x5918: [0:15]: DSIDSize (low), [16:31]: EarlyTerm0 (H)
+  uint32_t pre3;      // 0x591c: [27:17]: Footprint2
+  uint32_t term1_low; // 0x5920: [16:31]: EarlyTerm1 (H)
+  uint32_t pad1;      // 0x5924
+  uint32_t term2_3;   // 0x5928: [0:7]: EarlyTerm2 (B), [16:23]: EarlyTerm3 (B)
+  uint32_t backoff;   // 0x592c: TelemetryBackOff
+} __attribute__((packed)) ane_m4_cachedma_t;
+
+// [0x4D00] TileDMA Source Block
+typedef struct {
+  struct {
+    uint32_t en : 1;
+    uint32_t pad0 : 3;
+    uint32_t cache_hint : 4;
+    uint32_t pad1 : 20;
+    uint32_t dep_mode : 2;
+    uint32_t pad2 : 2;
+  } src1cfg; // Word 0
+
+  struct {
+    uint32_t en : 1;
+    uint32_t pad0 : 3;
+    uint32_t cache_hint : 4;
+    uint32_t pad1 : 24;
+  } src2cfg; // Word 1
+
+  uint32_t src1wrap; // Word 2
+  uint32_t src2wrap; // Word 3
+  uint32_t pad0[2];  // Word 4-5
+
+  uint32_t src1rows;   // Word 6
+  uint32_t src1chans;  // Word 7
+  uint32_t src1depths; // Word 8
+  uint32_t src1groups; // Word 9
+
+  uint32_t pad1[16];   // Word 10-25
+  uint32_t src1memfmt; // Word 26
+
+  uint32_t pad2[11];        // Word 27-37
+  uint32_t src1pixeloff[4]; // Word 38-41
+  uint32_t src2pixeloff[4]; // Word 42-45
+} __attribute__((packed)) ane_m4_tiledma_src_t;
+
+// [0x5100] TileDMA Destination Block
+typedef struct {
+  struct {
+    uint32_t en : 1;
+    uint32_t pad0 : 3;
+    uint32_t cache_hint : 4;
+    uint32_t pad1 : 24;
+  } dstcfg; // Word 0
+
+  uint32_t pad0[3]; // Word 1-3
+
+  uint32_t dstrows;   // Word 4
+  uint32_t dstchans;  // Word 5
+  uint32_t dstdepths; // Word 6
+  uint32_t dstgroups; // Word 7
+
+  uint32_t pad1[6];   // Word 8-13
+  uint32_t dstmemfmt; // Word 14
+} __attribute__((packed)) ane_m4_tiledma_dst_t;
 
 // [0x4900] Neural Engine (NE) Block (M4 specific mapping)
 typedef struct {
@@ -550,22 +831,26 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
     }
 
     if (has_common) {
-      uint32_t batch = common.group_cfg.num_groups;
-      printf("        InDim : B=%u W=%u H=%u C=%u D=%u\n", batch,
-             common.win.w_in, common.hin.h_in, common.cin.c_in,
-             common.din.d_in);
-      printf("        OutDim: B=%u W=%u H=%u C=%u D=%u\n", batch,
-             common.wout.w_out, common.hout.h_out, common.cout.c_out,
-             common.dout.d_out);
+      if (reg_valid[9]) {
+        printf("        Batch     : B=%u\n", common.group_cfg.num_groups);
+      }
+      if (reg_valid[1] || reg_valid[2] || reg_valid[3] || reg_valid[4]) {
+        printf("        InDim     : W=%u H=%u C=%u D=%u\n", common.win.w_in,
+               common.hin.h_in, common.cin.c_in, common.din.d_in);
+      }
+      if (reg_valid[5] || reg_valid[6] || reg_valid[7] || reg_valid[8]) {
+        printf("        OutDim    : W=%u H=%u C=%u D=%u\n", common.wout.w_out,
+               common.hout.h_out, common.cout.c_out, common.dout.d_out);
+      }
 
       if (reg_valid[0]) {
         const char *infmt_name = get_ch_fmt_name(common.ch_cfg.infmt);
         const char *outfmt_name = get_ch_fmt_name(common.ch_cfg.outfmt);
-        printf("        Format: In=%s Out=%s\n", infmt_name, outfmt_name);
+        printf("        ChCfg     : In=%s Out=%s\n", infmt_name, outfmt_name);
       }
 
       if (reg_valid[10]) {
-        printf("        ConvCfg0: K=%ux%u S=%ux%u P=%ux%u O=%ux%u\n",
+        printf("        ConvCfg0  : K=%ux%u S=%ux%u P=%ux%u O=%ux%u\n",
                common.conv_cfg_0.kw, common.conv_cfg_0.kh, common.conv_cfg_0.sx,
                common.conv_cfg_0.sy, common.conv_cfg_0.px, common.conv_cfg_0.py,
                common.conv_cfg_0.ox, common.conv_cfg_0.oy);
@@ -576,12 +861,12 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
       }
 
       if (reg_valid[17]) {
-        printf("        Patch: %ux%u\n", common.patch_dim.w,
+        printf("        PatchDim  : %ux%u\n", common.patch_dim.w,
                common.patch_dim.h);
       }
 
       if (reg_valid[11]) {
-        printf("        ConvCfg3D: 0x%08x\n", common.conv_cfg_3d);
+        printf("        ConvCfg3D : 0x%08x\n", common.conv_cfg_3d);
       }
 
       if (reg_valid[12]) {
@@ -596,7 +881,7 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
       }
 
       if (reg_valid[15]) {
-        printf("        MacCfg: TaskType=%u ActiveNE=%u SmallSrcMode=%u "
+        printf("        MacCfg    : TaskType=%u ActiveNE=%u SmallSrcMode=%u "
                "L2Barrier=%u OutTrans=%u\n",
                common.maccfg.task_type, common.maccfg.active_ne,
                common.maccfg.small_src_mode, common.maccfg.l2_barrier,
@@ -607,7 +892,7 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
       }
 
       if (reg_valid[18]) {
-        printf("        PERouting: S1WB=%d S1HB=%d S1DB=%d S1CB=%d S2WB=%d "
+        printf("        PERouting : S1WB=%d S1HB=%d S1DB=%d S1CB=%d S2WB=%d "
                "S2HB=%d S2DB=%d S2CB=%d S1T=%d S2T=%d OT=%d\n",
                common.pe_routing.src1_w_bcast, common.pe_routing.src1_h_bcast,
                common.pe_routing.src1_d_bcast, common.pe_routing.src1_c_bcast,
@@ -618,19 +903,19 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
       }
 
       if (reg_valid[19]) {
-        printf("        NID: 0x%08x\n", common.nid);
+        printf("        NID       : 0x%08x\n", common.nid);
       }
 
       if (reg_valid[20]) {
-        printf("        DPE: Cat=%u\n", common.dpe.category);
+        printf("        DPE       : Cat=%u\n", common.dpe.category);
       }
 
       if (reg_valid[21]) {
-        printf("        Val21: 0x%08x\n", common.val_21);
+        printf("        Val21     : 0x%08x\n", common.val_21);
       }
 
       if (reg_valid[22]) {
-        printf("        Val22: 0x%08x\n", common.val_22);
+        printf("        Val22     : 0x%08x\n", common.val_22);
       }
     }
 
@@ -721,33 +1006,161 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
       printf("        --- L2 Cache Control ---\n");
 
       if (reg_valid[0x4110 / 4]) {
-        printf("        Src1 : Base=0x%05x ChanS=0x%05x RowS=0x%05x "
-               "DepthS=0x%05x GroupS=0x%05x\n",
+        printf("        Src1 : BaseAddr=0x%05x PlaneStride=0x%05x "
+               "RowStride=0x%05x DepthStride=0x%05x GroupStride=0x%05x\n",
                l2.src1.base, l2.src1.channel_stride, l2.src1.row_stride,
                l2.src1.depth_stride, l2.src1.group_stride);
       }
       if (reg_valid[0x4124 / 4]) {
-        printf("        Src2 : Base=0x%05x ChanS=0x%05x RowS=0x%05x "
-               "DepthS=0x%05x GroupS=0x%05x\n",
+        printf("        Src2 : BaseAddr=0x%05x PlaneStride=0x%05x "
+               "RowStride=0x%05x DepthStride=0x%05x GroupStride=0x%05x\n",
                l2.src2.base, l2.src2.channel_stride, l2.src2.row_stride,
                l2.src2.depth_stride, l2.src2.group_stride);
       }
       if (reg_valid[0x4138 / 4]) {
-        printf("        SrcIdx: Base=0x%05x ChanS=0x%05x DepthS=0x%05x "
-               "GroupS=0x%05x\n",
+        printf("        SrcIdx: BaseAddr=0x%05x PlaneStride=0x%05x "
+               "DepthStride=0x%05x GroupStride=0x%05x\n",
                l2.srcidx.base, l2.srcidx.channel_stride, l2.srcidx.depth_stride,
                l2.srcidx.group_stride);
       }
       if (reg_valid[0x414c / 4]) {
-        printf("        Result: Base=0x%05x ChanS=0x%05x RowS=0x%05x "
-               "DepthS=0x%05x GroupS=0x%05x\n",
+        printf("        Result: BaseAddr=0x%05x PlaneStride=0x%05x "
+               "RowStride=0x%05x DepthStride=0x%05x GroupStride=0x%05x\n",
                l2.result.base, l2.result.channel_stride, l2.result.row_stride,
                l2.result.depth_stride, l2.result.group_stride);
       }
     }
 
+    // Decode 0x4D00 TileDMA Source
+    bool src_has_valid = false;
+    for (int i = 0x4d00 / 4; i < 0x4d00 / 4 + 64; i++) {
+      if (reg_valid[i])
+        src_has_valid = true;
+    }
+    if (src_has_valid) {
+      ane_m4_tiledma_src_t *src =
+          (ane_m4_tiledma_src_t *)&reg_values[0x4d00 / 4];
+      printf("        --- TileDMA Source (0x4D00) ---\n");
+      if (reg_valid[0x4d00 / 4]) {
+        printf("        Src1DMAConfig: En=%d CacheHint=%u DepMode=%u\n",
+               src->src1cfg.en, src->src1cfg.cache_hint, src->src1cfg.dep_mode);
+      }
+      if (reg_valid[0x4d18 / 4]) {
+        printf("        Src1Strides: RowStride=0x%08x PlaneStride=0x%08x "
+               "DepthStride=0x%08x GroupStride=0x%08x\n",
+               src->src1rows, src->src1chans, src->src1depths, src->src1groups);
+      }
+    }
+
+    // Decode 0x5100 TileDMA Destination
+    bool dst_has_valid = false;
+    for (int i = 0x5100 / 4; i < 0x5100 / 4 + 32; i++) {
+      if (reg_valid[i])
+        dst_has_valid = true;
+    }
+    if (dst_has_valid) {
+      ane_m4_tiledma_dst_t *dst =
+          (ane_m4_tiledma_dst_t *)&reg_values[0x5100 / 4];
+      printf("        --- TileDMA Destination (0x5100) ---\n");
+      if (reg_valid[0x5100 / 4]) {
+        printf("        DstDMAConfig: En=%d CacheHint=%u\n", dst->dstcfg.en,
+               dst->dstcfg.cache_hint);
+      }
+      if (reg_valid[0x5110 / 4]) {
+        printf("        DstStrides: RowStride=0x%08x PlaneStride=0x%08x "
+               "DepthStride=0x%08x GroupStride=0x%08x\n",
+               dst->dstrows, dst->dstchans, dst->dstdepths, dst->dstgroups);
+      }
+    }
+
+    // Decode 0x5500 KernelDMA Source
+    bool kernel_has_valid = false;
+    for (int i = 0x5500 / 4; i < 0x5500 / 4 + 100; i++) {
+      if (reg_valid[i])
+        kernel_has_valid = true;
+    }
+    if (kernel_has_valid) {
+      ane_m4_kerneldma_src_t *k =
+          (ane_m4_kerneldma_src_t *)&reg_values[0x5500 / 4];
+      printf("        --- KernelDMA Source (0x5500) ---\n");
+      for (int i = 0; i < 16; i++) {
+        if (reg_valid[0x5520 / 4 + i] || reg_valid[0x5560 / 4 + i]) {
+          printf("        Coeff[%d]: En=%d CacheHint=%u Tag=%u Base=0x%08x "
+                 "Size=0x%08x\n",
+                 i, k->coeff_cfg[i].en, k->coeff_cfg[i].cache_hint,
+                 k->coeff_cfg[i].user_tag, k->coeff_base[i], k->coeff_size[i]);
+        }
+      }
+      if (reg_valid[0x55e0 / 4]) {
+        printf("        Bias: En=%d CacheHint=%u Tag=%u\n", k->bias_cfg.en,
+               k->bias_cfg.cache_hint, k->bias_cfg.user_tag);
+      }
+      if (reg_valid[0x55f0 / 4]) {
+        printf("        PostScale: En=%d CacheHint=%u Tag=%u\n",
+               k->post_scale_cfg.en, k->post_scale_cfg.cache_hint,
+               k->post_scale_cfg.user_tag);
+      }
+      if (reg_valid[0x5600 / 4]) {
+        printf("        Palette: En=%d CacheHint=%u Tag=%u\n",
+               k->palette_cfg.en, k->palette_cfg.cache_hint,
+               k->palette_cfg.user_tag);
+      }
+      if (reg_valid[0x5610 / 4]) {
+        printf("        NonLinear: En=%d CacheHint=%u Tag=%u\n",
+               k->non_linear_cfg.en, k->non_linear_cfg.cache_hint,
+               k->non_linear_cfg.user_tag);
+      }
+    }
+
     if (1) { // Dump key M4 registers mapped to discrete blocks
-      printf("        --- HW Block Register State ---\n");
+      printf(
+          "        --- HW Block Register State ---\n"); // Decode 0x5900
+                                                        // CacheDMA & Telemetry
+      bool cdma_has_valid = false;
+      for (int i = 0x5900 / 4; i < 0x5900 / 4 + 13; i++) {
+        if (reg_valid[i])
+          cdma_has_valid = true;
+      }
+      if (cdma_has_valid) {
+        ane_m4_cachedma_t cdma = *(ane_m4_cachedma_t *)&reg_values[0x5900 / 4];
+        printf("        --- CacheDMA & Telemetry (0x5900) ---\n");
+        if (reg_valid[0x5900 / 4]) {
+          printf("        Config: WaitSync=%d PostSync=%d EarlyTermEn=0x%x "
+                 "FootprintThresh=0x%04x\n",
+                 (cdma.config >> 3) & 1, (cdma.config >> 2) & 1,
+                 (cdma.config >> 4) & 7, (cdma.config >> 16));
+        }
+        if (reg_valid[0x5904 / 4]) {
+          printf("        Pre0: BWLimit=%u Sieve2=%u TelemetryAgeOut=%u\n",
+                 cdma.pre0 & 0x3ff, (cdma.pre0 >> 16) & 0xf,
+                 (cdma.pre0 >> 20) & 0xf);
+        }
+        if (reg_valid[0x5908 / 4]) {
+          printf("        Pre1: Sieve1=%u\n", cdma.pre1 & 0x3fff);
+        }
+        if (reg_valid[0x5918 / 4]) {
+          printf("        Pre2_Term: DSIDSize_L=0x%04x EarlyTerm0=0x%04x\n",
+                 cdma.pre2_term & 0xffff, cdma.pre2_term >> 16);
+        }
+        if (reg_valid[0x591c / 4]) {
+          printf("        Pre3: Footprint2=0x%03x\n",
+                 (cdma.pre3 >> 17) & 0x7ff);
+        }
+        if (reg_valid[0x5920 / 4]) {
+          printf("        Term1_Low: EarlyTerm1=0x%04x\n",
+                 cdma.term1_low >> 16);
+        }
+        if (reg_valid[0x5928 / 4]) {
+          printf("        Term2_3: EarlyTerm2=0x%02x EarlyTerm3=0x%02x\n",
+                 cdma.term2_3 & 0xff, (cdma.term2_3 >> 16) & 0xff);
+        }
+        if (reg_valid[0x592c / 4]) {
+          printf("        BackOff: En=%d Delay=%u Min=%u Max=%u Scale=%u\n",
+                 cdma.backoff & 1, (cdma.backoff >> 4) & 0xf,
+                 (cdma.backoff >> 8) & 0xff, (cdma.backoff >> 16) & 0xff,
+                 (cdma.backoff >> 24) & 0xff);
+        }
+      }
 
       struct {
         const char *name;
@@ -774,7 +1187,14 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
               printf("        %s:\n", blocks[b].name);
               printed_header = true;
             }
-            printf("          0x%04x: 0x%08x\n", r * 4, reg_values[r]);
+            uint32_t addr = r * 4;
+            const char *reg_name = get_m4_reg_name(addr);
+            if (reg_name) {
+              printf("          0x%04x: 0x%08x (%s)\n", addr, reg_values[r],
+                     reg_name);
+            } else {
+              printf("          0x%04x: 0x%08x\n", addr, reg_values[r]);
+            }
           }
         }
       }

@@ -763,6 +763,9 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
            m4h->exceptions);
     printf("        LiveOuts: 0x%08x TSR: %d TDE: %d\n", m4h->live_outs,
            m4h->tsr, m4h->tde);
+    if (m4h->tde == 1) {
+      printf("        TDID: 0x%04x\n", m4h->tdid);
+    }
 
     uint32_t reg_values[0x8000] = {0};
     bool reg_valid[0x8000] = {false};
@@ -770,7 +773,7 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
     // Phase 4: Verbose Register Logging
     const uint32_t *words = (const uint32_t *)(ptr + offset);
     int num_words = size_bytes / 4;
-    int i = 9; // Skip 9-word header (36 bytes)
+    int i = sizeof(ane_m4_header_t) / 4;
 
     while (i < num_words) {
       uint32_t header = words[i++];

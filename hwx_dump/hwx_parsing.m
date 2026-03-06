@@ -1010,6 +1010,52 @@ typedef struct {
 
 } __attribute__((packed)) ane_m1_tiledma_dst_t;
 
+const char *get_arch_name(uint32_t subtype) {
+  switch (subtype) {
+  case 1:
+    return "H11 (A12)";
+  case 3:
+    return "H12 (A13)";
+  case 4:
+    return "H13 (A14/M1)";
+  case 5:
+    return "H14 (A15/M2)";
+  case 6:
+    return "H15 (A16/M3)";
+  case 7:
+    return "H16 (A17 Pro/M4)";
+  case 9:
+    return "H17 (A18 Pro/M5)";
+  case 10:
+    return "H18 (A19)";
+  default:
+    return "Unknown Architecture";
+  }
+}
+
+uint32_t get_instruction_set_version(uint32_t subtype) {
+  switch (subtype) {
+  case 1:
+    return 5;
+  case 3:
+    return 6;
+  case 4:
+    return 7;
+  case 5:
+    return 11;
+  case 6:
+    return 8;
+  case 7:
+    return 17;
+  case 9:
+    return 19;
+  case 10:
+    return 20;
+  default:
+    return 0;
+  }
+}
+
 const char *get_ch_fmt_name(uint32_t fmt) {
   switch (fmt) {
   case 0:
@@ -1154,11 +1200,11 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
              ne->mac_cfg.op_mode, ne->mac_cfg.non_linear_mode,
              ne->mac_cfg.kernel_mode, ne->mac_cfg.bias_mode,
              ne->mac_cfg.binary_point);
-      printf("        NE KernelCfg: Fmt=%u PalettizedEn=%d PalettizeBits=%u "
+      printf("        NE KernelCfg: Fmt=%s PalettizedEn=%d PalettizeBits=%u "
              "SparseFmt=%d GroupKernelReuse=%d\n",
-             ne->kernel_cfg.kernel_fmt, ne->kernel_cfg.palettized_en,
-             ne->kernel_cfg.palettized_bits, ne->kernel_cfg.sparse_fmt,
-             ne->kernel_cfg.group_kernel_reuse);
+             get_ch_fmt_name(ne->kernel_cfg.kernel_fmt),
+             ne->kernel_cfg.palettized_en, ne->kernel_cfg.palettized_bits,
+             ne->kernel_cfg.sparse_fmt, ne->kernel_cfg.group_kernel_reuse);
       printf("        NE MatrixVectorBias: 0x%04x\n",
              ne->matrix_vector_bias.matrix_vector_bias);
       printf("        NE AccBias: 0x%04x Shift=%u\n", ne->acc_bias.acc_bias,
@@ -1272,8 +1318,9 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
   }
 }
 
-void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
-  printf("\n[M4] Detected M4 HWX Format (CPU Subtype 0x7)\n");
+void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
+  printf("\n[%s] Detected Dense HWX Format (CPU Subtype 0x%x)\n",
+         get_arch_name(subtype), subtype);
 
   uint32_t offset = 0;
   int task_idx = 0;
@@ -1964,9 +2011,14 @@ void print_macho_headers(NSData *data, BOOL dump_all_symbols, BOOL dump_threads,
 
               if (strcmp(sect->sectname, "__text") == 0 ||
                   strcmp(sect->sectname, "__TEXT") == 0) {
-                if (header->cpusubtype == 0x7) {
-                  decode_ane_td_m4(section_ptr, section_size);
+                uint32_t instr_ver =
+                    get_instruction_set_version(header->cpusubtype);
+                if (instr_ver >= 11) {
+                  // v11+ Dense format (Burst/Scatter)
+                  decode_ane_td_m4(section_ptr, section_size,
+                                   header->cpusubtype);
                 } else {
+                  // v7- and similar (Stream format)
                   decode_ane_td(section_ptr, section_size);
                 }
                 if (dump_hexdump) {

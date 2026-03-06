@@ -23,6 +23,8 @@ typedef struct __attribute__((packed)) {
   uint32_t pad3 : 8;
   uint32_t flags;        // 0x018
   uint32_t next_pointer; // 0x01c
+  uint32_t pad4;
+  uint32_t pad5;
 } ane_td_header_t;
 
 typedef struct __attribute__((packed)) {
@@ -613,6 +615,401 @@ typedef struct {
 
 } ane_m4_l2_t;
 
+// [0x0000] M1 Common Registers
+typedef struct {
+  // 0x0000 Common.InDim
+  struct {
+    uint32_t w_in : 15;
+    uint32_t pad0 : 1;
+    uint32_t h_in : 15;
+    uint32_t pad1 : 1;
+  } indim;
+  uint32_t pad2; // 0x12C
+
+  // 0x130 Common.ChCfg
+  struct {
+    uint32_t infmt : 2;
+    uint32_t pad0 : 2;
+    uint32_t outfmt : 2;
+    uint32_t pad1 : 26;
+  } chcfg;
+
+  // 0x134 Common.Cin
+  struct {
+    uint32_t c_in : 17;
+    uint32_t pad0 : 15;
+  } cin;
+
+  // 0x138 Common.Cout
+  struct {
+    uint32_t c_out : 17;
+    uint32_t pad0 : 15;
+  } cout;
+
+  // 0x13c Common.OutDim
+  struct {
+    uint32_t w_out : 15;
+    uint32_t pad0 : 1;
+    uint32_t h_out : 15;
+    uint32_t pad1 : 1;
+  } outdim;
+
+  uint32_t pad3; // 0x140
+
+  // 0x144 Common.ConvCfg
+  struct {
+    uint32_t kw : 5;
+    uint32_t kh : 5;
+    uint32_t ocg_size : 3;
+    uint32_t sx : 2;
+    uint32_t sy : 2;
+    uint32_t px : 5;
+    uint32_t py : 5;
+    uint32_t pad0 : 1;
+    uint32_t ox : 2;
+    uint32_t oy : 2;
+  } convcfg;
+
+  uint32_t pad4; // 0x148
+
+  // 0x14c Common.GroupConvCfg
+  struct {
+    uint32_t num_groups : 13;
+    uint32_t pad0 : 1;
+    uint32_t unicast_en : 1;
+    uint32_t elem_mult_mode : 1;
+    uint32_t unicast_cin : 16;
+  } groupcfg;
+
+  // 0x150 Common.TileCfg
+  struct {
+    uint32_t tile_height : 16;
+    uint32_t pad0 : 16;
+  } tilecfg;
+
+  uint32_t pad5[2]; // 0x154-0x158
+
+  // 0x15c Common.Cfg
+  struct {
+    uint32_t pad0 : 2;
+    uint32_t small_src_mode : 1;
+    uint32_t pad1 : 5;
+    uint32_t sh_pref : 3;
+    uint32_t pad2 : 1;
+    uint32_t sh_min : 3;
+    uint32_t pad3 : 1;
+    uint32_t sh_max : 3;
+    uint32_t active_ne : 3;
+    uint32_t ctx_switch_in : 1;
+    uint32_t pad4 : 1;
+    uint32_t ctx_switch_out : 1;
+    uint32_t pad5 : 1;
+    uint32_t acc_db_buf_en : 1;
+    uint32_t pad6 : 5;
+  } cfg;
+
+  struct {
+    uint32_t tid : 16;
+    uint32_t task_q : 4;
+    uint32_t task_nid : 8;
+    uint32_t pad0 : 4;
+  } task_info; // 0x160
+
+  struct {
+    uint32_t category : 4;
+    uint32_t pad0 : 28;
+  } dpe; // 0x164
+
+} __attribute__((packed)) ane_m1_common_t;
+
+// [0x1e0] L2
+typedef struct {
+  struct {
+    uint32_t input_relu : 1;
+    uint32_t padding_mode : 2;
+    uint32_t pad0 : 29;
+  } l2cfg; // 0x1E0
+
+  struct {
+    uint32_t type : 2;
+    uint32_t dep : 2;
+    uint32_t alias_conv_src : 1;
+    uint32_t alias_conv_rslt : 1;
+    uint32_t fmt : 2;
+    uint32_t interleave : 4;
+    uint32_t cmpv : 4;
+    uint32_t offch : 3;
+    uint32_t pad0 : 1;
+    uint32_t alias_planar_src : 1;
+    uint32_t pad1 : 1;
+    uint32_t alias_planar_rslt : 1;
+    uint32_t pad2 : 9;
+  } scfg; // 0x1E4
+
+  struct {
+    uint32_t pad0 : 4;
+    uint32_t addr : 17;
+    uint32_t pad1 : 11;
+  } srcbase; // 0x1E8
+
+  struct {
+    uint32_t pad0 : 4;
+    uint32_t stride : 17;
+    uint32_t pad1 : 11;
+  } src_chan_stride; // 0x1EC
+
+  struct {
+    uint32_t pad0 : 4;
+    uint32_t stride : 17;
+    uint32_t pad1 : 11;
+  } src_row_stride; // 0x1F0
+
+  uint32_t pad3[(0x210 - 0x1F4) / 4];
+
+  struct {
+    uint32_t type : 2;
+    uint32_t bfrmode : 2;
+    uint32_t alias_conv_src : 1;
+    uint32_t alias_conv_rslt : 1;
+    uint32_t fmt : 2;
+    uint32_t interleave : 4;
+    uint32_t cmpv : 4;
+    uint32_t offch : 3;
+    uint32_t pad0 : 1;
+    uint32_t alias_planar_src : 1;
+    uint32_t pad1 : 1;
+    uint32_t alias_planar_rslt : 1;
+    uint32_t pad2 : 9;
+  } rcfg; // 0x210
+} __attribute__((packed)) ane_m1_l2_t;
+
+// [0xC800] Neural Engine (NE) Block
+typedef struct {
+  // Word 0 (0xC800)
+  struct {
+    uint32_t kernel_fmt : 2;
+    uint32_t palettized_en : 1;
+    uint32_t pad0 : 1;
+    uint32_t palettized_bits : 4;
+    uint32_t sparse_fmt : 1;
+    uint32_t pad1 : 1;
+    uint32_t group_kernel_reuse : 1;
+    uint32_t pad2 : 21;
+  } kernel_cfg;
+
+  // Word 1 (0xC804)
+  struct {
+    uint32_t op_mode : 4;
+    uint32_t kernel_mode : 1;
+    uint32_t bias_mode : 1;
+    uint32_t pad0 : 1;
+    uint32_t matrix_bias_en : 1;
+    uint32_t pad1 : 1;
+    uint32_t binary_point : 4;
+    uint32_t pad2 : 1;
+    uint32_t post_scale_mode : 1;
+    uint32_t pad3 : 1;
+    uint32_t non_linear_mode : 2;
+    uint32_t pad4 : 14;
+  } mac_cfg;
+
+  // Word 2 (0x248)
+  struct {
+    uint32_t matrix_vector_bias : 16;
+    uint32_t pad0 : 16;
+  } matrix_vector_bias;
+
+  // Word 3 (0x24c)
+  struct {
+    uint32_t acc_bias : 16;
+    uint32_t acc_bias_shift : 5;
+    uint32_t pad0 : 11;
+  } acc_bias;
+
+  // Word 4 (0x250)
+  struct {
+    uint32_t post_scale : 16;
+    uint32_t post_scale_right_shift : 5;
+    uint32_t pad0 : 11;
+  } post_scale;
+
+} __attribute__((packed)) ane_m1_ne_t;
+
+// [0x16c] TileDMA Source Block (M1 mapping)
+typedef struct {
+  struct {
+    uint32_t en : 1;
+    uint32_t pad0 : 3;
+    uint32_t cache_hint : 4;
+    uint32_t cache_hint_reuse : 4;
+    uint32_t cache_hint_noreuse : 4;
+    uint32_t dep_mode : 4;
+    uint32_t pad1 : 12;
+  } src_dma_config; // 0x16c
+
+  uint32_t pad2; // 0x170
+
+  struct {
+    uint32_t pad0 : 6;
+    uint32_t addr : 26;
+  } base_addr; // 0x174
+
+  struct {
+    uint32_t pad0 : 6;
+    uint32_t stride : 26;
+  } row_stride; // 0x178
+
+  struct {
+    uint32_t pad0 : 6;
+    uint32_t stride : 26;
+  } plane_stride; // 0x17c
+
+  struct {
+    uint32_t pad0 : 6;
+    uint32_t stride : 26;
+  } depth_stride; // 0x180
+
+  struct {
+    uint32_t pad0 : 6;
+    uint32_t stride : 26;
+  } group_stride; // 0x184
+
+  uint32_t pad3[(0x1a4 - 0x188) / 4];
+
+  struct {
+    uint32_t fmt_mode : 2;
+    uint32_t pad0 : 2;
+    uint32_t truncate : 2;
+    uint32_t pad1 : 2;
+    uint32_t shift : 1;
+    uint32_t pad2 : 3;
+    uint32_t mem_fmt : 2;
+    uint32_t pad3 : 2;
+    uint32_t offset_ch : 3;
+    uint32_t pad4 : 5;
+    uint32_t interleave : 4;
+    uint32_t cmp_vec : 4;
+  } fmt; // 0x1a4
+
+  uint32_t pad4[(0x1bc - 0x1a8) / 4];
+
+  uint32_t pixel_offset[4]; // 0x1bc - 0x1c8
+
+  uint32_t pad5[(0x1f8 - 0x1cc) / 4];
+
+} __attribute__((packed)) ane_m1_tiledma_src_t;
+
+// [0x8800] Planar Engine (PE) Block
+// Corresponds to range 0x22c-0x238 in ane_hwx.tex
+typedef struct {
+  struct {
+    uint32_t pad0 : 1;
+    uint32_t enable : 1;
+    uint32_t op_mode : 3;
+    uint32_t relu_en : 1;
+    uint32_t cond : 1;
+    uint32_t pad1 : 9;
+    uint32_t first_source : 1;
+    uint32_t pad2 : 1;
+    uint32_t second_source : 2;
+    uint32_t pad3 : 12;
+  } cfg; // 0x8800 (offset 0x22c in tex)
+
+  struct {
+    uint16_t bias;
+    uint16_t scale;
+  } bias_scale; // 0x8804 (offset 0x230 in tex)
+
+  struct {
+    uint16_t pre_scale;
+    uint16_t pad0;
+  } pre_scale; // 0x8808 (offset 0x234 in tex)
+
+  struct {
+    uint32_t final_scale;
+  } final_scale; // 0x880c (offset 0x238 in tex)
+} __attribute__((packed)) ane_m1_pe_t;
+
+// [0xc0] KernelDMA Config block
+typedef struct {
+  // to be added
+  uint32_t pad0;
+  uint32_t pad1;
+
+  struct {
+    uint32_t en : 1;
+    uint32_t pad0 : 3;
+    uint32_t cache_hint : 4;
+    uint32_t pad1 : 24;
+  } coeff_dma_config[16]; // 0xc0 - 0xfc
+
+  struct {
+    uint32_t pad0 : 6;
+    uint32_t addr : 26;
+  } coeff_base_addr[16]; // 0x100 - 0x13c
+
+  uint32_t coeff_bfr_size[16]; // 0x140 - 0x17c
+} __attribute__((packed)) ane_m1_kerneldma_t;
+
+// [0x258] TileDMA Destination Block
+typedef struct {
+  struct {
+    uint32_t en : 1;
+    uint32_t pad0 : 3;
+    uint32_t cache_hint : 4;
+    uint32_t pad1 : 14;
+    uint32_t pad2 : 2;
+    uint32_t l2bfrmode : 1;
+    uint32_t bypass_eow : 1;
+    uint32_t pad3 : 4;
+  } dst_dma_config; // 0x258
+
+  struct {
+    uint32_t pad0 : 6;
+    uint32_t addr : 26;
+  } base_addr; // 0x25c
+
+  struct {
+    uint32_t pad0 : 6;
+    uint32_t stride : 26;
+  } row_stride; // 0x260
+
+  struct {
+    uint32_t pad0 : 6;
+    uint32_t stride : 26;
+  } plane_stride; // 0x264
+
+  struct {
+    uint32_t pad0 : 6;
+    uint32_t stride : 26;
+  } depth_stride; // 0x268
+
+  struct {
+    uint32_t pad0 : 6;
+    uint32_t stride : 26;
+  } group_stride; // 0x26c
+
+  struct {
+    uint32_t fmt_mode : 2;
+    uint32_t pad0 : 2;
+    uint32_t truncate : 2;
+    uint32_t pad1 : 2;
+    uint32_t shift : 1;
+    uint32_t pad2 : 3;
+    uint32_t mem_fmt : 2;
+    uint32_t pad3 : 2;
+    uint32_t offset_ch : 3;
+    uint32_t pad4 : 1;
+    uint32_t zero_pad_last : 1;
+    uint32_t zero_pad_first : 1;
+    uint32_t cmp_vec_fill : 1;
+    uint32_t pad5 : 1;
+    uint32_t interleave : 4;
+    uint32_t cmp_vec : 4;
+  } fmt; // 0x270
+
+} __attribute__((packed)) ane_m1_tiledma_dst_t;
+
 const char *get_ch_fmt_name(uint32_t fmt) {
   switch (fmt) {
   case 0:
@@ -634,6 +1031,10 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
 
   while (offset + sizeof(ane_td_header_t) <= total_len) {
     const ane_td_header_t *td = (const ane_td_header_t *)(ptr + offset);
+    if (td->next_pointer == 0 && td->exe_cycles == 0 && td->log_events == 0) {
+      break; // Hit zero padding
+    }
+
     printf("      [ANE Task %d @ 0x%x]\n", task_idx++, offset);
     printf("        TID: 0x%04x NID: 0x%02x LNID: %d EON: %d\n", td->tid,
            td->nid, td->lnid_eon & 1, (td->lnid_eon >> 1) & 1);
@@ -642,86 +1043,226 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
     printf("        Flags: 0x%08x NextPointer: 0x%08x\n", td->flags,
            td->next_pointer);
 
-    // Decode some common registers if they fit in the section
-    if (offset + 0x140 <= total_len) {
-      const uint32_t *regs = (const uint32_t *)(ptr + offset);
-      // InDim: 0x128
-      uint32_t indim = regs[0x128 / 4];
-      uint16_t win = indim & 0x7FFF;
-      uint16_t hin = (indim >> 16) & 0x7FFF;
+    uint32_t reg_values[0x20000] = {0};
+    bool reg_valid[0x20000] = {false};
 
-      // ChCfg: 0x130
-      uint32_t chcfg = regs[0x130 / 4];
-      const char *infmt_name = get_ch_fmt_name(chcfg & 0x3);
-      const char *outfmt_name = get_ch_fmt_name((chcfg >> 4) & 0x3);
+    // Modern Stream Parse
+    if (offset + sizeof(ane_td_header_t) <= total_len) {
+      const uint32_t *words = (const uint32_t *)(td + 1);
+      uint32_t max_payload_bytes =
+          (total_len > offset + sizeof(ane_td_header_t))
+              ? (uint32_t)(total_len - offset - sizeof(ane_td_header_t))
+              : 0;
+      uint32_t num_words = max_payload_bytes / 4;
 
-      // Cin: 0x134, Cout: 0x138
-      uint32_t cin = regs[0x134 / 4] & 0x1FFFF;
-      uint32_t cout = regs[0x138 / 4] & 0x1FFFF;
+      if (td->next_pointer > offset + sizeof(ane_td_header_t)) {
+        uint32_t td_words =
+            (td->next_pointer - offset - sizeof(ane_td_header_t)) / 4;
+        if (td_words < num_words) {
+          num_words = td_words;
+        }
+      }
 
-      // OutDim: 0x13c
-      uint32_t outdim = regs[0x13c / 4];
-      uint16_t wout = outdim & 0x7FFF;
-      uint16_t hout = (outdim >> 16) & 0x7FFF;
+      int w_idx = 0;
+      while (w_idx < num_words) {
+        uint32_t hdr = words[w_idx++];
+
+        // skip padding words
+        if (hdr == 0)
+          continue;
+        uint32_t count = (hdr >> 26) & 0x3f;
+        uint32_t addr = (hdr & 0x3ffffff) >> 2;
+        uint32_t num_vals = count + 1;
+        for (uint32_t i = 0; i < num_vals; i++) {
+          if (w_idx >= num_words)
+            break;
+          // Mask addr just in case it exceeds our struct buffer logic
+          if (addr + i < 0x20000) {
+            reg_values[addr + i] = words[w_idx];
+            reg_valid[addr + i] = true;
+          }
+          w_idx++;
+        }
+      }
+    }
+
+    if (offset + sizeof(ane_td_header_t) <= total_len) {
+      printf("        --- HW Block Register State ---\n");
+      // Decode Common Block (0x0000)
+      printf("        --- Common (0x0000) ---\n");
+      const ane_m1_common_t *common = (const ane_m1_common_t *)&reg_values[0];
+
+      uint16_t win = common->indim.w_in;
+      uint16_t hin = common->indim.h_in;
+      uint32_t cin = common->cin.c_in;
+
+      uint16_t wout = common->outdim.w_out;
+      uint16_t hout = common->outdim.h_out;
+      uint32_t cout = common->cout.c_out;
+
+      const char *infmt_name = get_ch_fmt_name(common->chcfg.infmt);
+      const char *outfmt_name = get_ch_fmt_name(common->chcfg.outfmt);
 
       printf("        %u x %u x %u (%s) -> %u x %u x %u (%s)\n", win, hin, cin,
              infmt_name, wout, hout, cout, outfmt_name);
 
-      // ConvCfg: 0x144
-      uint32_t convcfg = regs[0x144 / 4];
-      uint8_t kw = convcfg & 0x1F;
-      uint8_t kh = (convcfg >> 5) & 0x1F;
+      if (common->convcfg.kw != 0 || common->convcfg.kh != 0) {
+        printf("        ConvCfg: K=%ux%u S=%ux%u P=%ux%u\n", common->convcfg.kw,
+               common->convcfg.kh, common->convcfg.sx, common->convcfg.sy,
+               common->convcfg.px, common->convcfg.py);
 
-      if (kw != 0 || kh != 0) {
-        uint8_t sx = (convcfg >> 13) & 0x3;
-        uint8_t sy = (convcfg >> 15) & 0x3;
-        uint8_t px = (convcfg >> 17) & 0x1F;
-        uint8_t py = (convcfg >> 22) & 0x1F;
-        printf("        ConvCfg: K=%ux%u S=%ux%u P=%ux%u\n", kw, kh, sx, sy, px,
-               py);
-
-        // GroupConvCfg: 0x14c
-        uint32_t groupcfg = regs[0x14c / 4];
-        uint16_t num_groups = groupcfg & 0x1FFF;
-        uint16_t unicast_cin = (groupcfg >> 16) & 0xFFFF;
         printf("        GroupConvCfg: Groups=%u UnicastEn=%d ElemMult=%d "
                "UnicastCin=%u\n",
-               num_groups, (groupcfg >> 14) & 1, (groupcfg >> 15) & 1,
-               unicast_cin);
+               common->groupcfg.num_groups, common->groupcfg.unicast_en,
+               common->groupcfg.elem_mult_mode, common->groupcfg.unicast_cin);
       }
 
-      // Show NE and L2 details for all layers
-      uint32_t common_cfg = regs[0x15c / 4];
-      uint32_t active_ne = (common_cfg >> 18) & 0x7;
-      printf("        ActiveNE: %u\n", active_ne);
+      printf("        Cfg: ActiveNE=%u SmallSrc=%u ShPref=%u ShMin=%u ShMax=%u "
+             "AccDB=%u\n",
+             common->cfg.active_ne, common->cfg.small_src_mode,
+             common->cfg.sh_pref, common->cfg.sh_min, common->cfg.sh_max,
+             common->cfg.acc_db_buf_en);
 
-      uint32_t maccfg = regs[0x244 / 4];
-      uint8_t op_mode = maccfg & 0xF;
-      uint8_t nl_mode = (maccfg >> 16) & 0x3;
+      printf("        TaskInfo: TID=0x%04x Q=%u NID=0x%02x\n",
+             common->task_info.tid, common->task_info.task_q,
+             common->task_info.task_nid);
+
+      // Decode L2 Block (0x4800)
+      printf("        --- L2 (0x4800) ---\n");
+      const ane_m1_l2_t *l2 = (const ane_m1_l2_t *)&reg_values[0x4800 / 4];
+      printf("        L2Cfg: InputRelu=%d PaddingMode=%u\n",
+             l2->l2cfg.input_relu, l2->l2cfg.padding_mode);
+      printf("        L2 SourceCfg: Type=%u Dep=%u Fmt=%u Intrlv=%u CmpV=%u "
+             "OffCh=%u\n",
+             l2->scfg.type, l2->scfg.dep, l2->scfg.fmt, l2->scfg.interleave,
+             l2->scfg.cmpv, l2->scfg.offch);
       printf(
-          "        NE MACCfg: OpMode=%u NLMode=%u KernelMode=%d BiasMode=%d\n",
-          op_mode, nl_mode, (maccfg >> 4) & 1, (maccfg >> 5) & 1);
+          "        L2 Src1: Base=0x%05x ChanStride=0x%05x RowStride=0x%05x\n",
+          l2->srcbase.addr, l2->src_chan_stride.stride,
+          l2->src_row_stride.stride);
 
-      uint32_t l2cfg = regs[0x1e0 / 4];
-      printf("        L2Cfg: InputRelu=%d PaddingMode=%u\n", l2cfg & 1,
-             (l2cfg >> 1) & 0x3);
+      printf("        L2 ResultCfg: Type=%u Bfr=%u Fmt=%u Intrlv=%u CmpV=%u "
+             "OffCh=%u\n",
+             l2->rcfg.type, l2->rcfg.bfrmode, l2->rcfg.fmt, l2->rcfg.interleave,
+             l2->rcfg.cmpv, l2->rcfg.offch);
 
-      // Show L2 Source and Result Cfg
-      if (offset + 0x218 <= total_len) {
-        // regs is already defined and points to the start of the current task's
-        // registers
+      // Decode NE Block (0xC800)
+      printf("        --- Neural Engine (0xC800) ---\n");
+      const ane_m1_ne_t *ne = (const ane_m1_ne_t *)&reg_values[0xC800 / 4];
+      printf("        NE MACCfg: OpMode=%u NLMode=%u KernelMode=%d BiasMode=%d "
+             "BinaryPoint=%u\n",
+             ne->mac_cfg.op_mode, ne->mac_cfg.non_linear_mode,
+             ne->mac_cfg.kernel_mode, ne->mac_cfg.bias_mode,
+             ne->mac_cfg.binary_point);
+      printf("        NE KernelCfg: Fmt=%u PalettizedEn=%d PalettizeBits=%u "
+             "SparseFmt=%d GroupKernelReuse=%d\n",
+             ne->kernel_cfg.kernel_fmt, ne->kernel_cfg.palettized_en,
+             ne->kernel_cfg.palettized_bits, ne->kernel_cfg.sparse_fmt,
+             ne->kernel_cfg.group_kernel_reuse);
+      printf("        NE MatrixVectorBias: 0x%04x\n",
+             ne->matrix_vector_bias.matrix_vector_bias);
+      printf("        NE AccBias: 0x%04x Shift=%u\n", ne->acc_bias.acc_bias,
+             ne->acc_bias.acc_bias_shift);
+      printf("        NE PostScale: 0x%04x RightShift=%u\n",
+             ne->post_scale.post_scale, ne->post_scale.post_scale_right_shift);
 
-        uint32_t scfg = regs[0x1e4 / 4];
-        printf("        SourceCfg: Type=%u Dep=%u Fmt=%u Intrlv=%u CmpV=%u "
-               "OffCh=%u\n",
-               scfg & 0x3, (scfg >> 2) & 0x3, (scfg >> 6) & 0x3,
-               (scfg >> 8) & 0xF, (scfg >> 12) & 0xF, (scfg >> 16) & 0x7);
+      // Decode TileDMA Source (0x13800)
+      const ane_m1_tiledma_src_t *tsrc =
+          (const ane_m1_tiledma_src_t *)&reg_values[0x13800 / 4];
+      printf("        --- TileDMA Source (0x13800) ---\n");
+      printf("        Src1DMAConfig: En=%d CacheHint=%u DepMode=%u\n",
+             tsrc->src_dma_config.en, tsrc->src_dma_config.cache_hint,
+             tsrc->src_dma_config.dep_mode);
+      printf("        Src1Strides: Base=0x%05x Row=0x%05x Plane=0x%05x "
+             "Depth=0x%05x Group=0x%05x\n",
+             tsrc->base_addr.addr, tsrc->row_stride.stride,
+             tsrc->plane_stride.stride, tsrc->depth_stride.stride,
+             tsrc->group_stride.stride);
 
-        uint32_t rcfg = regs[0x210 / 4];
-        printf("        ResultCfg: Type=%u Bfr=%u Fmt=%u Intrlv=%u CmpV=%u "
-               "OffCh=%u\n",
-               rcfg & 0x3, (rcfg >> 2) & 0x3, (rcfg >> 6) & 0x3,
-               (rcfg >> 8) & 0xF, (rcfg >> 12) & 0xF, (rcfg >> 16) & 0x7);
+      printf("        Src1Fmt: FmtMode=%u Trunc=%u Shift=%u MemFmt=%u "
+             "OffCh=%u Intrlv=%u CmpV=%u\n",
+             tsrc->fmt.fmt_mode, tsrc->fmt.truncate, tsrc->fmt.shift,
+             tsrc->fmt.mem_fmt, tsrc->fmt.offset_ch, tsrc->fmt.interleave,
+             tsrc->fmt.cmp_vec);
+
+      // Decode PE Block (0x8800)
+      const ane_m1_pe_t *pe = (const ane_m1_pe_t *)&reg_values[0x8800 / 4];
+      if (reg_valid[0x8800 / 4]) {
+        printf("        --- Planar Engine (0x8800) ---\n");
+        printf("        PECfg: En=%d OpMode=%u ReluEn=%d Cond=%u FirstSrc=%u "
+               "SecondSrc=%u\n",
+               pe->cfg.enable, pe->cfg.op_mode, pe->cfg.relu_en, pe->cfg.cond,
+               pe->cfg.first_source, pe->cfg.second_source);
+        printf("        PEBiasScale: Bias=0x%04x Scale=0x%04x\n",
+               pe->bias_scale.bias, pe->bias_scale.scale);
+        printf("        PEPreScale: 0x%04x PEFinalScale: 0x%08x\n",
+               pe->pre_scale.pre_scale, pe->final_scale.final_scale);
+      }
+
+      // Decode KernelDMA (0x1F800)
+      const ane_m1_kerneldma_t *k =
+          (const ane_m1_kerneldma_t *)&reg_values[0x1F800 / 4];
+      printf("        --- KernelDMA (0x1F800) ---\n");
+      for (int i = 0; i < 16; i++) {
+        if (k->coeff_dma_config[i].en) {
+          printf(
+              "        Coeff[%d]: En=%d CacheHint=%u Base=0x%08x Size=0x%08x\n",
+              i, k->coeff_dma_config[i].en, k->coeff_dma_config[i].cache_hint,
+              k->coeff_base_addr[i].addr, k->coeff_bfr_size[i]);
+        }
+      }
+
+      // Decode TileDMA Destination (0x17800)
+      const ane_m1_tiledma_dst_t *tdst =
+          (const ane_m1_tiledma_dst_t *)&reg_values[0x17800 / 4];
+      printf("        --- TileDMA Destination (0x17800) ---\n");
+      printf("        DstDMAConfig: En=%d CacheHint=%u L2BfrMode=%d "
+             "BypassEOW=%d\n",
+             tdst->dst_dma_config.en, tdst->dst_dma_config.cache_hint,
+             tdst->dst_dma_config.l2bfrmode, tdst->dst_dma_config.bypass_eow);
+      printf("        DstStrides: Base=0x%05x Row=0x%05x Plane=0x%05x "
+             "Depth=0x%05x Group=0x%05x\n",
+             tdst->base_addr.addr, tdst->row_stride.stride,
+             tdst->plane_stride.stride, tdst->depth_stride.stride,
+             tdst->group_stride.stride);
+
+      printf("        DstFmt: FmtMode=%u Trunc=%u Shift=%u MemFmt=%u "
+             "OffCh=%u ZPLast=%d ZPFirst=%d Fill=%d Intrlv=%u CmpV=%u\n",
+             tdst->fmt.fmt_mode, tdst->fmt.truncate, tdst->fmt.shift,
+             tdst->fmt.mem_fmt, tdst->fmt.offset_ch, tdst->fmt.zero_pad_last,
+             tdst->fmt.zero_pad_first, tdst->fmt.cmp_vec_fill,
+             tdst->fmt.interleave, tdst->fmt.cmp_vec);
+
+      if (1) {
+        struct {
+          const char *name;
+          uint32_t startWord;
+        } blocks[] = {
+            {"[0x00000] Common Module", 0x00000},
+            {"[0x04800] L2 Cache Control", 0x04800},
+            {"[0x08800] Planar Engine (PE)", 0x08800},
+            {"[0x0C800] Neural Engine Core (NE)", 0x0C800},
+            {"[0x13800] TileDMA Source", 0x13800},
+            {"[0x17800] TileDMA Destination", 0x17800},
+            {"[0x1F800] KernelDMA Source", 0x1F800},
+        };
+
+        for (int b = 0; b < 7; b++) {
+          bool printed_header = false;
+          uint32_t word_start = blocks[b].startWord / 4;
+          uint32_t word_end = word_start + 0x100; // Look ahead 0x400 bytes
+
+          for (uint32_t r = word_start; r < word_end; r++) {
+            if (reg_valid[r]) {
+              if (!printed_header) {
+                printf("        %s:\n", blocks[b].name);
+                printed_header = true;
+              }
+              uint32_t addr = r * 4;
+              printf("          0x%05x: 0x%08x\n", addr, reg_values[r]);
+            }
+          }
+        }
       }
     }
 
@@ -774,6 +1315,9 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len) {
     const uint32_t *words = (const uint32_t *)(ptr + offset);
     int num_words = size_bytes / 4;
     int i = sizeof(ane_m4_header_t) / 4;
+
+    if (i >= num_words)
+      break;
 
     while (i < num_words) {
       uint32_t header = words[i++];

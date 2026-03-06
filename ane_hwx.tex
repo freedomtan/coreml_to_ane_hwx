@@ -92,11 +92,9 @@
     \bitbox{8}{} &
   \end{rightwordgroup} \\
 
-  \wordbox[]{1}{$\vdots$} \\[1ex]
-  
   \begin{rightwordgroup}{0x028, aneRegs.KernelDMASrc}
-    \bitbox{6}{length} &
     \bitbox{26}{KernelDMASrc address base} &
+    \bitbox{6}{length} &
   \end{rightwordgroup} \\
 
   \bytefieldsetup{bitheight=20ex}% \\    
@@ -171,8 +169,8 @@
   \wordbox[]{1}{$\vdots$} \\[1ex]
   
   \begin{rightwordgroup}{0x124, aneRegs.Common}
-    \bitbox{6}{length} &
     \bitbox{26}{common address base} &
+    \bitbox{6}{length} &
   \end{rightwordgroup} \\
 
   \begin{rightwordgroup}{0x128, aneRegs.Common.InDim}
@@ -279,8 +277,8 @@
   \wordbox{1}{} \\
 
   \begin{rightwordgroup}{0x168, aneRegs.TileDMASrc}
-    \bitbox{6}{length} &
     \bitbox{26}{TileDMASrc address base} &
+    \bitbox{6}{length} &
   \end{rightwordgroup} \\
 
   \begin{rightwordgroup}{0x16c, aneRegs.TileDMASrc.DMAConfig}
@@ -365,8 +363,8 @@
   \wordbox[]{1}{$\vdots$} \\[1ex]
 
   \begin{rightwordgroup}{0x1dc, aneRegs.L2}
-    \bitbox{6}{length} &
     \bitbox{26}{L2 address base} &
+    \bitbox{6}{length} &
   \end{rightwordgroup} \\
 
   \bytefieldsetup{bitheight=12ex}% \\  
@@ -450,16 +448,43 @@
 
   \wordbox[]{1}{$\vdots$} \\[1ex]
 
-  \begin{rightwordgroup}{0x228, aneRegs.??}
+  \begin{rightwordgroup}{0x228, aneRegs.PE}
+    \bitbox{26}{PE address base} &
     \bitbox{6}{length} &
-    \bitbox{26}{?? address base} &
   \end{rightwordgroup} \\
 
-  \wordbox[]{1}{$\vdots$} \\[1ex]
+  \bytefieldsetup{bitheight=12ex}% \\
+  \begin{rightwordgroup}{0x22c, aneRegs.PE.Cfg}
+    \bitbox{12}{} & % 31..20
+    \bitbox{2}{SecSrc} & % 19..18
+    \bitbox{1}{} & % 17
+    \bitbox{1}{\rotatebox{90}{\tiny FirstSrc}} & % 16
+    \bitbox{9}{} & % 15..7
+    \bitbox{1}{\rotatebox{90}{\tiny Cond}} & % 6
+    \bitbox{1}{\rotatebox{90}{\tiny ReluEn}} & % 5
+    \bitbox{3}{OpMode} & % 4..2
+    \bitbox{1}{\rotatebox{90}{\tiny En}} & % 1
+    \bitbox{1}{} % 0
+  \end{rightwordgroup} \\
+
+  \bytefieldsetup{bitheight=6ex}% \\
+  \begin{rightwordgroup}{0x230, aneRegs.PE.BiasScale}
+    \bitbox{16}{Scale} & % 31..16
+    \bitbox{16}{Bias} % 15..0
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x234, aneRegs.PE.PreScale}
+    \bitbox{16}{} & % 31..16
+    \bitbox{16}{PreScale} % 15..0
+  \end{rightwordgroup} \\
+
+  \begin{rightwordgroup}{0x238, aneRegs.PE.FinalScale}
+    \bitbox{32}{FinalScale}
+  \end{rightwordgroup} \\
 
   \begin{rightwordgroup}{0x23c, aneRegs.NE}
-    \bitbox{6}{length} &
     \bitbox{26}{NE address base} &
+    \bitbox{6}{length} &
   \end{rightwordgroup} \\
 
   \bytefieldsetup{bitheight=16ex}% \\
@@ -508,8 +533,8 @@
   \end{rightwordgroup} \\
 
   \begin{rightwordgroup}{0x254, aneRegs.TileDMADst}
-    \bitbox{6}{length} &
     \bitbox{26}{TileDMADst address base} &
+    \bitbox{6}{length} &
   \end{rightwordgroup} \\
 
   \bytefieldsetup{bitheight=12ex}% \\

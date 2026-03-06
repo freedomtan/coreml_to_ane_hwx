@@ -33,23 +33,26 @@ The `.hwx` file is a customized Mach-O binary.
 
 M1 uses a **Linked-List** task structure with a **Stream Payload** for register configuration.
 
-### Header: `ane_td_header_t` (0x20 bytes)
+### Header: `ane_td_header_t` (0x28 bytes)
 ```c
 typedef struct {
-  uint16_t tid;             // Task ID
-  uint8_t nid;              // Neural ID
-  uint8_t lnid_eon;         // LNID (bit 0), EON (bit 1)
-  uint16_t exe_cycles;      // Predicted execution cycles
-  uint16_t next_size;       // Size of next task (9 bits)
-  uint32_t log_events : 24; // Logging configuration
-  uint32_t exceptions : 24; // Exception configuration
-  uint32_t flags;           // Task flags
-  uint32_t next_pointer;    // Absolute file offset to next task header
+  uint16_t tid;             // 0x000
+  uint8_t nid;              // 0x002
+  uint8_t lnid_eon;         // 0x003: LNID (bit 0), EON (bit 1)
+  uint16_t exe_cycles;      // 0x004
+  uint16_t next_size_pad;   // 0x006: NextSize (9 bits)
+  uint32_t log_events : 24; // 0x008
+  uint32_t exceptions : 24; // 0x00c
+  uint32_t debug_log_events:24; // 0x010
+  uint32_t debug_exceptions:24; // 0x014
+  uint32_t flags;           // 0x018
+  uint32_t next_pointer;    // 0x01c
+  uint32_t pad[2];          // 0x20-0x28
 } ane_td_header_t;
 ```
 
 ### Payload: Stream Parse
-Immediately following the header is the register stream. Each command block consists of a 32-bit header followed by a variable number of data words.
+Immediately following the header (at offset `0x28`) is the register stream. Each command block consists of a 32-bit header followed by a variable number of data words.
 
 - **Header Word**:
     - `bits [25:0]`: Word Address (Hardware address >> 2).
@@ -61,15 +64,20 @@ Immediately following the header is the register stream. Each command block cons
 
 M4 uses an **Aligned Array** task structure with a **Dense Instruction** format (Burst/Scatter).
 
-### Header: `ane_m4_header_t` (0x20 bytes)
+### Header: `ane_m4_header_t` (0x24 bytes)
 ```c
 typedef struct {
-  uint16_t tid;             // Task ID
-  uint32_t task_size : 11;  // Total task size in 32-bit words (header + payload)
-  uint16_t exe_cycles;      // Execution cycles
-  uint32_t log_events : 24;
-  uint32_t live_outs;       // Live-out buffer configuration
-  uint16_t tdid;            // Task descriptor ID
+  uint16_t tid;             // 0x000
+  uint32_t task_size : 11;  // 0x002
+  uint16_t exe_cycles;      // 0x004
+  uint32_t log_events : 24; // 0x008
+  uint32_t exceptions : 24; // 0x00c
+  uint32_t debug_log_events:24; // 0x010
+  uint32_t debug_exceptions:24; // 0x014
+  uint32_t live_outs;       // 0x018
+  uint32_t tsr_tde_ene;     // 0x01c
+  uint16_t tdid;            // 0x020
+  uint16_t pad;             // 0x022
 } ane_m4_header_t;
 ```
 Tasks are 16-byte aligned. If `task_size` is 0, the parser skips to the next alignment boundary.

@@ -10,22 +10,64 @@
 typedef struct __attribute__((packed)) {
   uint16_t tid;             // 0x000
   uint8_t nid;              // 0x002
-  uint8_t lnid_eon;         // 0x003: LNID (bit 0), EON (bit 1)
+  uint8_t lnid: 1;          // 0x003 bit 0
+  uint8_t eon: 1;           // 0x003 bit 1
+  uint8_t pad0 : 6;
   uint16_t exe_cycles;      // 0x004
-  uint16_t next_size_pad;   // 0x006: NextSize (9 bits), Pad (7 bits)
+  uint16_t next_size : 9;   // 0x006 bits 0-8
+  uint16_t pad1 : 7;
   uint32_t log_events : 24; // 0x008
-  uint32_t pad0 : 8;
-  uint32_t exceptions : 24; // 0x00c
-  uint32_t pad1 : 8;
-  uint32_t debug_log_events : 24; // 0x010
   uint32_t pad2 : 8;
-  uint32_t debug_exceptions : 24; // 0x014
+  uint32_t exceptions : 24; // 0x00c
   uint32_t pad3 : 8;
-  uint32_t flags;        // 0x018
-  uint32_t next_pointer; // 0x01c
-  uint32_t pad4;
-  uint32_t pad5;
-} ane_td_header_t;
+  uint32_t debug_log_events : 24; // 0x010
+  uint32_t pad4 : 8;
+  uint32_t debug_exceptions : 24; // 0x014
+  uint32_t pad5 : 8;
+  struct {
+    uint32_t tq_dis : 1;      // bit 0
+    uint32_t pad0 : 1;
+    uint32_t dst_loc : 1;     // bit 2
+    uint32_t src_loc : 1;     // bit 3
+    uint32_t pad1 : 3;
+    uint32_t tde : 1;         // bit 7
+    uint32_t pad2 : 2;
+    uint32_t next_priority: 6;// bits 10-15
+    uint32_t tse : 1;         // bit 16
+    uint32_t dpc : 1;         // bit 17
+    uint32_t spc : 1;         // bit 18
+    uint32_t tsr : 1;         // bit 19
+    uint32_t spl : 1;         // bit 20
+    uint32_t kpc : 1;         // bit 21
+    uint32_t td_skip : 1;     // bit 22
+    uint32_t disallow_abort:1;// bit 23
+    uint32_t pad3 : 8;
+  } flags;                  // 0x018
+  uint32_t next_pointer;    // 0x01c
+  struct {
+    uint32_t rbase0 : 5;
+    uint32_t rbe0 : 1;
+    uint32_t rbase1 : 5;
+    uint32_t rbe1 : 1;
+    uint32_t wbase : 5;
+    uint32_t wbe : 1;
+    uint32_t tbase : 5;
+    uint32_t tbe : 1;
+    uint32_t ene : 3;
+    uint32_t pad : 5;
+  } base_ene;               // 0x020
+  struct {
+    uint32_t kbase0 : 5;
+    uint32_t kbe0 : 1;
+    uint32_t kbase1 : 5;
+    uint32_t kbe1 : 1;
+    uint32_t kbase2 : 5;
+    uint32_t kbe2 : 1;
+    uint32_t kbase3 : 5;
+    uint32_t kbe3 : 1;
+    uint32_t pad : 8;
+  } kbase;                  // 0x024
+} ane_td_header_h13_t;
 
 typedef struct __attribute__((packed)) {
   uint16_t tid;             // 0x000
@@ -49,7 +91,7 @@ typedef struct __attribute__((packed)) {
   uint32_t pad7 : 13; // 0x01c bits 19-31
   uint16_t tdid;
   uint16_t pad8;
-} ane_m4_header_t;
+} ane_header_h16_t;
 
 typedef struct __attribute__((packed)) {
   // Word 0 (0x000)
@@ -194,7 +236,7 @@ typedef struct __attribute__((packed)) {
   uint32_t val_21; // 0x054 (Word 21)
   uint32_t val_22; // 0x058 (Word 22)
 
-} ane_m4_common_t;
+} ane_common_h16_t;
 
 const char *get_m4_reg_name(uint32_t addr) {
   if (addr < 23 * 4) {
@@ -404,7 +446,7 @@ typedef struct {
     uint32_t user_tag : 8;
     uint32_t pad2 : 8;
   } non_linear_cfg; // Word 68 (0x5610)
-} __attribute__((packed)) ane_m4_kerneldma_src_t;
+} __attribute__((packed)) ane_kerneldma_src_h16_t;
 
 typedef struct {
   uint32_t config; // 0x5900: bits[3:2]: TaskSync, [6:4]: EarlyTerm, [16:31]:
@@ -419,7 +461,7 @@ typedef struct {
   uint32_t pad1;      // 0x5924
   uint32_t term2_3;   // 0x5928: [0:7]: EarlyTerm2 (B), [16:23]: EarlyTerm3 (B)
   uint32_t backoff;   // 0x592c: TelemetryBackOff
-} __attribute__((packed)) ane_m4_cachedma_t;
+} __attribute__((packed)) ane_cachedma_h16_t;
 
 // [0x4D00] TileDMA Source Block
 typedef struct {
@@ -454,7 +496,7 @@ typedef struct {
   uint32_t pad2[11];        // Word 27-37
   uint32_t src1pixeloff[4]; // Word 38-41
   uint32_t src2pixeloff[4]; // Word 42-45
-} __attribute__((packed)) ane_m4_tiledma_src_t;
+} __attribute__((packed)) ane_tiledma_src_h16_t;
 
 // [0x5100] TileDMA Destination Block
 typedef struct {
@@ -474,7 +516,7 @@ typedef struct {
 
   uint32_t pad1[6];   // Word 8-13
   uint32_t dstmemfmt; // Word 14
-} __attribute__((packed)) ane_m4_tiledma_dst_t;
+} __attribute__((packed)) ane_tiledma_dst_h16_t;
 
 // [0x4900] Neural Engine (NE) Block (M4 specific mapping)
 typedef struct {
@@ -534,7 +576,7 @@ typedef struct {
   uint32_t raw_491c; // Word 7
   uint32_t raw_4920; // Word 8
 
-} ane_m4_ne_t;
+} ane_ne_h16_t;
 
 // [0x4500] Planar Engine (PE) Block (M4 specific mapping)
 typedef struct {
@@ -551,7 +593,7 @@ typedef struct {
   uint32_t raw_450c; // Word 3 (0x450c)
   uint32_t bias_2;   // Word 4 (0x4510)
   uint32_t scale_2;  // Word 5 (0x4514)
-} ane_m4_pe_t;
+} ane_pe_h16_t;
 
 // [0x4100] L2 Cache Control Block (M4 specific mapping)
 typedef struct {
@@ -613,7 +655,7 @@ typedef struct {
     uint32_t pad4 : 15;
   } result; // Words 19-23
 
-} ane_m4_l2_t;
+} ane_l2_h16_t;
 
 // [0x0000] M1 Common Registers
 typedef struct {
@@ -720,7 +762,7 @@ typedef struct {
     uint32_t pad0 : 28;
   } dpe; // 0x164
 
-} __attribute__((packed)) ane_m1_common_t;
+} __attribute__((packed)) ane_common_h13_t;
 
 // [0x1e0] L2
 typedef struct {
@@ -781,7 +823,7 @@ typedef struct {
     uint32_t alias_planar_rslt : 1;
     uint32_t pad2 : 9;
   } rcfg; // 0x210
-} __attribute__((packed)) ane_m1_l2_t;
+} __attribute__((packed)) ane_l2_h13_t;
 
 // [0xC800] Neural Engine (NE) Block
 typedef struct {
@@ -833,7 +875,7 @@ typedef struct {
     uint32_t pad0 : 11;
   } post_scale;
 
-} __attribute__((packed)) ane_m1_ne_t;
+} __attribute__((packed)) ane_ne_h13_t;
 
 // [0x16c] TileDMA Source Block (M1 mapping)
 typedef struct {
@@ -897,7 +939,7 @@ typedef struct {
 
   uint32_t pad5[(0x1f8 - 0x1cc) / 4];
 
-} __attribute__((packed)) ane_m1_tiledma_src_t;
+} __attribute__((packed)) ane_tiledma_src_h13_t;
 
 // [0x8800] Planar Engine (PE) Block
 // Corresponds to range 0x22c-0x238 in ane_hwx.tex
@@ -928,7 +970,7 @@ typedef struct {
   struct {
     uint32_t final_scale;
   } final_scale; // 0x880c (offset 0x238 in tex)
-} __attribute__((packed)) ane_m1_pe_t;
+} __attribute__((packed)) ane_pe_h13_t;
 
 // [0xc0] KernelDMA Config block
 typedef struct {
@@ -949,7 +991,7 @@ typedef struct {
   } coeff_base_addr[16]; // 0x100 - 0x13c
 
   uint32_t coeff_bfr_size[16]; // 0x140 - 0x17c
-} __attribute__((packed)) ane_m1_kerneldma_t;
+} __attribute__((packed)) ane_kerneldma_h13_t;
 
 // [0x258] TileDMA Destination Block
 typedef struct {
@@ -1008,7 +1050,7 @@ typedef struct {
     uint32_t cmp_vec : 4;
   } fmt; // 0x270
 
-} __attribute__((packed)) ane_m1_tiledma_dst_t;
+} __attribute__((packed)) ane_tiledma_dst_h13_t;
 
 const char *get_arch_name(uint32_t subtype) {
   switch (subtype) {
@@ -1075,35 +1117,40 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
   uint32_t offset = 0;
   int task_idx = 0;
 
-  while (offset + sizeof(ane_td_header_t) <= total_len) {
-    const ane_td_header_t *td = (const ane_td_header_t *)(ptr + offset);
+  while (offset + sizeof(ane_td_header_h13_t) <= total_len) {
+    const ane_td_header_h13_t *td = (const ane_td_header_h13_t *)(ptr + offset);
     if (td->next_pointer == 0 && td->exe_cycles == 0 && td->log_events == 0) {
       break; // Hit zero padding
     }
 
     printf("      [ANE Task %d @ 0x%x]\n", task_idx++, offset);
     printf("        TID: 0x%04x NID: 0x%02x LNID: %d EON: %d\n", td->tid,
-           td->nid, td->lnid_eon & 1, (td->lnid_eon >> 1) & 1);
-    printf("        ExeCycles: %u NextSize: %u\n", td->exe_cycles,
-           td->next_size_pad & 0x1FF);
-    printf("        Flags: 0x%08x NextPointer: 0x%08x\n", td->flags,
-           td->next_pointer);
+           td->nid, td->lnid, td->eon);
+    printf("        ExeCycles: %u NextSize: %u\n", td->exe_cycles, td->next_size);
+    printf("        NextPtr: 0x%08x TSR: %d TSE: %d ENE: %d\n", td->next_pointer,
+           td->flags.tsr, td->flags.tse, td->base_ene.ene);
+    printf("        RBase: %d/%d WBase: %d TBase: %d\n", td->base_ene.rbase0,
+           td->base_ene.rbase1, td->base_ene.wbase, td->base_ene.tbase);
+    if (td->kbase.kbe0 || td->kbase.kbe1 || td->kbase.kbe2 || td->kbase.kbe3) {
+      printf("        KBase: %d/%d/%d/%d\n", td->kbase.kbase0,
+             td->kbase.kbase1, td->kbase.kbase2, td->kbase.kbase3);
+    }
 
     uint32_t reg_values[0x20000] = {0};
     bool reg_valid[0x20000] = {false};
 
     // Modern Stream Parse
-    if (offset + sizeof(ane_td_header_t) <= total_len) {
+    if (offset + sizeof(ane_td_header_h13_t) <= total_len) {
       const uint32_t *words = (const uint32_t *)(td + 1);
       uint32_t max_payload_bytes =
-          (total_len > offset + sizeof(ane_td_header_t))
-              ? (uint32_t)(total_len - offset - sizeof(ane_td_header_t))
+          (total_len > offset + sizeof(ane_td_header_h13_t))
+              ? (uint32_t)(total_len - offset - sizeof(ane_td_header_h13_t))
               : 0;
       uint32_t num_words = max_payload_bytes / 4;
 
-      if (td->next_pointer > offset + sizeof(ane_td_header_t)) {
+      if (td->next_pointer > offset + sizeof(ane_td_header_h13_t)) {
         uint32_t td_words =
-            (td->next_pointer - offset - sizeof(ane_td_header_t)) / 4;
+            (td->next_pointer - offset - sizeof(ane_td_header_h13_t)) / 4;
         if (td_words < num_words) {
           num_words = td_words;
         }
@@ -1132,11 +1179,11 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
       }
     }
 
-    if (offset + sizeof(ane_td_header_t) <= total_len) {
+    if (offset + sizeof(ane_td_header_h13_t) <= total_len) {
       printf("        --- HW Block Register State ---\n");
       // Decode Common Block (0x0000)
       printf("        --- Common (0x0000) ---\n");
-      const ane_m1_common_t *common = (const ane_m1_common_t *)&reg_values[0];
+      const ane_common_h13_t *common = (const ane_common_h13_t *)&reg_values[0];
 
       uint16_t win = common->indim.w_in;
       uint16_t hin = common->indim.h_in;
@@ -1175,7 +1222,7 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
 
       // Decode L2 Block (0x4800)
       printf("        --- L2 (0x4800) ---\n");
-      const ane_m1_l2_t *l2 = (const ane_m1_l2_t *)&reg_values[0x4800 / 4];
+      const ane_l2_h13_t *l2 = (const ane_l2_h13_t *)&reg_values[0x4800 / 4];
       printf("        L2Cfg: InputRelu=%d PaddingMode=%u\n",
              l2->l2cfg.input_relu, l2->l2cfg.padding_mode);
       printf("        L2 SourceCfg: Type=%u Dep=%u Fmt=%u Intrlv=%u CmpV=%u "
@@ -1194,7 +1241,7 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
 
       // Decode NE Block (0xC800)
       printf("        --- Neural Engine (0xC800) ---\n");
-      const ane_m1_ne_t *ne = (const ane_m1_ne_t *)&reg_values[0xC800 / 4];
+      const ane_ne_h13_t *ne = (const ane_ne_h13_t *)&reg_values[0xC800 / 4];
       printf("        NE MACCfg: OpMode=%u NLMode=%u KernelMode=%d BiasMode=%d "
              "BinaryPoint=%u\n",
              ne->mac_cfg.op_mode, ne->mac_cfg.non_linear_mode,
@@ -1213,8 +1260,8 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
              ne->post_scale.post_scale, ne->post_scale.post_scale_right_shift);
 
       // Decode TileDMA Source (0x13800)
-      const ane_m1_tiledma_src_t *tsrc =
-          (const ane_m1_tiledma_src_t *)&reg_values[0x13800 / 4];
+      const ane_tiledma_src_h13_t *tsrc =
+          (const ane_tiledma_src_h13_t *)&reg_values[0x13800 / 4];
       printf("        --- TileDMA Source (0x13800) ---\n");
       printf("        Src1DMAConfig: En=%d CacheHint=%u DepMode=%u\n",
              tsrc->src_dma_config.en, tsrc->src_dma_config.cache_hint,
@@ -1232,7 +1279,7 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
              tsrc->fmt.cmp_vec);
 
       // Decode PE Block (0x8800)
-      const ane_m1_pe_t *pe = (const ane_m1_pe_t *)&reg_values[0x8800 / 4];
+      const ane_pe_h13_t *pe = (const ane_pe_h13_t *)&reg_values[0x8800 / 4];
       if (reg_valid[0x8800 / 4]) {
         printf("        --- Planar Engine (0x8800) ---\n");
         printf("        PECfg: En=%d OpMode=%u ReluEn=%d Cond=%u FirstSrc=%u "
@@ -1246,8 +1293,8 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
       }
 
       // Decode KernelDMA (0x1F800)
-      const ane_m1_kerneldma_t *k =
-          (const ane_m1_kerneldma_t *)&reg_values[0x1F800 / 4];
+      const ane_kerneldma_h13_t *k =
+          (const ane_kerneldma_h13_t *)&reg_values[0x1F800 / 4];
       printf("        --- KernelDMA (0x1F800) ---\n");
       for (int i = 0; i < 16; i++) {
         if (k->coeff_dma_config[i].en) {
@@ -1259,8 +1306,8 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
       }
 
       // Decode TileDMA Destination (0x17800)
-      const ane_m1_tiledma_dst_t *tdst =
-          (const ane_m1_tiledma_dst_t *)&reg_values[0x17800 / 4];
+      const ane_tiledma_dst_h13_t *tdst =
+          (const ane_tiledma_dst_h13_t *)&reg_values[0x17800 / 4];
       printf("        --- TileDMA Destination (0x17800) ---\n");
       printf("        DstDMAConfig: En=%d CacheHint=%u L2BfrMode=%d "
              "BypassEOW=%d\n",
@@ -1325,8 +1372,8 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
   uint32_t offset = 0;
   int task_idx = 0;
 
-  while (offset + sizeof(ane_m4_header_t) <= total_len) {
-    const ane_m4_header_t *m4h = (const ane_m4_header_t *)(ptr + offset);
+  while (offset + sizeof(ane_header_h16_t) <= total_len) {
+    const ane_header_h16_t *m4h = (const ane_header_h16_t *)(ptr + offset);
 
     if (m4h->task_size == 0) {
       offset += 16;
@@ -1361,7 +1408,7 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
     // Phase 4: Verbose Register Logging
     const uint32_t *words = (const uint32_t *)(ptr + offset);
     int num_words = size_bytes / 4;
-    int i = sizeof(ane_m4_header_t) / 4;
+    int i = sizeof(ane_header_h16_t) / 4;
 
     if (i >= num_words)
       break;
@@ -1413,7 +1460,7 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
     printf("        Stream Parse: OK (End index %d/%d)\n", i, num_words);
 
     // Decode Common Registers from Map M4 Style
-    ane_m4_common_t common;
+    ane_common_h16_t common;
     bool has_common = false;
     for (int j = 0; j < 23; j++) {
       if (reg_valid[j]) {
@@ -1521,7 +1568,7 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
     }
 
     if (ne_has_valid) {
-      ane_m4_ne_t ne = *(ane_m4_ne_t *)&reg_values[0x4900 / 4];
+      ane_ne_h16_t ne = *(ane_ne_h16_t *)&reg_values[0x4900 / 4];
       printf("        --- Neural Engine Config ---\n");
 
       if (reg_valid[0x4900 / 4]) {
@@ -1568,7 +1615,7 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
     }
 
     if (pe_has_valid) {
-      ane_m4_pe_t pe = *(ane_m4_pe_t *)&reg_values[0x4500 / 4];
+      ane_pe_h16_t pe = *(ane_pe_h16_t *)&reg_values[0x4500 / 4];
       printf("        --- Planar Engine Config ---\n");
 
       if (reg_valid[0x4500 / 4]) {
@@ -1596,7 +1643,7 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
     }
 
     if (l2_has_valid) {
-      ane_m4_l2_t l2 = *(ane_m4_l2_t *)&reg_values[0x4100 / 4];
+      ane_l2_h16_t l2 = *(ane_l2_h16_t *)&reg_values[0x4100 / 4];
       printf("        --- L2 Cache Control ---\n");
 
       if (reg_valid[0x4110 / 4]) {
@@ -1632,8 +1679,8 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
         src_has_valid = true;
     }
     if (src_has_valid) {
-      ane_m4_tiledma_src_t *src =
-          (ane_m4_tiledma_src_t *)&reg_values[0x4d00 / 4];
+      ane_tiledma_src_h16_t *src =
+          (ane_tiledma_src_h16_t *)&reg_values[0x4d00 / 4];
       printf("        --- TileDMA Source (0x4D00) ---\n");
       if (reg_valid[0x4d00 / 4]) {
         printf("        Src1DMAConfig: En=%d CacheHint=%u DepMode=%u\n",
@@ -1653,8 +1700,8 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
         dst_has_valid = true;
     }
     if (dst_has_valid) {
-      ane_m4_tiledma_dst_t *dst =
-          (ane_m4_tiledma_dst_t *)&reg_values[0x5100 / 4];
+      ane_tiledma_dst_h16_t *dst =
+          (ane_tiledma_dst_h16_t *)&reg_values[0x5100 / 4];
       printf("        --- TileDMA Destination (0x5100) ---\n");
       if (reg_valid[0x5100 / 4]) {
         printf("        DstDMAConfig: En=%d CacheHint=%u\n", dst->dstcfg.en,
@@ -1674,8 +1721,8 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
         kernel_has_valid = true;
     }
     if (kernel_has_valid) {
-      ane_m4_kerneldma_src_t *k =
-          (ane_m4_kerneldma_src_t *)&reg_values[0x5500 / 4];
+      ane_kerneldma_src_h16_t *k =
+          (ane_kerneldma_src_h16_t *)&reg_values[0x5500 / 4];
       printf("        --- KernelDMA Source (0x5500) ---\n");
       for (int i = 0; i < 16; i++) {
         if (reg_valid[0x5520 / 4 + i] || reg_valid[0x5560 / 4 + i]) {
@@ -1716,7 +1763,7 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
           cdma_has_valid = true;
       }
       if (cdma_has_valid) {
-        ane_m4_cachedma_t cdma = *(ane_m4_cachedma_t *)&reg_values[0x5900 / 4];
+        ane_cachedma_h16_t cdma = *(ane_cachedma_h16_t *)&reg_values[0x5900 / 4];
         printf("        --- CacheDMA & Telemetry (0x5900) ---\n");
         if (reg_valid[0x5900 / 4]) {
           printf("        Config: WaitSync=%d PostSync=%d EarlyTermEn=0x%x "

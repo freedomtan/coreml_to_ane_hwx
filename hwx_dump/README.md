@@ -25,7 +25,7 @@ The `.hwx` file is a customized Mach-O binary.
 | H18 (A19/A19 Pro) | 10 | 20 |
 
 > [!NOTE]
-> The **Instruction Set Version** $n$ corresponds directly to the template parameter in the **`ZinAneTd<n u>`** class within the [ANECompiler](file:///Users/freedom/work/coreml_to_ane_hwx_hacks/hwx_dump/ANECompiler) binary. For example, M1 (subtype 4) uses version 7, processed by `ZinAneTd<7u>`.
+> The **Instruction Set Version** $n$ corresponds directly to the template parameter in the **`ZinAneTd<n u>`** class within the ANECompiler binary. For example, M1 (subtype 4) uses version 7, processed by `ZinAneTd<7u>`.
 
 - **Location of Tasks**: ANE tasks are stored in the `__TEXT` segment, `__text` section.
 
@@ -33,7 +33,7 @@ The `.hwx` file is a customized Mach-O binary.
 
 M1 uses a **Linked-List** task structure with a **Stream Payload** for register configuration.
 
-### Header: `ane_td_header_t` (0x28 bytes)
+### Header: `ane_td_header_h13_t` (0x28 bytes)
 ```c
 typedef struct {
   uint16_t tid;             // 0x000
@@ -48,7 +48,7 @@ typedef struct {
   uint32_t flags;           // 0x018
   uint32_t next_pointer;    // 0x01c
   uint32_t pad[2];          // 0x20-0x28
-} ane_td_header_t;
+} ane_td_header_h13_t;
 ```
 
 ### Payload: Stream Parse
@@ -64,7 +64,7 @@ Immediately following the header (at offset `0x28`) is the register stream. Each
 
 M4 uses an **Aligned Array** task structure with a **Dense Instruction** format (Burst/Scatter).
 
-### Header: `ane_m4_header_t` (0x24 bytes)
+### Header: `ane_td_header_h16_t` (0x24 bytes)
 ```c
 typedef struct {
   uint16_t tid;             // 0x000
@@ -78,7 +78,7 @@ typedef struct {
   uint32_t tsr_tde_ene;     // 0x01c
   uint16_t tdid;            // 0x020
   uint16_t pad;             // 0x022
-} ane_m4_header_t;
+} ane_td_header_h16_t;
 ```
 Tasks are 16-byte aligned. If `task_size` is 0, the parser skips to the next alignment boundary.
 

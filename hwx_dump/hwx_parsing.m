@@ -8,13 +8,13 @@
 #define LC_ANE_MAPPED_REGION 0x40
 
 typedef struct __attribute__((packed)) {
-  uint16_t tid;             // 0x000
-  uint8_t nid;              // 0x002
-  uint8_t lnid: 1;          // 0x003 bit 0
-  uint8_t eon: 1;           // 0x003 bit 1
+  uint16_t tid;     // 0x000
+  uint8_t nid;      // 0x002
+  uint8_t lnid : 1; // 0x003 bit 0
+  uint8_t eon : 1;  // 0x003 bit 1
   uint8_t pad0 : 6;
-  uint16_t exe_cycles;      // 0x004
-  uint16_t next_size : 9;   // 0x006 bits 0-8
+  uint16_t exe_cycles;    // 0x004
+  uint16_t next_size : 9; // 0x006 bits 0-8
   uint16_t pad1 : 7;
   uint32_t log_events : 24; // 0x008
   uint32_t pad2 : 8;
@@ -25,25 +25,25 @@ typedef struct __attribute__((packed)) {
   uint32_t debug_exceptions : 24; // 0x014
   uint32_t pad5 : 8;
   struct {
-    uint32_t tq_dis : 1;      // bit 0
+    uint32_t tq_dis : 1; // bit 0
     uint32_t pad0 : 1;
-    uint32_t dst_loc : 1;     // bit 2
-    uint32_t src_loc : 1;     // bit 3
+    uint32_t dst_loc : 1; // bit 2
+    uint32_t src_loc : 1; // bit 3
     uint32_t pad1 : 3;
-    uint32_t tde : 1;         // bit 7
+    uint32_t tde : 1; // bit 7
     uint32_t pad2 : 2;
-    uint32_t next_priority: 6;// bits 10-15
-    uint32_t tse : 1;         // bit 16
-    uint32_t dpc : 1;         // bit 17
-    uint32_t spc : 1;         // bit 18
-    uint32_t tsr : 1;         // bit 19
-    uint32_t spl : 1;         // bit 20
-    uint32_t kpc : 1;         // bit 21
-    uint32_t td_skip : 1;     // bit 22
-    uint32_t disallow_abort:1;// bit 23
+    uint32_t next_priority : 6;  // bits 10-15
+    uint32_t tse : 1;            // bit 16
+    uint32_t dpc : 1;            // bit 17
+    uint32_t spc : 1;            // bit 18
+    uint32_t tsr : 1;            // bit 19
+    uint32_t spl : 1;            // bit 20
+    uint32_t kpc : 1;            // bit 21
+    uint32_t td_skip : 1;        // bit 22
+    uint32_t disallow_abort : 1; // bit 23
     uint32_t pad3 : 8;
-  } flags;                  // 0x018
-  uint32_t next_pointer;    // 0x01c
+  } flags;               // 0x018
+  uint32_t next_pointer; // 0x01c
   struct {
     uint32_t rbase0 : 5;
     uint32_t rbe0 : 1;
@@ -55,7 +55,7 @@ typedef struct __attribute__((packed)) {
     uint32_t tbe : 1;
     uint32_t ene : 3;
     uint32_t pad : 5;
-  } base_ene;               // 0x020
+  } base_ene; // 0x020
   struct {
     uint32_t kbase0 : 5;
     uint32_t kbe0 : 1;
@@ -66,7 +66,7 @@ typedef struct __attribute__((packed)) {
     uint32_t kbase3 : 5;
     uint32_t kbe3 : 1;
     uint32_t pad : 8;
-  } kbase;                  // 0x024
+  } kbase; // 0x024
 } ane_td_header_h13_t;
 
 typedef struct __attribute__((packed)) {
@@ -299,11 +299,13 @@ const char *get_m4_reg_name(uint32_t addr) {
     return pe_names[off / 4];
   }
   // NE 0x4900
-  if (addr >= 0x4900 && addr <= 0x4910) {
+  if (addr >= 0x4900 && addr <= 0x4920) {
     uint32_t off = addr - 0x4900;
-    static const char *ne_names[] = {"KernelCfg", "MACCfg", "MatrixBias",
-                                     "AccBias", "PostScale"};
-    return ne_names[off / 4];
+    static const char *ne_names[] = {"KernelCfg",  "MACCfg",      "MatrixBias",
+                                     "AccBias",    "PostScale",   "Val4914",
+                                     "StRoundCfg", "StRoundSeed", "Val4920"};
+    if (off / 4 < 9)
+      return ne_names[off / 4];
   }
   // CE/CacheDMA 0x5900
   if (addr >= 0x5900 && addr <= 0x5930) {
@@ -522,35 +524,40 @@ typedef struct {
 typedef struct {
   // Word 0 (0x4900)
   struct {
-    uint32_t kernel_fmt : 2;
-    uint32_t palettized_en : 1;
-    uint32_t pad0 : 1;
-    uint32_t palettized_bits : 4;
-    uint32_t sparse_fmt : 1;
-    uint32_t pad1 : 6;
-    uint32_t sparse_binary : 1;
-    uint32_t alignment_fmt : 1;
-    uint32_t pad2 : 4;
-    uint32_t sparse_block_size : 3;
-    uint32_t asym_quant_en : 1;
+    uint32_t kernel_fmt : 2;         // [1:0]
+    uint32_t palettized_en : 1;      // [2]
+    uint32_t pad0 : 1;               // [3]
+    uint32_t palettized_bits : 4;    // [7:4]
+    uint32_t sparse_fmt : 1;         // [8]
+    uint32_t pad1_0 : 1;             // [9]
+    uint32_t group_kernel_reuse : 1; // [10]
+    uint32_t pad1_1 : 4;             // [14:11]
+    uint32_t sparse_binary : 1;      // [15]
+    uint32_t alignment_fmt : 1;      // [16]
+    uint32_t pad2 : 4;               // [20:17]
+    uint32_t sparse_block_size : 3;  // [23:21]
+    uint32_t asym_quant_en : 1;      // [24]
     uint32_t pad3 : 7;
   } kernel_cfg;
 
   // Word 1 (0x4904)
   struct {
-    uint32_t op_mode : 3;
-    uint32_t kernel_mode : 1;
-    uint32_t ne_bias_en : 1;
-    uint32_t passthrough_en : 1;
-    uint32_t matrix_bias_en : 1;
-    uint32_t pad0 : 1;
-    uint32_t binary_point : 6;
-    uint32_t post_scale_en : 1;
-    uint32_t pad1 : 1;
-    uint32_t non_linear_mode : 2;
-    uint32_t padding_mode : 1;
-    uint32_t max_pool_mode : 1;
-    uint32_t pad2 : 12;
+    uint32_t op_mode : 3;           // [2:0]
+    uint32_t kernel_mode : 1;       // [3]
+    uint32_t ne_bias_en : 1;        // [4]
+    uint32_t passthrough_en : 1;    // [5]
+    uint32_t matrix_bias_en : 1;    // [6]
+    uint32_t pad0 : 1;              // [7]
+    uint32_t binary_point : 6;      // [13:8]
+    uint32_t post_scale_en : 1;     // [14]
+    uint32_t pad1 : 1;              // [15]
+    uint32_t non_linear_mode : 2;   // [17:16]
+    uint32_t padding_mode : 1;      // [18]
+    uint32_t max_pool_mode : 1;     // [19]
+    uint32_t arg_output_select : 4; // [23:20]
+    uint32_t pad2 : 2;              // [25:24]
+    uint32_t double_int8_en : 1;    // [26]
+    uint32_t pad3 : 5;
   } mac_cfg;
 
   // Word 2 (0x4908)
@@ -571,10 +578,15 @@ typedef struct {
     uint32_t pad0 : 11;
   } post_scale;
 
-  uint32_t raw_4914; // Word 5
-  uint32_t raw_4918; // Word 6
-  uint32_t raw_491c; // Word 7
-  uint32_t raw_4920; // Word 8
+  uint32_t raw_4914; // Word 5 (0x4914)
+  struct {
+    uint32_t round_mode : 2;   // [1:0]
+    uint32_t pad0 : 2;         // [3:2]
+    uint32_t integer_bits : 5; // [8:4]
+    uint32_t pad1 : 23;
+  } st_round_cfg;         // Word 6 (0x4918)
+  uint32_t st_round_seed; // Word 7 (0x491C)
+  uint32_t raw_4920;      // Word 8 (0x4920)
 
 } ane_ne_h16_t;
 
@@ -1126,14 +1138,15 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
     printf("      [ANE Task %d @ 0x%x]\n", task_idx++, offset);
     printf("        TID: 0x%04x NID: 0x%02x LNID: %d EON: %d\n", td->tid,
            td->nid, td->lnid, td->eon);
-    printf("        ExeCycles: %u NextSize: %u\n", td->exe_cycles, td->next_size);
-    printf("        NextPtr: 0x%08x TSR: %d TSE: %d ENE: %d\n", td->next_pointer,
-           td->flags.tsr, td->flags.tse, td->base_ene.ene);
+    printf("        ExeCycles: %u NextSize: %u\n", td->exe_cycles,
+           td->next_size);
+    printf("        NextPtr: 0x%08x TSR: %d TSE: %d ENE: %d\n",
+           td->next_pointer, td->flags.tsr, td->flags.tse, td->base_ene.ene);
     printf("        RBase: %d/%d WBase: %d TBase: %d\n", td->base_ene.rbase0,
            td->base_ene.rbase1, td->base_ene.wbase, td->base_ene.tbase);
     if (td->kbase.kbe0 || td->kbase.kbe1 || td->kbase.kbe2 || td->kbase.kbe3) {
-      printf("        KBase: %d/%d/%d/%d\n", td->kbase.kbase0,
-             td->kbase.kbase1, td->kbase.kbase2, td->kbase.kbase3);
+      printf("        KBase: %d/%d/%d/%d\n", td->kbase.kbase0, td->kbase.kbase1,
+             td->kbase.kbase2, td->kbase.kbase3);
     }
 
     uint32_t reg_values[0x20000] = {0};
@@ -1582,11 +1595,16 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
       if (reg_valid[0x4904 / 4]) {
         printf(
             "        MACCfg: OpMode=%d KernelMode=%d BiasEn=%d Passthrough=%d "
-            "MVBiasEn=%d BinaryPoint=%u PostScaleEn=%d NonLinear=%d\n",
+            "MVBiasEn=%d BinaryPoint=%u PostScaleEn=%d NonLinear=%d\n"
+            "                PaddingMode=%d MaxPoolMode=%d "
+            "arg_output_select=%d "
+            "double_int8_en=%d\n",
             ne.mac_cfg.op_mode, ne.mac_cfg.kernel_mode, ne.mac_cfg.ne_bias_en,
             ne.mac_cfg.passthrough_en, ne.mac_cfg.matrix_bias_en,
             ne.mac_cfg.binary_point, ne.mac_cfg.post_scale_en,
-            ne.mac_cfg.non_linear_mode);
+            ne.mac_cfg.non_linear_mode, ne.mac_cfg.padding_mode,
+            ne.mac_cfg.max_pool_mode, ne.mac_cfg.arg_output_select,
+            ne.mac_cfg.double_int8_en);
       }
 
       if (reg_valid[0x4908 / 4]) {
@@ -1763,7 +1781,8 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
           cdma_has_valid = true;
       }
       if (cdma_has_valid) {
-        ane_cachedma_h16_t cdma = *(ane_cachedma_h16_t *)&reg_values[0x5900 / 4];
+        ane_cachedma_h16_t cdma =
+            *(ane_cachedma_h16_t *)&reg_values[0x5900 / 4];
         printf("        --- CacheDMA & Telemetry (0x5900) ---\n");
         if (reg_valid[0x5900 / 4]) {
           printf("        Config: WaitSync=%d PostSync=%d EarlyTermEn=0x%x "

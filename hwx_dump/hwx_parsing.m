@@ -291,21 +291,30 @@ const char *get_m4_reg_name(uint32_t addr) {
     if (off == 0xA0)
       return "L2ResultWrapAddrOff2";
   }
+  // Auxiliary PE Indexing 0x44D0
+  if (addr >= 0x44D0 && addr <= 0x44D4) {
+    return (addr == 0x44D0) ? "PE_IndexOp" : "PE_IndexBroadcast";
+  }
   // PE 0x4500
-  if (addr >= 0x4500 && addr <= 0x4514) {
-    uint32_t off = addr - 0x4500;
-    static const char *pe_names[] = {"PEOpMode", "PEBias1", "PEScale1",
-                                     "PERaw3",   "PEBias2", "PEScale2"};
-    return pe_names[off / 4];
+  if (addr >= 0x4500 && addr <= 0x4538) {
+    uint32_t off = (addr - 0x4500) / 4;
+    static const char *pe_names[] = {
+        "PE_Config", "PE_Bias", "PE_Scale", "PE_FinalScale",
+        "PE_PreScale", "PE_FinalScale2", "PE_Res1", "PE_Res2",
+        "PE_Res3", "PE_Res4", "PE_Res5", "PE_Res6",
+        "PE_Res7", "PE_Res8", "PE_Quant"};
+    if (off < 15)
+      return pe_names[off];
   }
   // NE 0x4900
-  if (addr >= 0x4900 && addr <= 0x4920) {
-    uint32_t off = addr - 0x4900;
-    static const char *ne_names[] = {"KernelCfg",  "MACCfg",      "MatrixBias",
-                                     "AccBias",    "PostScale",   "Val4914",
-                                     "StRoundCfg", "StRoundSeed", "Val4920"};
-    if (off / 4 < 9)
-      return ne_names[off / 4];
+  if (addr >= 0x4900 && addr <= 0x492C) {
+    uint32_t off = (addr - 0x4900) / 4;
+    static const char *ne_names[] = {
+        "KernelCfg", "MACCfg",      "MatrixVectorBias", "NEBias",
+        "PostScale", "RcasConfig",  "RoundModeCfg",     "SRSeed0",
+        "SRSeed1",   "SRSeed2",     "SRSeed3",          "QuantZeroPoint"};
+    if (off < 12)
+      return ne_names[off];
   }
   // CE/CacheDMA 0x5900
   if (addr >= 0x5900 && addr <= 0x5930) {
@@ -568,25 +577,44 @@ typedef struct {
 
   // Word 3 (0x490C)
   struct {
-    uint32_t acc_bias : 21;
+    uint32_t val : 21;
     uint32_t pad0 : 11;
-  } acc_bias;
+  } ne_bias;
 
   // Word 4 (0x4910)
   struct {
-    uint32_t post_scale : 21;
+    uint32_t val : 21;
     uint32_t pad0 : 11;
   } post_scale;
 
-  uint32_t raw_4914; // Word 5 (0x4914)
+  // Word 5 (0x4914)
+  struct {
+    uint32_t key_mask : 8;    // [7:0]
+    uint32_t cmp_bit : 3;     // [10:8]
+    uint32_t pad0 : 1;        // [11]
+    uint32_t sense_axis : 2;  // [13:12]
+    uint32_t pad1 : 2;        // [15:14]
+    uint32_t sense_bit : 4;   // [19:16]
+    uint32_t mode : 1;        // [20]
+    uint32_t pad2 : 11;
+  } rcas_cfg;
+
+  // Word 6 (0x4918)
   struct {
     uint32_t round_mode : 2;   // [1:0]
     uint32_t pad0 : 2;         // [3:2]
     uint32_t integer_bits : 5; // [8:4]
     uint32_t pad1 : 23;
-  } st_round_cfg;         // Word 6 (0x4918)
-  uint32_t st_round_seed; // Word 7 (0x491C)
-  uint32_t raw_4920;      // Word 8 (0x4920)
+  } st_round_cfg;
+
+  // Words 7-10 (0x491C, 4920, 4924, 4928)
+  uint32_t st_round_seed[4];
+
+  // Word 11 (0x492C)
+  struct {
+    uint32_t quant_zero_point : 8; // [7:0]
+    uint32_t pad0 : 24;
+  } quant;
 
 } ane_ne_h16_t;
 
@@ -594,17 +622,27 @@ typedef struct {
 typedef struct {
   // Word 0 (0x4500)
   struct {
-    uint32_t op : 6;
-    uint32_t pad0 : 13;
-    uint32_t en : 1;
-    uint32_t pad1 : 12;
-  } op_mode;
+    uint32_t op : 6;        // [5:0]
+    uint32_t cond : 3;      // [8:6]
+    uint32_t pad0 : 7;      // [15:9]
+    uint32_t src1 : 1;      // [16]
+    uint32_t pad1 : 1;      // [17]
+    uint32_t src2 : 2;      // [19:18]
+    uint32_t pad2 : 12;
+  } pe_cfg;
 
-  uint32_t bias_1;   // Word 1 (0x4504)
-  uint32_t scale_1;  // Word 2 (0x4508)
-  uint32_t raw_450c; // Word 3 (0x450c)
-  uint32_t bias_2;   // Word 4 (0x4510)
-  uint32_t scale_2;  // Word 5 (0x4514)
+  uint32_t bias;          // Word 1 (0x4504)
+  uint32_t scale;         // Word 2 (0x4508)
+  uint32_t final_scale;    // Word 3 (0x450C)
+  uint32_t pre_scale;      // Word 4 (0x4510)
+  uint32_t final_scale2;   // Word 5 (0x4514)
+  uint32_t res[8];         // Words 6-13
+  struct {
+    uint32_t input_relu : 1;
+    uint32_t output_relu : 1;
+    uint32_t zero_point : 8;
+    uint32_t pad : 22;
+  } quant; // Word 14 (0x4538)
 } ane_pe_h16_t;
 
 // [0x4100] L2 Cache Control Block (M4 specific mapping)
@@ -1110,6 +1148,11 @@ uint32_t get_instruction_set_version(uint32_t subtype) {
   }
 }
 
+static float decode_f19(uint32_t val) {
+  uint32_t bits = (val & 0x7FFFF) << 13;
+  return *(float *)&bits;
+}
+
 const char *get_ch_fmt_name(uint32_t fmt) {
   switch (fmt) {
   case 0:
@@ -1613,15 +1656,34 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
       }
 
       if (reg_valid[0x490c / 4]) {
-        printf("        AccBias: 0x%06x\n", ne.acc_bias.acc_bias);
+        printf("        NEBias: 0x%06x\n", ne.ne_bias.val);
       }
 
       if (reg_valid[0x4910 / 4]) {
-        printf("        PostScale: %u\n", ne.post_scale.post_scale);
+        printf("        PostScale: 0x%06x\n", ne.post_scale.val);
       }
 
-      if (reg_valid[0x4920 / 4]) {
-        printf("        Raw[0x4920]: 0x%08x\n", ne.raw_4920);
+      if (reg_valid[0x4914 / 4]) {
+        printf("        RcasConfig: KeyMask=0x%02x CmpBit=%d SenseAxis=%d "
+               "SenseBit=%d Mode=%d\n",
+               ne.rcas_cfg.key_mask, ne.rcas_cfg.cmp_bit,
+               ne.rcas_cfg.sense_axis, ne.rcas_cfg.sense_bit,
+               ne.rcas_cfg.mode);
+      }
+
+      if (reg_valid[0x4918 / 4]) {
+        printf("        RoundModeCfg: Mode=%d IntegerBits=%d\n",
+               ne.st_round_cfg.round_mode, ne.st_round_cfg.integer_bits);
+      }
+
+      if (reg_valid[0x491c / 4]) {
+        printf("        SRSeeds: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+               ne.st_round_seed[0], ne.st_round_seed[1],
+               ne.st_round_seed[2], ne.st_round_seed[3]);
+      }
+
+      if (reg_valid[0x492c / 4]) {
+        printf("        QuantZeroPoint: %d\n", ne.quant.quant_zero_point);
       }
     }
 
@@ -1637,19 +1699,27 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
       printf("        --- Planar Engine Config ---\n");
 
       if (reg_valid[0x4500 / 4]) {
-        printf("        PEOpMode: Op=%d En=%d\n", pe.op_mode.op, pe.op_mode.en);
+        printf("        PEConfig: Op=%d Cond=%d Src1=%d Src2=%d\n",
+               pe.pe_cfg.op, pe.pe_cfg.cond, pe.pe_cfg.src1, pe.pe_cfg.src2);
       }
-      if (reg_valid[0x4504 / 4]) {
-        printf("        PEBias1: 0x%08x\n", pe.bias_1);
-      }
-      if (reg_valid[0x4508 / 4]) {
-        printf("        PEScale1: 0x%08x\n", pe.scale_1);
-      }
-      if (reg_valid[0x4510 / 4]) {
-        printf("        PEBias2: 0x%08x\n", pe.bias_2);
-      }
-      if (reg_valid[0x4514 / 4]) {
-        printf("        PEScale2: 0x%08x\n", pe.scale_2);
+      if (reg_valid[0x4504 / 4])
+        printf("        PEBias   : 0x%05x (%f)\n", pe.bias & 0x7FFFF,
+               decode_f19(pe.bias));
+      if (reg_valid[0x4508 / 4])
+        printf("        PEScale  : 0x%05x (%f)\n", pe.scale & 0x7FFFF,
+               decode_f19(pe.scale));
+      if (reg_valid[0x450c / 4])
+        printf("        PEFScale : 0x%05x (%f)\n", pe.final_scale & 0x7FFFF,
+               decode_f19(pe.final_scale));
+      if (reg_valid[0x4510 / 4])
+        printf("        PEPScale : 0x%05x (%f)\n", pe.pre_scale & 0x7FFFF,
+               decode_f19(pe.pre_scale));
+      if (reg_valid[0x4514 / 4])
+        printf("        PEFScale2: 0x%05x (%f)\n", pe.final_scale2 & 0x7FFFF,
+               decode_f19(pe.final_scale2));
+      if (reg_valid[0x4538 / 4]) {
+        printf("        PEQuant: InReLU=%d OutReLU=%d ZeroPoint=%d\n",
+               pe.quant.input_relu, pe.quant.output_relu, pe.quant.zero_point);
       }
     }
 

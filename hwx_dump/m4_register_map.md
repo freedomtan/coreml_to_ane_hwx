@@ -103,38 +103,51 @@ Size: 12 registers (`0x30` bytes).
 | **0x4928** | `+0x4c0` | **SRSeed[3]** | 32-bit Stochastic Rounding Seed 3. |
 | **0x492C** | `+0x4c4` | **QuantZeroPoint** | 8-bit Quantization Zero Point (`strb`). |
 
-### KernelDmaSrc (0x5500 block, Object `+0x030`)
-This block handles kernel-related data transfers (coefficients, bias, LUTs). The object maps to `HW 0x5500`.
+##### KernelDmaSrc (0x5500 block, Object `+0x030`)
+Size: 72 registers (`0x48` words, `0x120` bytes).
 
-- **Register 0x5500**: KernelDmaMasterEnable (Bit 6)
-- **Register 0x5508** (Object `0x38`): **KDMA_Prefetch** (PrefetchRate: Bits 16-31, EarlyTermEnable: Bit 0, StopOnError: Bit 1)
-- **Register 0x5518** (Object `0x48`): **KDMA_StrideX** (Bits 6-31)
-- **Register 0x551C** (Object `0x4C`): **KDMA_StrideY** (Bits 6-31)
-
-#### Sub-Arrays (16 indices, 0x40 bytes per array):
-- **0x5520 - 0x555C** (Object `0x50`): **CoeffDMAConfig** [0-15]
-  - Formats: Enable (Bit 0), CacheHint (Bits 4-7), UserTag (Bits 16-23)
-- **0x5560 - 0x559C** (Object `0x90`): **CoeffBaseAddr** [0-15]
-  - Formats: Base Offset (Bits 0-31, 64-byte aligned)
-- **0x55A0 - 0x55DC** (Object `0xD0`): **CoeffBfrSize** [0-15]
-  - Formats: Buffer Size (Bits 0-31, 64-byte aligned)
-
-#### Metadata Transfers:
-- **Register 0x55E0** (Object `0x110`): **Bias DMAConfig** (Enable: Bit 0, CacheHint: Bits 4-7, UserTag: Bits 16-23)
-- **Register 0x55F0** (Object `0x120`): **PostScale DMAConfig** (Enable: Bit 0, CacheHint: Bits 4-7, UserTag: Bits 16-23)
-- **Register 0x5600** (Object `0x130`): **PaletteLut DMAConfig** (Enable: Bit 0, CacheHint: Bits 4-7, UserTag: Bits 16-23)
-- **Register 0x5610** (Object `0x140`): **NonLinearLut DMAConfig** (Enable: Bit 0, CacheHint: Bits 4-7, UserTag: Bits 16-23)
+| HW Addr | Index | Name | Bit-Field Mapping |
+| :--- | :--- | :--- | :--- |
+| **0x5500** | Word 0 | **KDMA_MasterConfig** | **MasterEnable**: 6. |
+| **0x5504** | Word 1 | **KDMA_Reserved1** | Unknown. |
+| **0x5508** | Word 2 | **KDMA_Prefetch** | **EarlyTermEn**: 0, **StopOnError**: 1, **PrefetchRate**: 16-31. |
+| **0x550C** | Word 3 | **KDMA_Reserved2** | Unknown. |
+| **0x5518** | Word 6 | **KDMA_StrideX** | Stride X (Bits 6-31). |
+| **0x551C** | Word 7 | **KDMA_StrideY** | Stride Y (Bits 6-31). |
+| **0x5520-0x555C**| Words 8-23 | **CoeffDMAConfig[16]**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5560-0x559C**| Words 24-39| **CoeffBaseAddr[16]** | Base Offset (Bits 6-31, 64-byte aligned). |
+| **0x55A0-0x55DC**| Words 40-55| **CoeffBfrSize[16]** | Buffer Size (Bits 0-31). |
+| **0x55E0** | Word 56 | **BiasDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
+| **0x55F0** | Word 60 | **PostScaleDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
+| **0x5600** | Word 64 | **PaletteDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
+| **0x5610** | Word 68 | **NLutDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
 
 ### TileDMA Source (0x4D00 block, Object `+0x25c`)
-- **Word 0 (0x4D00)**: **Src1DMAConfig** (Enable: Bit 0, CacheHint: Bits 4-7, DependencyMode: Bits 28-29)
-- **Word 1 (0x4D04)**: **Src2DMAConfig** (Enable: Bit 0, CacheHint: Bits 4-7)
-- **Word 6 (0x4D18)**: **Src1RowStride** (Bits 6-31)
-- **Word 7 (0x4D1C)**: **Src1PlaneStride** (Bits 6-31)
-- **Word 8 (0x4D20)**: **Src1DepthStride** (Bits 6-31)
-- **Word 9 (0x4D24)**: **Src1GroupStride** (Bits 6-31)
-- **Word 26 (0x4D68)**: **Src1Fmt** (Bits 12-13: 0=Planar, 1=Interleaved)
-- **Word 38 (0x4D98)**: **Src1PixelOffset** (16 bytes packed)
-- **Word 42 (0x4DA8)**: **Src2PixelOffset** (16 bytes packed)
+Size: 81 registers (`0x51` words, `0x144` bytes).
+
+| HW Addr | Index | Name | Bit-Field Mapping |
+| :--- | :--- | :--- | :--- |
+| **0x4D00** | Word 0 | **Src1DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **Format**: 24-27. |
+| **0x4D04** | Word 1 | **Src2DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **DependencyMode**: 28-29. |
+| **0x4D08** | Word 2 | **Src1BaseAddrLo** | Lower 32 bits of 64-bit base address. |
+| **0x4D0C** | Word 3 | **Src1BaseAddrHi** | Upper 32 bits of 64-bit base address. |
+| **0x4D10** | Word 4 | **Src2BaseAddrLo** | Lower 32 bits (likely, needs confirmation). |
+| **0x4D14** | Word 5 | **Src2BaseAddrHi** | Upper 32 bits (likely). |
+| **0x4D18** | Word 6 | **Src1RowStride** | Row stride (Bits 6-31). |
+| **0x4D1C** | Word 7 | **Src1PlaneStride** | Channel (Plane) stride (Bits 6-31). |
+| **0x4D20** | Word 8 | **Src1DepthStride** | Depth stride (Bits 6-31). |
+| **0x4D24** | Word 9 | **Src1GroupStride** | Group stride (Bits 6-31). |
+| **0x4D30** | Word 12 | **Src2RowStride** | Row stride (Bits 6-31). |
+| **0x4D34** | Word 13 | **Src2PlaneStride** | Channel (Plane) stride (Bits 6-31). |
+| **0x4D38** | Word 14 | **Src2DepthStride** | Depth stride (Bits 6-31). |
+| **0x4D3C** | Word 15 | **Src2GroupStride** | Group stride (Bits 6-31). |
+| **0x4D50** | Word 20 | **Src1MetaDataAddrLo**| MetaData Buffer Lo (Bits 0-31). |
+| **0x4D58** | Word 22 | **Src1MetaDataSize** | MetaData Size / Config. |
+| **0x4D5C** | Word 23 | **Src2MetaDataAddrLo**| MetaData Buffer Lo (Bits 0-31). |
+| **0x4D64** | Word 25 | **Src2MetaDataSize** | MetaData Size / Config. |
+| **0x4D68** | Word 26 | **Src1Fmt** | Interleave Mode (Bits 12-13). |
+| **0x4D98** | Word 38 | **Src1PixelOffset** | Cropping Offset (H: 0-13, W: 16-29... 16 bytes). |
+| **0x4DA8** | Word 42 | **Src2PixelOffset** | Cropping Offset (H: 0-13, W: 16-29... 16 bytes). |
 
 ### TileDMA Destination (0x5100 block, Object `+0x4d0`)
 Size: 21 registers (`0x15` words, `0x54` bytes).

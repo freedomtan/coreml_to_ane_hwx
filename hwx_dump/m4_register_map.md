@@ -137,12 +137,31 @@ This block handles kernel-related data transfers (coefficients, bias, LUTs). The
 - **Word 42 (0x4DA8)**: **Src2PixelOffset** (16 bytes packed)
 
 ### TileDMA Destination (0x5100 block, Object `+0x4d0`)
-- **Word 0 (0x5100)**: **DstDMAConfig** (Enable: Bit 0, CacheHint: Bits 4-7)
-- **Word 4 (0x5110)**: **DstRowStride** (Bits 6-31)
-- **Word 5 (0x5114)**: **DstPlaneStride** (Bits 6-31)
-- **Word 6 (0x5118)**: **DstDepthStride** (Bits 6-31)
-- **Word 7 (0x511C)**: **DstGroupStride** (Bits 6-31)
-- **Word 14 (0x5138)**: **DstFmt** (Bits 12-13)
+Size: 21 registers (`0x15` words, `0x54` bytes).
+
+| HW Addr | Index | Name | Bit-Field Mapping |
+| :--- | :--- | :--- | :--- |
+| **0x5100** | Word 0 | **DstDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5104** | Word 1 | **DstPadding** | Reserved / Padding Mode. |
+| **0x5108** | Word 2 | **DstBaseAddrLo**| Lower 32 bits of 64-bit output base address. |
+| **0x510C** | Word 3 | **DstBaseAddrHi**| Upper 32 bits of 64-bit output base address. |
+| **0x5110** | Word 4 | **DstRowStride** | Row stride (Bits 6-31). |
+| **0x5114** | Word 5 | **DstPlaneStride**| Channel (Plane) stride (Bits 6-31). |
+| **0x5118** | Word 6 | **DstDepthStride**| Depth stride (Bits 6-31). |
+| **0x511C** | Word 7 | **DstGroupStride**| Group stride (Bits 6-31). |
+| **0x5120** | Word 8 | **DstInternalCfg**| **InternalBits**: 0-15, **Flag1**: 16, **Flag2**: 17, **Flag3**: 18. (Set by `SetDmaDstInternal`). |
+| **0x5124** | Word 9 | **DstReserved1** | Unknown. |
+| **0x5128** | Word 10| **DstMetaDataAddrLo**| MetaData Buffer Lo (Bits 0-31). |
+| **0x512C** | Word 11| **DstMetaDataAddrHi**| MetaData Buffer Hi (Bits 32-63). |
+| **0x5130** | Word 12| **DstFmtMode** | **FormatMode**: 0-1, **MetaDataSize**: 7-31. |
+| **0x5134** | Word 13| **DstReserved2** | Unknown. |
+| **0x5138** | Word 14| **DstCompStatus** | **IsCompressed**: 0. |
+| **0x513C** | Word 15| **DstReserved3** | Unknown. |
+| **0x5140** | Word 16| **DstCompressionCfg**| **PackingFmt**: 4-7, **MacroblockSize**: 12-13. (Set by `SetTileDmaDstCompressedInfo`). |
+| **0x5144** | Word 17| **DstReserved4** | Unknown. |
+| **0x5148** | Word 18| **DstCompSizeLo** | Output Compressed Size (Bits 0-31). |
+| **0x514C** | Word 19| **DstCompSizeHi** | Output Compressed Size (Bits 32-63). |
+| **0x5150** | Word 20| **DstPixelOffset** | Pixel/Crop offsets (See `GetCropOffsetDstY`). |
 ### CacheDMA / Telemetry (0x5900 block, Object `+0x52c`)
 This block handles telemetry, caching hints, and task synchronization.
 Size: 12 registers (`0x30` bytes, `0x0c` words).

@@ -29,7 +29,60 @@ The `.hwx` file is a customized Mach-O binary.
 
 - **Location of Tasks**: ANE tasks are stored in the `__TEXT` segment, `__text` section.
 
-## 2. M1 Architecture (v7)
+## 2. Register Naming Discovery (H16/M4)
+
+To discover register names and bit-accurate fields for the H16 (M4) architecture, analyze the `ANECompiler` binary using two primary classes: `ZinAneTd<17u>` (setters/descriptor state) and `ZinGetRegisterProgramming<17u>` (getters/hardware constraints).
+
+### 1. Structural Mapping
+The compiler uses an internal array within `ZinAneTd<17u>` to store the Task Descriptor state.
+- **Wait on `this`**: `Set` methods operate on the absolute base of the object (`this`).
+- **Wait on `this + 8`**: `Get` methods (via `ZinGetRegisterProgramming`) operate on the `ZinAneTdHw_v17` sub-structure, which is offset by `+8` bytes (2 words).
+
+| Logic Type | Method Prefix | Operation Base | Note |
+| :--- | :--- | :--- | :--- |
+| **Setters** | `ZinAneTd<17u>::Set*` | `this` | Writes to internal offsets. |
+| **Getters** | `ZinGetRegisterProgramming<17u>::Get*` | `this + 0x8` | Reads internal state for HW programming. |
+
+### 2. Identifying Hardware Addresses
+Internal offsets correlate directly to hardware register addresses.
+- **Formula**: `(Internal Word Offset) * 4` = `Hardware Address`.
+- **Known Blocks**:
+    - `+0x454` Word -> `0x1150` -> Block `0x4500` (PE)
+    - `+0x498` Word -> `0x1260` -> Block `0x4900` (NE)
+
+### 3. Disassembly Analysis Patterns
+
+#### Identifying Fields (bfi)
+The `bfi` (Bit Field Insert) instruction is the primary indicator of a register's bit layout.
+```asm
+; Example: SetNEBinaryPoint(int)
+1e4492db0: b9449c08    ldr  w8, [x0, #0x49c]    ; Load MACCfg register
+1e4492db4: 33181428    bfi  w8, w1, #8, #6      ; Insert argument at Bit 8, Size 6
+1e4492db8: b9049c08    str  w8, [x0, #0x49c]    ; Store back
+```
+- **Target**: Offset `+0x49c` (HW `0x4904`).
+- **Field**: BinaryPoint = Bits 8-13.
+
+#### Identifying Flags (orr)
+Single-bit flags often use immediate `orr`.
+```asm
+; Example: SetKernelAsymQuantEn(bool)
+1e4492d04: 12077908    and  w8, w8, #0xfeffffff ; Clear bit 24
+1e4492d08: 2a090108    orr  w8, w8, w9         ; Set bit 24 if true
+```
+- **Field**: AsymQuantEn = Bit 24.
+
+### 4. Cross-Referencing Getters
+Getters confirm how the hardware block views the data.
+```asm
+; Example: GetWin(ZinAneTdHw_v17 const&)
+1e459a534: b941f400    ldr  w0, [x0, #0x1f4]
+```
+- **Input**: `this + 8`.
+- **Read**: `0x1f4 + 0x8 = 0x1FC`.
+- **Mapping**: `0x1FC` word -> HW Offset `0x1FC * 4` = `0x7F0` (Geometry register 1).
+
+## 3. M1 Architecture (v7)
 
 M1 uses a **Linked-List** task structure with a **Stream Payload** for register configuration.
 
@@ -60,7 +113,7 @@ Immediately following the header (at offset `0x28`) is the register stream. Each
 - **Data Words**:
     - The next `count + 1` words are written sequentially starting at the target word address.
 
-## 3. M4 Architecture (v11+)
+## 4. M4 Architecture (v11+)
 
 M4 uses an **Aligned Array** task structure with a **Dense Instruction** format (Burst/Scatter).
 
@@ -98,7 +151,7 @@ The payload consists of command headers that specify sequential (Burst) or maske
     1. The first word following the header is ALWAYS written to `base_address`.
     2. For each bit $i$ set in the mask (0-15), the next word in the stream is written to `base_address + i + 1`.
 
-## 4. Hardware Block Memory Map
+## 5. Hardware Block Memory Map
 
 Registers are grouped into functional blocks. Note the base address shift between architectures.
 
@@ -113,7 +166,7 @@ Registers are grouped into functional blocks. Note the base address shift betwee
 | **KernelDMA** | `0x1F800` | `0x5500` | Weight and bias loading. |
 | **CacheDMA** | N/A | `0x5900` | Telemetry and cache management (M4+). |
 
-## 5. Parsing Workflow
+## 6. Parsing Workflow
 
 1.  **Open HWX**: Read Mach-O header and verify `0xbeefface`.
 2.  **Identify Architecture**: Check `cpusubtype` to choose parsing logic.

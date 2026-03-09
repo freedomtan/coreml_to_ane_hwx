@@ -112,6 +112,8 @@ Size: 72 registers (`0x48` words, `0x120` bytes).
 | **0x5504** | Word 1 | **KDMA_Reserved1** | Unknown. |
 | **0x5508** | Word 2 | **KDMA_Prefetch** | **EarlyTermEn**: 0, **StopOnError**: 1, **PrefetchRate**: 16-31. |
 | **0x550C** | Word 3 | **KDMA_Reserved2** | Unknown. |
+| **0x5510** | Word 4 | **KDMA_Reserved3** | Unknown. |
+| **0x5514** | Word 5 | **KDMA_Reserved4** | Unknown. |
 | **0x5518** | Word 6 | **KDMA_StrideX** | Stride X (Bits 6-31). |
 | **0x551C** | Word 7 | **KDMA_StrideY** | Stride Y (Bits 6-31). |
 | **0x5520-0x555C**| Words 8-23 | **CoeffDMAConfig[16]**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
@@ -131,23 +133,29 @@ Size: 81 registers (`0x51` words, `0x144` bytes).
 | **0x4D04** | Word 1 | **Src2DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **DependencyMode**: 28-29. |
 | **0x4D08** | Word 2 | **Src1BaseAddrLo** | Lower 32 bits of 64-bit base address. |
 | **0x4D0C** | Word 3 | **Src1BaseAddrHi** | Upper 32 bits of 64-bit base address. |
-| **0x4D10** | Word 4 | **Src2BaseAddrLo** | Lower 32 bits (likely, needs confirmation). |
-| **0x4D14** | Word 5 | **Src2BaseAddrHi** | Upper 32 bits (likely). |
+| **0x4D10** | Word 4 | **Src2BaseAddrLo** | Lower 32 bits of 64-bit base address. |
+| **0x4D14** | Word 5 | **Src2BaseAddrHi** | Upper 32 bits of 64-bit base address. |
 | **0x4D18** | Word 6 | **Src1RowStride** | Row stride (Bits 6-31). |
 | **0x4D1C** | Word 7 | **Src1PlaneStride** | Channel (Plane) stride (Bits 6-31). |
 | **0x4D20** | Word 8 | **Src1DepthStride** | Depth stride (Bits 6-31). |
 | **0x4D24** | Word 9 | **Src1GroupStride** | Group stride (Bits 6-31). |
+| **0x4D28** | Word 10 | **Src2Config** | Reserved / Mode Flags. |
+| **0x4D2C** | Word 11 | **Src2Padding** | Reserved / Padding Mode. |
 | **0x4D30** | Word 12 | **Src2RowStride** | Row stride (Bits 6-31). |
 | **0x4D34** | Word 13 | **Src2PlaneStride** | Channel (Plane) stride (Bits 6-31). |
 | **0x4D38** | Word 14 | **Src2DepthStride** | Depth stride (Bits 6-31). |
 | **0x4D3C** | Word 15 | **Src2GroupStride** | Group stride (Bits 6-31). |
+| **0x4D40** | Word 16 | **Src1MetaDataConfig**| MetaData Enable/Flags. |
 | **0x4D50** | Word 20 | **Src1MetaDataAddrLo**| MetaData Buffer Lo (Bits 0-31). |
+| **0x4D54** | Word 21 | **Src1MetaDataAddrHi**| MetaData Buffer Hi (Bits 32-63). |
 | **0x4D58** | Word 22 | **Src1MetaDataSize** | MetaData Size / Config. |
 | **0x4D5C** | Word 23 | **Src2MetaDataAddrLo**| MetaData Buffer Lo (Bits 0-31). |
+| **0x4D60** | Word 24 | **Src2MetaDataAddrHi**| MetaData Buffer Hi (Bits 32-63). |
 | **0x4D64** | Word 25 | **Src2MetaDataSize** | MetaData Size / Config. |
 | **0x4D68** | Word 26 | **Src1Fmt** | Interleave Mode (Bits 12-13). |
-| **0x4D98** | Word 38 | **Src1PixelOffset** | Cropping Offset (H: 0-13, W: 16-29... 16 bytes). |
-| **0x4DA8** | Word 42 | **Src2PixelOffset** | Cropping Offset (H: 0-13, W: 16-29... 16 bytes). |
+| **0x4D6C** | Word 27 | **Src2Fmt** | Interleave Mode (Bits 12-13). |
+| **0x4D98** | Word 38 | **Src1PixelOffset** | Cropping Offset (H: 0-13, W: 16-29, D: 32-45... 16 bytes). |
+| **0x4DA8** | Word 42 | **Src2PixelOffset** | Cropping Offset (H: 0-13, W: 16-29, D: 32-45... 16 bytes). |
 
 ### TileDMA Destination (0x5100 block, Object `+0x4d0`)
 Size: 21 registers (`0x15` words, `0x54` bytes).

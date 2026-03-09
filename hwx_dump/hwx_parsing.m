@@ -249,47 +249,24 @@ const char *get_m4_reg_name(uint32_t addr) {
     return common_names[addr / 4];
   }
   // L2 0x4100
-  if (addr >= 0x4100 && addr <= 0x41A4) {
+  if (addr >= 0x4100 && addr <= 0x41A0) {
     uint32_t off = addr - 0x4100;
-    if (off == 0x00)
-      return "L2BfrCfg";
-    if (off == 0x04)
-      return "L2Src1Cfg";
-    if (off == 0x08)
-      return "L2Src2Cfg";
-    if (off >= 0x10 && off <= 0x20) {
-      static const char *s1[] = {"L2Src1BaseAddr", "L2Src1PlaneStride",
-                                 "L2Src1RowStride", "L2Src1DepthStride",
-                                 "L2Src1GroupStride"};
-      return s1[(off - 0x10) / 4];
-    }
-    if (off >= 0x24 && off <= 0x34) {
-      static const char *s2[] = {"L2Src2BaseAddr", "L2Src2PlaneStride",
-                                 "L2Src2RowStride", "L2Src2DepthStride",
-                                 "L2Src2GroupStride"};
-      return s2[(off - 0x24) / 4];
-    }
-    if (off >= 0x38 && off <= 0x44) {
-      static const char *si[] = {"L2SrcIdxBaseAddr", "L2SrcIdxPlaneStride",
-                                 "L2SrcIdxDepthStride", "L2SrcIdxGroupStride"};
-      return si[(off - 0x38) / 4];
-    }
-    if (off == 0x48)
-      return "L2ResultCfg";
-    if (off >= 0x4C && off <= 0x5C) {
-      static const char *res[] = {"L2ResultBaseAddr", "L2ResultPlaneStride",
-                                  "L2ResultRowStride", "L2ResultDepthStride",
-                                  "L2ResultGroupStride"};
-      return res[(off - 0x4C) / 4];
-    }
-    if (off == 0x64)
-      return "L2ResultWrapCfg";
-    if (off == 0x74)
-      return "L2ResultWrapIndex";
-    if (off == 0x9C)
-      return "L2ResultWrapAddrOff1";
-    if (off == 0xA0)
-      return "L2ResultWrapAddrOff2";
+    uint32_t word_off = off / 4;
+    static const char *l2_names[] = {
+        "L2_Control",      "L2_Src1Cfg",      "L2_Src2Cfg",      "L2_Pad3",
+        "L2_Src1Base",     "L2_Src1CStride",  "L2_Src1RStride",  "L2_Src1DStride",
+        "L2_Src1GStride",  "L2_Src2Base",     "L2_Src2CStride",  "L2_Src2RStride",
+        "L2_Src2DStride",  "L2_Src2GStride",  "L2_SrcIdxBase",   "L2_SrcIdxCStride",
+        "L2_SrcIdxDStride", "L2_SrcIdxGStride", "L2_ResultCfg",  "L2_ResultBase",
+        "L2_ResultCStride", "L2_ResultRStride", "L2_ResultDStride", "L2_ResultGStride",
+        "L2_Res24",        "L2_ResultWrapCfg", "L2_Res26",        "L2_Res27",
+        "L2_Res28",        "L2_ResultWrapIdxOff", "L2_Res30",     "L2_Result2Base",
+        "L2_Result2CStride", "L2_Result2RStride", "L2_Result2DStride", "L2_Result2GStride",
+        "L2_Res36",        "L2_Res37",        "L2_Res38",        "L2_ResultWrapAddr",
+        "L2_Res40"
+    };
+    if (word_off < 41)
+      return l2_names[word_off];
   }
   // Auxiliary PE Indexing 0x44D0
   if (addr >= 0x44D0 && addr <= 0x44D4) {
@@ -645,14 +622,47 @@ typedef struct {
   } quant; // Word 14 (0x4538)
 } ane_pe_h16_t;
 
-// [0x4100] L2 Cache Control Block (M4 specific mapping)
+// [0x4100] L2 Cache Control Block (M4 specific mapping - 41 registers)
 typedef struct {
-  uint32_t l2cfg;   // Word 0
-  uint32_t src1cfg; // Word 1
-  uint32_t src2cfg; // Word 2
-  uint32_t pad0;    // Word 3
+  // Word 0 (0x4100)
+  struct {
+    uint32_t pad0 : 2;
+    uint32_t padding_mode : 2; // [3:2]
+    uint32_t src1_fifo : 1;    // [4]
+    uint32_t pad1 : 1;
+    uint32_t src1_double : 1;  // [6]
+    uint32_t pad2 : 9;
+    uint32_t barrier : 1;      // [16]
+    uint32_t pad3 : 15;
+  } l2_control;
 
-  // Dense 17-bit packed tensor block (Bits 4:20)
+  // Word 1 (0x4104)
+  struct {
+    uint32_t pad0 : 2;
+    uint32_t src_type : 2;      // [3:2]
+    uint32_t pad1 : 2;
+    uint32_t dma_fmt : 2;       // [7:6]
+    uint32_t interleave : 4;    // [11:8]
+    uint32_t offset_y_lsbs : 4; // [15:12]
+    uint32_t pad2 : 9;
+    uint32_t compression : 1;   // [25]
+    uint32_t pad3 : 6;
+  } src1_cfg;
+
+  // Word 2 (0x4108)
+  struct {
+    uint32_t pad0 : 2;
+    uint32_t src_type : 2;      // [3:2]
+    uint32_t pad1 : 4;
+    uint32_t interleave : 4;    // [11:8]
+    uint32_t pad2 : 13;
+    uint32_t compression : 1;   // [25]
+    uint32_t pad3 : 6;
+  } src2_cfg;
+
+  uint32_t l2_pad3; // Word 3 (0x410c)
+
+  // Dense 17-bit packed tensor blocks (Bits 4:20)
   struct {
     uint32_t base : 17;
     uint32_t pad0 : 15;
@@ -688,9 +698,20 @@ typedef struct {
     uint32_t pad2 : 15;
     uint32_t group_stride : 17;
     uint32_t pad3 : 15;
-  } srcidx; // Words 14-17 (No RowStride)
+  } srcidx; // Words 14-17
 
-  uint32_t resultcfg; // Word 18
+  // Word 18 (0x4148)
+  struct {
+    uint32_t pad0 : 3;
+    uint32_t bfr_mode : 1;      // [3]
+    uint32_t crop_offset_x : 3; // [6:4]
+    uint32_t pad1 : 1;
+    uint32_t interleave : 4;    // [11:8]
+    uint32_t res_type : 2;      // [13:12]
+    uint32_t pad2 : 11;
+    uint32_t compression : 1;   // [25]
+    uint32_t pad3 : 6;
+  } result_cfg;
 
   struct {
     uint32_t base : 17;
@@ -705,7 +726,49 @@ typedef struct {
     uint32_t pad4 : 15;
   } result; // Words 19-23
 
-} ane_l2_h16_t;
+  uint32_t l2_res24; // 0x4160
+  uint32_t l2_res25; // 0x4164 (WrapCfg)
+  uint32_t l2_res26; // 0x4168
+  uint32_t l2_res27; // 0x416c
+  uint32_t l2_res28; // 0x4170
+
+  // Word 29 (0x4174)
+  struct {
+    uint32_t wrap_index : 16;
+    uint32_t wrap_start_offset : 16;
+  } result_wrap_idx_off;
+
+  uint32_t l2_res30; // 0x4178
+
+  // Words 31-35 (Secondary Result)
+  struct {
+    uint32_t base : 17;
+    uint32_t pad0 : 15;
+    uint32_t channel_stride : 17;
+    uint32_t pad1 : 15;
+    uint32_t row_stride : 17;
+    uint32_t pad2 : 15;
+    uint32_t depth_stride : 17;
+    uint32_t pad3 : 15;
+    uint32_t group_stride : 17;
+    uint32_t pad4 : 15;
+  } result2;
+
+  uint32_t l2_res36; // 0x4190
+  uint32_t l2_res37; // 0x4194
+  uint32_t l2_res38; // 0x4198
+
+  // Word 39 (0x419c)
+  struct {
+    uint32_t wrap_addr : 12;
+    uint32_t pad0 : 4;
+    uint32_t wrap_addr_offset : 11;
+    uint32_t pad1 : 5;
+  } result_wrap_addr;
+
+  uint32_t l2_res40; // 0x41a0
+
+} __attribute__((packed)) ane_l2_h16_t;
 
 // [0x0000] M1 Common Registers
 typedef struct {
@@ -1723,9 +1786,9 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
       }
     }
 
-    // Decode 0x4100 L2 Block
+    // Decode 0x4100 L2 Block (41 registers)
     bool l2_has_valid = false;
-    for (int i = 0x4100 / 4; i < 0x4100 / 4 + 32; i++) {
+    for (int i = 0x4100 / 4; i < 0x4100 / 4 + 41; i++) {
       if (reg_valid[i])
         l2_has_valid = true;
     }
@@ -1734,29 +1797,62 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
       ane_l2_h16_t l2 = *(ane_l2_h16_t *)&reg_values[0x4100 / 4];
       printf("        --- L2 Cache Control ---\n");
 
+      if (reg_valid[0x4100 / 4]) {
+        printf("        L2Control: Padding=%d Src1FIFO=%d Src1Double=%d Barrier=%d\n",
+               l2.l2_control.padding_mode, l2.l2_control.src1_fifo,
+               l2.l2_control.src1_double, l2.l2_control.barrier);
+      }
+      if (reg_valid[0x4104 / 4]) {
+        printf("        Src1Cfg  : Type=%d DmaFmt=%d Interleave=%d OffY=%d Comp=%d\n",
+               l2.src1_cfg.src_type, l2.src1_cfg.dma_fmt, l2.src1_cfg.interleave, 
+               l2.src1_cfg.offset_y_lsbs, l2.src1_cfg.compression);
+      }
+      if (reg_valid[0x4108 / 4]) {
+        printf("        Src2Cfg  : Type=%d Interleave=%d Comp=%d\n", 
+               l2.src2_cfg.src_type, l2.src2_cfg.interleave, l2.src2_cfg.compression);
+      }
       if (reg_valid[0x4110 / 4]) {
-        printf("        Src1 : BaseAddr=0x%05x PlaneStride=0x%05x "
-               "RowStride=0x%05x DepthStride=0x%05x GroupStride=0x%05x\n",
+        printf("        Src1  : BaseAddr=0x%05x CStride=0x%05x "
+               "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
                l2.src1.base, l2.src1.channel_stride, l2.src1.row_stride,
                l2.src1.depth_stride, l2.src1.group_stride);
       }
       if (reg_valid[0x4124 / 4]) {
-        printf("        Src2 : BaseAddr=0x%05x PlaneStride=0x%05x "
-               "RowStride=0x%05x DepthStride=0x%05x GroupStride=0x%05x\n",
+        printf("        Src2  : BaseAddr=0x%05x CStride=0x%05x "
+               "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
                l2.src2.base, l2.src2.channel_stride, l2.src2.row_stride,
                l2.src2.depth_stride, l2.src2.group_stride);
       }
       if (reg_valid[0x4138 / 4]) {
-        printf("        SrcIdx: BaseAddr=0x%05x PlaneStride=0x%05x "
-               "DepthStride=0x%05x GroupStride=0x%05x\n",
+        printf("        SrcIdx: BaseAddr=0x%05x CStride=0x%05x "
+               "DStride=0x%05x GStride=0x%05x\n",
                l2.srcidx.base, l2.srcidx.channel_stride, l2.srcidx.depth_stride,
                l2.srcidx.group_stride);
       }
+      if (reg_valid[0x4148 / 4]) {
+        printf("        ResCfg: BfrMode=%d CropX=%d Interleave=%d Type=%d Comp=%d\n",
+               l2.result_cfg.bfr_mode, l2.result_cfg.crop_offset_x,
+               l2.result_cfg.interleave, l2.result_cfg.res_type, l2.result_cfg.compression);
+      }
       if (reg_valid[0x414c / 4]) {
-        printf("        Result: BaseAddr=0x%05x PlaneStride=0x%05x "
-               "RowStride=0x%05x DepthStride=0x%05x GroupStride=0x%05x\n",
+        printf("        Result: BaseAddr=0x%05x CStride=0x%05x "
+               "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
                l2.result.base, l2.result.channel_stride, l2.result.row_stride,
                l2.result.depth_stride, l2.result.group_stride);
+      }
+      if (reg_valid[0x417c / 4]) {
+        printf("        Res2 / L2Wr: BaseAddr=0x%05x CStride=0x%05x "
+               "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
+               l2.result2.base, l2.result2.channel_stride, l2.result2.row_stride,
+               l2.result2.depth_stride, l2.result2.group_stride);
+      }
+      if (reg_valid[0x4174 / 4]) {
+        printf("        ResultWrap: Index=0x%x StartOffset=0x%x\n",
+               l2.result_wrap_idx_off.wrap_index, l2.result_wrap_idx_off.wrap_start_offset);
+      }
+      if (reg_valid[0x419c / 4]) {
+        printf("        ResultWrap: Addr=0x%x AddrOffset=0x%x\n",
+               l2.result_wrap_addr.wrap_addr, l2.result_wrap_addr.wrap_addr_offset);
       }
     }
 

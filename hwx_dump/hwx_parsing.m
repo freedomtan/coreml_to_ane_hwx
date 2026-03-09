@@ -297,11 +297,10 @@ const char *get_m4_reg_name(uint32_t addr) {
   if (addr >= 0x5900 && addr <= 0x5930) {
     uint32_t off = addr - 0x5900;
     static const char *cdma_names[] = {
-        "CacheDMAConfig",  "CacheDMAPre0",  "CacheDMAPre1",  "CacheDMAPad3",
-        "CacheDMAPad4",    "CacheDMAPad5",  "CacheDMAPre2",  "CacheDMAPre3",
-        "CacheDMATerm0",   "CacheDMATerm1", "CacheDMATerm2", "CacheDMATerm3",
-        "TelemetryBackOff"};
-    if (off / 4 < 13)
+        "CacheDMAControl",  "CacheDMAPre0",  "CacheDMAPre1",  "CacheDMAPad3",
+        "CacheDMAPad4",    "CacheDMAPad5",  "CacheDMADsid",  "CacheDMAFootprint",
+        "EarlyTermArg12",   "CacheDMAFlushArg", "EarlyTermArg34", "TelemetryBackOff"};
+    if (off / 4 < 12)
       return cdma_names[off / 4];
   }
   // TileDMA Src 0x4D00
@@ -437,18 +436,68 @@ typedef struct {
 } __attribute__((packed)) ane_kerneldma_src_h16_t;
 
 typedef struct {
-  uint32_t config; // 0x5900: bits[3:2]: TaskSync, [6:4]: EarlyTerm, [16:31]:
-                   // Footprint
-  uint32_t
-      pre0; // 0x5904: [9:0]: BWLimit, [19:16]: Sieve2, [23:20]: TelemetryAgeOut
-  uint32_t pre1; // 0x5908: [13:0]: Sieve1
-  uint32_t pad0[3];
-  uint32_t pre2_term; // 0x5918: [0:15]: DSIDSize (low), [16:31]: EarlyTerm0 (H)
-  uint32_t pre3;      // 0x591c: [27:17]: Footprint2
-  uint32_t term1_low; // 0x5920: [16:31]: EarlyTerm1 (H)
-  uint32_t pad1;      // 0x5924
-  uint32_t term2_3;   // 0x5928: [0:7]: EarlyTerm2 (B), [16:23]: EarlyTerm3 (B)
-  uint32_t backoff;   // 0x592c: TelemetryBackOff
+  struct {
+    uint32_t flush : 1;             // Bit 0
+    uint32_t enable : 1;            // Bit 1
+    uint32_t task_sync : 2;         // Bits 2-3 (WaitPrev:3, PostDone:2)
+    uint32_t early_term : 5;        // Bits 4-8
+    uint32_t footprint_limiter : 1; // Bit 9
+    uint32_t pad1 : 6;              // Bits 10-15
+    uint32_t footprint_threshold : 16; // Bits 16-31
+  } control; // 0x5900 (Word 0)
+
+  struct {
+    uint32_t bandwidth_limit : 10;  // Bits 0-9
+    uint32_t pad0 : 6;              // Bits 10-15
+    uint32_t sieve2 : 4;            // Bits 16-19
+    uint32_t telemetry_age_out : 4; // Bits 20-23
+    uint32_t pad1 : 8;              // Bits 24-31
+  } pre0; // 0x5904 (Word 1)
+
+  struct {
+    uint32_t sieve1 : 14;           // Bits 0-13
+    uint32_t pad0 : 18;             // Bits 14-31
+  } pre1; // 0x5908 (Word 2)
+
+  uint32_t pad0[3]; // 0x590c, 0x5910, 0x5914
+
+  struct {
+    uint32_t pad0 : 7;              // Bits 0-6
+    uint32_t dsid_and_size : 23;    // Bits 7-29
+    uint32_t pad1 : 2;              // Bits 30-31
+  } dsid; // 0x5918 (Word 6)
+
+  struct {
+    uint32_t pad0 : 17;             // Bits 0-16
+    uint32_t footprint_arg2 : 11;   // Bits 17-27
+    uint32_t pad1 : 4;              // Bits 28-31
+  } footprint_arg; // 0x591c (Word 7)
+
+  struct {
+    uint16_t arg1;                  // Bits 0-15 (Half)
+    uint16_t arg2;                  // Bits 16-31 (Half)
+  } early_term_arg12; // 0x5920 (Word 8)
+
+  struct {
+    uint16_t flush_arg;             // Bits 0-15 (Half)
+    uint16_t pad0;                  // Bits 16-31
+  } flush_reg; // 0x5924 (Word 9)
+
+  struct {
+    uint8_t arg3;                   // Bits 0-7 (Byte)
+    uint8_t pad0;                   // Bits 8-15
+    uint8_t arg4;                   // Bits 16-23 (Byte)
+    uint8_t pad1;                   // Bits 24-31
+  } early_term_arg34; // 0x5928 (Word 10)
+
+  struct {
+    uint32_t enable : 1;            // Bit 0
+    uint32_t pad0 : 3;              // Bits 1-3
+    uint32_t delay : 4;             // Bits 4-7
+    uint32_t min : 8;               // Bits 8-15
+    uint32_t max : 8;               // Bits 16-23
+    uint32_t scale : 8;             // Bits 24-31
+  } backoff; // 0x592c (Word 11)
 } __attribute__((packed)) ane_cachedma_h16_t;
 
 // [0x4D00] TileDMA Source Block
@@ -1951,42 +2000,40 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
             *(ane_cachedma_h16_t *)&reg_values[0x5900 / 4];
         printf("        --- CacheDMA & Telemetry (0x5900) ---\n");
         if (reg_valid[0x5900 / 4]) {
-          printf("        Config: WaitSync=%d PostSync=%d EarlyTermEn=0x%x "
-                 "FootprintThresh=0x%04x\n",
-                 (cdma.config >> 3) & 1, (cdma.config >> 2) & 1,
-                 (cdma.config >> 4) & 7, (cdma.config >> 16));
+          printf("        Control: Flush=%d En=%d TaskSync=0x%x ET=0x%x FL=%d Thresh=0x%04x\n",
+                 cdma.control.flush, cdma.control.enable, cdma.control.task_sync,
+                 cdma.control.early_term, cdma.control.footprint_limiter, cdma.control.footprint_threshold);
         }
         if (reg_valid[0x5904 / 4]) {
-          printf("        Pre0: BWLimit=%u Sieve2=%u TelemetryAgeOut=%u\n",
-                 cdma.pre0 & 0x3ff, (cdma.pre0 >> 16) & 0xf,
-                 (cdma.pre0 >> 20) & 0xf);
+          printf("        Pre0: BWLimit=%u Sieve2=%u AgeOut=%u\n",
+                 cdma.pre0.bandwidth_limit, cdma.pre0.sieve2, cdma.pre0.telemetry_age_out);
         }
         if (reg_valid[0x5908 / 4]) {
-          printf("        Pre1: Sieve1=%u\n", cdma.pre1 & 0x3fff);
+          printf("        Pre1: Sieve1=%u\n", cdma.pre1.sieve1);
         }
         if (reg_valid[0x5918 / 4]) {
-          printf("        Pre2_Term: DSIDSize_L=0x%04x EarlyTerm0=0x%04x\n",
-                 cdma.pre2_term & 0xffff, cdma.pre2_term >> 16);
+          printf("        DSID: DSID_Size=0x%x\n", cdma.dsid.dsid_and_size);
         }
         if (reg_valid[0x591c / 4]) {
-          printf("        Pre3: Footprint2=0x%03x\n",
-                 (cdma.pre3 >> 17) & 0x7ff);
+          printf("        Footprint: Arg2=0x%x\n", cdma.footprint_arg.footprint_arg2);
         }
         if (reg_valid[0x5920 / 4]) {
-          printf("        Term1_Low: EarlyTerm1=0x%04x\n",
-                 cdma.term1_low >> 16);
+          printf("        ET_Args12: Arg1=0x%04x Arg2=0x%04x\n",
+                 cdma.early_term_arg12.arg1, cdma.early_term_arg12.arg2);
+        }
+        if (reg_valid[0x5924 / 4]) {
+          printf("        Flush: Arg=0x%04x\n", cdma.flush_reg.flush_arg);
         }
         if (reg_valid[0x5928 / 4]) {
-          printf("        Term2_3: EarlyTerm2=0x%02x EarlyTerm3=0x%02x\n",
-                 cdma.term2_3 & 0xff, (cdma.term2_3 >> 16) & 0xff);
+          printf("        ET_Args34: Arg3=0x%02x Arg4=0x%02x\n",
+                 cdma.early_term_arg34.arg3, cdma.early_term_arg34.arg4);
         }
         if (reg_valid[0x592c / 4]) {
           printf("        BackOff: En=%d Delay=%u Min=%u Max=%u Scale=%u\n",
-                 cdma.backoff & 1, (cdma.backoff >> 4) & 0xf,
-                 (cdma.backoff >> 8) & 0xff, (cdma.backoff >> 16) & 0xff,
-                 (cdma.backoff >> 24) & 0xff);
+                 cdma.backoff.enable, cdma.backoff.delay, cdma.backoff.min,
+                 cdma.backoff.max, cdma.backoff.scale);
         }
-      }
+    }
 
       struct {
         const char *name;

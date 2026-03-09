@@ -145,31 +145,22 @@ This block handles kernel-related data transfers (coefficients, bias, LUTs). The
 - **Word 14 (0x5138)**: **DstFmt** (Bits 12-13)
 ### CacheDMA / Telemetry (0x5900 block, Object `+0x52c`)
 This block handles telemetry, caching hints, and task synchronization.
+Size: 12 registers (`0x30` bytes, `0x0c` words).
 
-#### CacheDMA Control & Sync:
-- **Register 0x5900**: **CacheDMAConfig**
-  - TaskSync: WaitOnPrev (Bit 3), PostTaskDone (Bit 2)
-  - EarlyTermination: Enable (Bits 4-6)
-  - FootprintLimiter: Enable (Bit 5, shared?), Threshold (Bits 16-31)
-
-#### CacheDMA Pre-Processing Logic:
-- **Register 0x5904**: **CacheDMAPre0**
-  - BandwidthLimit: Bits 0-9
-  - SieveFiltering: Arg2 (Bits 16-19)
-  - TelemetryResponseAgeOut: Bits 20-23
-- **Register 0x5908**: **CacheDMAPre1**
-  - SieveFiltering: Arg1 (Bits 0-13)
-- **Register 0x5918**: **CacheDMAPre2**
-  - DSIDAndSize: Bits 7-29
-  - EarlyTermination: Arg1 (Bits 16-31, strh)
-- **Register 0x591C**: **CacheDMAPre3** / **CacheDMAFootprint**
-  - FootprintLimiter: Arg2 (Bits 17-27)
-- **Register 0x5920**: **CacheDMATerm1**
-  - EarlyTermination: Arg2 (Bits 16-31, strh)
-- **Register 0x5928**: **CacheDMATerm2**
-  - EarlyTermination: Arg3 (Bits 0-7, strb), Arg4 (Bits 16-23, strb)
-- **Register 0x592C**: **TelemetryBackOff**
-  - Enable (Bit 0), Delay (Bits 4-7), Min (Bits 8-15), Max (Bits 16-23), Scale (Bits 24-31)
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
+| :--- | :--- | :--- | :--- |
+| **0x5900** | `+0x52c` | **CacheDMAControl** | **Flush**: Bit 0, **Enable**: Bit 1, **TaskSync**: WaitPrev:3, PostDone:2, **EarlyTerm**: 4-6, **FootprintLimiter**: Bit 9, **FootprintThreshold**: 16-31. |
+| **0x5904** | `+0x530` | **CacheDMAPre0** | **BandwidthLimit**: 0-9, **Sieve2**: 16-19, **TelemetryAgeOut**: 20-23. |
+| **0x5908** | `+0x534** | **CacheDMAPre1** | **Sieve1**: 0-13. |
+| **0x590C** | `+0x538` | **CacheDMAPad3** | Reserved / Unknown. |
+| **0x5910** | `+0x53c` | **CacheDMAPad4** | Reserved / Unknown. |
+| **0x5914** | `+0x540` | **CacheDMAPad5** | Reserved / Unknown (Maybe DstCrop in Some contexts). |
+| **0x5918** | `+0x544** | **CacheDMADsid** | **DSIDAndSize**: Bits 7-29. |
+| **0x591C** | `+0x548` | **CacheDMAFootprint**| **FootprintArg2**: Bits 17-27. |
+| **0x5920** | `+0x54c` | **EarlyTermArg12** | **Arg1**: Bits 0-15 (`strh`), **Arg2**: Bits 16-31 (`strh`). |
+| **0x5924** | `+0x550` | **CacheDMAFlushArg**| **FlushArg**: Bits 0-15 (`strh`). |
+| **0x5928** | `+0x554` | **EarlyTermArg34** | **Arg3**: Bits 0-7 (`strb`), **Arg4**: Bits 16-23 (`strb`). |
+| **0x592C** | `+0x558` | **TelemetryBackOff**| **Enable**: Bit 0, **Delay**: 4-7, **Min**: 8-15, **Max**: 16-23, **Scale**: 24-31. |
 
 ### Planar Engine (PE) (0x4500 block, Object `+0x454`)
 This block controls the Planar Engine (PE) which handles element-wise operations, pooling, and scaling.

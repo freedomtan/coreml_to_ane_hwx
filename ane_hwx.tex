@@ -276,12 +276,12 @@
 
   \wordbox{1}{} \\
 
-  \begin{rightwordgroup}{0x168, aneRegs.TileDMASrc}
-    \bitbox{26}{TileDMASrc address base} &
+  \begin{rightwordgroup}{0x168, aneRegs.TileDmaSrc}
+    \bitbox{26}{TileDmaSrc address base} &
     \bitbox{6}{length} &
   \end{rightwordgroup} \\
 
-  \begin{rightwordgroup}{0x16c, aneRegs.TileDMASrc.DMAConfig}
+  \begin{rightwordgroup}{0x16c, aneRegs.TileDmaSrc.DMAConfig}
     \bitbox{1}{{EN}} &
     \bitbox{3}{} &
     \bitbox{2}{CrH} &
@@ -294,27 +294,27 @@
 
   \wordbox{1}{} \\
 
-  \begin{rightwordgroup}{0x174, aneRegs.TileDMASrc.BaseAddr}
+  \begin{rightwordgroup}{0x174, aneRegs.TileDmaSrc.BaseAddr}
     \bitbox{6}{} &
     \bitbox{26}{Addr} &
   \end{rightwordgroup} \\
 
-  \begin{rightwordgroup}{0x178, aneRegs.TileDMASrc.RowStride}
+  \begin{rightwordgroup}{0x178, aneRegs.TileDmaSrc.RowStride}
     \bitbox{6}{} &
     \bitbox{26}{Stride} &
   \end{rightwordgroup} \\
 
-  \begin{rightwordgroup}{0x17c, aneRegs.TileDMASrc.PlaneStride}
+  \begin{rightwordgroup}{0x17c, aneRegs.TileDmaSrc.PlaneStride}
     \bitbox{6}{} &
     \bitbox{26}{PlaneStride} &
   \end{rightwordgroup} \\
 
-  \begin{rightwordgroup}{0x180, aneRegs.TileDMASrc.DepthStride}
+  \begin{rightwordgroup}{0x180, aneRegs.TileDmaSrc.DepthStride}
     \bitbox{6}{} &
     \bitbox{26}{Stride} &
   \end{rightwordgroup} \\
   
-  \begin{rightwordgroup}{0x184, aneRegs.TileDMASrc.GroupStride}
+  \begin{rightwordgroup}{0x184, aneRegs.TileDmaSrc.GroupStride}
     \bitbox{6}{} &
     \bitbox{26}{Stride} &
   \end{rightwordgroup} \\
@@ -323,7 +323,7 @@
   \wordbox[]{1}{$\vdots$} \\[1ex]
 
 
-  \begin{rightwordgroup}{0x1a4, aneRegs.TileDMASrc.Fmt}
+  \begin{rightwordgroup}{0x1a4, aneRegs.TileDmaSrc.Fmt}
     \bitbox{2}{FmtMode} &
     \bitbox{2}{} &
     \bitbox{2}{Truncate} &
@@ -340,22 +340,22 @@
   
   \wordbox[]{1}{$\vdots$} \\[1ex]
 
-  \begin{rightwordgroup}{0x1bc, aneRegs.TileDMASrc.PixelOffset[0]}
+  \begin{rightwordgroup}{0x1bc, aneRegs.TileDmaSrc.PixelOffset[0]}
     \bitbox{16}{Offset} &
     \bitbox{16}{} &
   \end{rightwordgroup} \\
 
-  \begin{rightwordgroup}{0x1c0, aneRegs.TileDMASrc.PixelOffset[1]}
+  \begin{rightwordgroup}{0x1c0, aneRegs.TileDmaSrc.PixelOffset[1]}
     \bitbox{16}{Offset} &
     \bitbox{16}{} &
   \end{rightwordgroup} \\
 
-  \begin{rightwordgroup}{0x1c4, aneRegs.TileDMASrc.PixelOffset[2]}
+  \begin{rightwordgroup}{0x1c4, aneRegs.TileDmaSrc.PixelOffset[2]}
     \bitbox{16}{Offset} &
     \bitbox{16}{} &
   \end{rightwordgroup} \\
 
-  \begin{rightwordgroup}{0x1c8, aneRegs.TileDMASrc.PixelOffset[3]}
+  \begin{rightwordgroup}{0x1c8, aneRegs.TileDmaSrc.PixelOffset[3]}
     \bitbox{16}{Offset} &
     \bitbox{16}{} &
   \end{rightwordgroup} \\
@@ -532,13 +532,13 @@
     \bitbox{11}{} &
   \end{rightwordgroup} \\
 
-  \begin{rightwordgroup}{0x254, aneRegs.TileDMADst}
-    \bitbox{26}{TileDMADst address base} &
+  \begin{rightwordgroup}{0x254, aneRegs.TileDmaDst}
+    \bitbox{26}{TileDmaDst address base} &
     \bitbox{6}{length} &
   \end{rightwordgroup} \\
 
   \bytefieldsetup{bitheight=12ex}% \\
-  \begin{rightwordgroup}{0x258, aneRegs.TileDMADst.DMAConfig}
+  \begin{rightwordgroup}{0x258, aneRegs.TileDmaDst.DMAConfig}
     \bitbox{1}{{\rotatebox{0}{EN}}} &
     \bitbox{3}{} &
     \bitbox{2}{CrH} &
@@ -550,33 +550,33 @@
     \bitbox{4}{} &
   \end{rightwordgroup} \\
 
-  \begin{rightwordgroup}{0x25c, aneRegs.TileDMADst.BaseAddr}
+  \begin{rightwordgroup}{0x25c, aneRegs.TileDmaDst.BaseAddr}
     \bitbox{6}{} &
     \bitbox{26}{Addr} &
   \end{rightwordgroup} \\
 
-  \begin{rightwordgroup}{0x260, aneRegs.TileDMADst.RowStride}
+  \begin{rightwordgroup}{0x260, aneRegs.TileDmaDst.RowStride}
     \bitbox{6}{} &
     \bitbox{26}{Stride} &
   \end{rightwordgroup} \\
 
-  \begin{rightwordgroup}{0x264, aneRegs.TileDMADst.PlaneStride}
+  \begin{rightwordgroup}{0x264, aneRegs.TileDmaDst.PlaneStride}
     \bitbox{6}{} &
     \bitbox{26}{PlaneStride} &
   \end{rightwordgroup} \\
 
-  \begin{rightwordgroup}{0x268, aneRegs.TileDMADst.DepthStride}
+  \begin{rightwordgroup}{0x268, aneRegs.TileDmaDst.DepthStride}
     \bitbox{6}{} &
     \bitbox{26}{Stride} &
   \end{rightwordgroup} \\
   
-  \begin{rightwordgroup}{0x26c, aneRegs.TileDMADst.GroupStride}
+  \begin{rightwordgroup}{0x26c, aneRegs.TileDmaDst.GroupStride}
     \bitbox{6}{} &
     \bitbox{26}{Stride} &
   \end{rightwordgroup} \\
 
   \bytefieldsetup{bitheight=12ex}% \\
-  \begin{rightwordgroup}{0x270, aneRegs.TileDMADst.Fmt}
+  \begin{rightwordgroup}{0x270, aneRegs.TileDmaDst.Fmt}
     \bitbox{2}{FmtMode} &
     \bitbox{2}{} &
     \bitbox{2}{Truncate} &

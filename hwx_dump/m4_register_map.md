@@ -8,8 +8,8 @@ The `ZinAneTd<17u>` object maps internal offsets to hardware register blocks as 
 | `+0x3a8` | `0x29` | `0x4100` | `0x41A4` | L2 Cache / Buffer |
 | `+0x454` | `0x0f` | `0x4500` | `0x4538` | PE (Planar Engine) |
 | `+0x498` | `0x0c` | `0x4900` | `0x4930` | NE (Neural Engine) |
-| `+0x25c` | `0x51` | `0x4d00` | `0x4E44` | TileDMASrc (Engine Control) |
-| `+0x4d0` | `0x15` | `0x5100` | `0x5154` | TileDMADst (Engine Control) |
+| `+0x25c` | `0x51` | `0x4d00` | `0x4E44` | TileDmaSrc (Engine Control) |
+| `+0x4d0` | `0x15` | `0x5100` | `0x5154` | TileDmaDst (Engine Control) |
 | `+0x030` | `0x48` | `0x5500` | `0x5547` | KernelDmaSrc (Stride, Coeffs) |
 | `+0x52c` | `0x0c` | `0x5900` | `0x5930` | CacheDMA & Telemetry |
 
@@ -47,8 +47,8 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 - **L2 Cache (0x4100)**: L2 buffer strides and wrap offsets.
 - **PE (0x4500)**: Processing Element (Bias, Quantization, Pooling).
 - **NE (0x4900)**: Neural Engine core config (BinaryPoint, KernelMode, OpMode).
-- **TileDMASrc (0x4D00)**: Tile DMA Source configurations.
-- **TileDMADst (0x5100)**: Tile DMA Destination configurations.
+- **TileDmaSrc (0x4D00)**: Tile DMA Source configurations.
+- **TileDmaDst (0x5100)**: Tile DMA Destination configurations.
 - **KernelDmaSrc (0x5500)**: Stride, coefficients, and sparse control.
 - **CacheDMA (0x5900)**: Telemetry and task synchronization.
 
@@ -295,9 +295,9 @@ Certain high-level configurations, like Quantization, touch multiple disparate h
 - **Neural Engine (`+0x4C4`)**: Likely writes to `AccBias` / `PostScale` extensions.
 
 **SetTexture***
-The texture sampling feature (such as GatherMode) maps heavily into the extended spaces of the **TileDMASrc** block (`0x4D00`).
-- **TileDMASrc (`+0x2C8`)**: Used for `TextureFilter`, `TextureWrap`, and `TextureIndexTensorInterleave`.
-- **TileDMASrc Extended (`+0x324` to `+0x33C`)**: Memory region explicitly dedicated to texture logic. Configures `ExtMax`, `Permute` (Idx, Ind, Src), `PreserveFraction`, `BackgroundEn`, and `CropBatchSplit`.
+The texture sampling feature (such as GatherMode) maps heavily into the extended spaces of the **TileDmaSrc** block (`0x4D00`).
+- **TileDmaSrc (`+0x2C8`)**: Used for `TextureFilter`, `TextureWrap`, and `TextureIndexTensorInterleave`.
+- **TileDmaSrc Extended (`+0x324` to `+0x33C`)**: Memory region explicitly dedicated to texture logic. Configures `ExtMax`, `Permute` (Idx, Ind, Src), `PreserveFraction`, `BackgroundEn`, and `CropBatchSplit`.
 - *Note: `TextureBypassFilter` is checked via `SetTextureBypassFilter` but explicitly triggers an assertion since it is no longer supported on M4.*
 
 ## Hardware Traits (`ZinHWTraits<17u>`)
@@ -305,16 +305,16 @@ The compiler maintains a set of statically defined traits for the M4 architectur
 
 | Trait Symbol | Hex Value | Decimal | Block Affiliation |
 | --- | --- | --- | --- |
-| `ANE_TILE_DMA_SRC_PLANE_STRIDE_OFFSET` | `0x4D1C` | `19740` | TileDMASrc1 Channel Stride |
-| `ANE_TILE_DMA_SRC_DEPTH_STRIDE_OFFSET` | `0x4D20` | `19744` | TileDMASrc1 Depth Stride |
-| `ANE_TILE_DMA_SRC_GROUP_STRIDE_OFFSET` | `0x4D24` | `19748` | TileDMASrc1 Group Stride |
-| `ANE_TILE_DMA_SRC_PLANE_STRIDE2_OFFSET` | `0x4D34` | `19764` | TileDMASrc2 Channel Stride |
-| `ANE_TILE_DMA_SRC_DEPTH_STRIDE2_OFFSET` | `0x4D38` | `19768` | TileDMASrc2 Depth Stride |
-| `ANE_TILE_DMA_SRC_GROUP_STRIDE2_OFFSET` | `0x4D3C` | `19772` | TileDMASrc2 Group Stride |
+| `ANE_TILE_DMA_SRC_PLANE_STRIDE_OFFSET` | `0x4D1C` | `19740` | TileDmaSrc1 Channel Stride |
+| `ANE_TILE_DMA_SRC_DEPTH_STRIDE_OFFSET` | `0x4D20` | `19744` | TileDmaSrc1 Depth Stride |
+| `ANE_TILE_DMA_SRC_GROUP_STRIDE_OFFSET` | `0x4D24` | `19748` | TileDmaSrc1 Group Stride |
+| `ANE_TILE_DMA_SRC_PLANE_STRIDE2_OFFSET` | `0x4D34` | `19764` | TileDmaSrc2 Channel Stride |
+| `ANE_TILE_DMA_SRC_DEPTH_STRIDE2_OFFSET` | `0x4D38` | `19768` | TileDmaSrc2 Depth Stride |
+| `ANE_TILE_DMA_SRC_GROUP_STRIDE2_OFFSET` | `0x4D3C` | `19772` | TileDmaSrc2 Group Stride |
 | `ANE_L2_SOURCE2_CHANNEL_STRIDE_OFFSET` | `0x4128` | `16680` | L2 Src2 Base Channel Stride |
-| `ANE_TILE_DMA_DST_PLANE_STRIDE_OFFSET` | `0x5114` | `20756` | TileDMADst Channel Stride |
-| `ANE_TILE_DMA_DST_DEPTH_STRIDE_OFFSET` | `0x5118` | `20760` | TileDMADst Depth Stride |
-| `ANE_TILE_DMA_DST_GROUP_STRIDE_OFFSET` | `0x511C` | `20764` | TileDMADst Group Stride |
+| `ANE_TILE_DMA_DST_PLANE_STRIDE_OFFSET` | `0x5114` | `20756` | TileDmaDst Channel Stride |
+| `ANE_TILE_DMA_DST_DEPTH_STRIDE_OFFSET` | `0x5118` | `20760` | TileDmaDst Depth Stride |
+| `ANE_TILE_DMA_DST_GROUP_STRIDE_OFFSET` | `0x511C` | `20764` | TileDmaDst Group Stride |
 | `ANE_L2_RESULT_CHANNEL_STRIDE_OFFSET` | `0x4150` | `16720` | L2 Result Group Stride |
 
 *(Note: In the ANE nomenclature, "Plane" defines the Channel spacing offset.)*

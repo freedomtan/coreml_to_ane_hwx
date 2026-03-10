@@ -4,227 +4,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define HWX_MAGIC 0xbeefface
-#define LC_ANE_MAPPED_REGION 0x40
+#import "ane_hwx_regs.h"
 
-// Architecture block start addresses
-#define H13_COMMON_START 0x0000
-#define H13_L2_START 0x4800
-#define H13_PE_START 0x8800
-#define H13_NE_START 0xC800
-#define H13_TILEDMA_SRC_START 0x13800
-#define H13_TILEDMA_DST_START 0x17800
-#define H13_KERNELDMA_START 0x1F800
 
-#define H16_COMMON_START 0x0000
-#define H16_L2_START 0x4100
-#define H16_PE_START 0x4500
-#define H16_NE_START 0x4900
-#define H16_TILEDMA_SRC_START 0x4D00
-#define H16_TILEDMA_DST_START 0x5100
-#define H16_KERNELDMA_START 0x5500
-#define H16_CACHEDMA_START 0x5900
-
-typedef struct __attribute__((packed)) {
-  uint16_t tid;     // 0x000
-  uint8_t nid;      // 0x002
-  uint8_t lnid : 1; // 0x003 bit 0
-  uint8_t eon : 1;  // 0x003 bit 1
-  uint8_t pad0 : 6;
-  uint16_t exe_cycles;    // 0x004
-  uint16_t next_size : 9; // 0x006 bits 0-8
-  uint16_t pad1 : 7;
-  uint32_t log_events : 24; // 0x008
-  uint32_t pad2 : 8;
-  uint32_t exceptions : 24; // 0x00c
-  uint32_t pad3 : 8;
-  uint32_t debug_log_events : 24; // 0x010
-  uint32_t pad4 : 8;
-  uint32_t debug_exceptions : 24; // 0x014
-  uint32_t pad5 : 8;
-  struct {
-    uint32_t tq_dis : 1; // bit 0
-    uint32_t pad0 : 1;
-    uint32_t dst_loc : 1; // bit 2
-    uint32_t src_loc : 1; // bit 3
-    uint32_t pad1 : 3;
-    uint32_t tde : 1; // bit 7
-    uint32_t pad2 : 2;
-    uint32_t next_priority : 6;  // bits 10-15
-    uint32_t tse : 1;            // bit 16
-    uint32_t dpc : 1;            // bit 17
-    uint32_t spc : 1;            // bit 18
-    uint32_t tsr : 1;            // bit 19
-    uint32_t spl : 1;            // bit 20
-    uint32_t kpc : 1;            // bit 21
-    uint32_t td_skip : 1;        // bit 22
-    uint32_t disallow_abort : 1; // bit 23
-    uint32_t pad3 : 8;
-  } flags;               // 0x018
-  uint32_t next_pointer; // 0x01c
-  struct {
-    uint32_t rbase0 : 5;
-    uint32_t rbe0 : 1;
-    uint32_t rbase1 : 5;
-    uint32_t rbe1 : 1;
-    uint32_t wbase : 5;
-    uint32_t wbe : 1;
-    uint32_t tbase : 5;
-    uint32_t tbe : 1;
-    uint32_t ene : 3;
-    uint32_t pad : 5;
-  } base_ene; // 0x020
-  struct {
-    uint32_t kbase0 : 5;
-    uint32_t kbe0 : 1;
-    uint32_t kbase1 : 5;
-    uint32_t kbe1 : 1;
-    uint32_t kbase2 : 5;
-    uint32_t kbe2 : 1;
-    uint32_t kbase3 : 5;
-    uint32_t kbe3 : 1;
-    uint32_t pad : 8;
-  } kbase; // 0x024
-} ane_td_header_h13_t;
-
-typedef struct __attribute__((packed)) {
-  uint16_t tid;             // 0x000
-  uint32_t task_size : 11;  // 0x002 bits 0-10 (Header[0] bits 16-26)
-  uint32_t pad0 : 5;        // 0x002 bits 11-15 (Header[0] bits 27-31)
-  uint16_t exe_cycles;      // 0x004
-  uint16_t pad1;            // 0x006
-  uint32_t log_events : 24; // 0x008
-  uint32_t pad2 : 8;
-  uint32_t exceptions : 24; // 0x00c
-  uint32_t pad3 : 8;
-  uint32_t debug_log_events : 24; // 0x010
-  uint32_t pad4 : 8;
-  uint32_t debug_exceptions : 24; // 0x014
-  uint32_t pad5 : 8;
-  uint32_t live_outs; // 0x018
-  uint32_t tsr : 1;   // 0x01c bit 0
-  uint32_t tde : 1;   // 0x01c bit 1
-  uint32_t pad6 : 14; // 0x01c bits 2-15
-  uint32_t ene : 3;   // 0x01c bits 16-18
-  uint32_t pad7 : 13; // 0x01c bits 19-31
-  uint16_t tdid;
-  uint16_t pad8;
-} ane_header_h16_t;
-
-typedef struct __attribute__((packed)) {
-  // Word 0 (0x000)
-  struct {
-    uint32_t infmt : 2;
-    uint32_t pad0_0 : 2;
-    uint32_t outfmt : 2;
-    uint32_t pad0_1 : 2;
-    uint32_t src2infmt : 2;
-    uint32_t pad0_2 : 22;
-  } ch_cfg;
-
-  // Word 1-8
-  uint32_t inwidth;     // Word 1
-  uint32_t inheight;    // Word 2
-  uint32_t inchannels;  // Word 3
-  uint32_t indepth;     // Word 4
-  uint32_t outwidth;    // Word 5
-  uint32_t outheight;   // Word 6
-  uint32_t outchannels; // Word 7
-  uint32_t outdepth;    // Word 8
-
-  // Word 9 (0x024)
-  uint32_t num_groups;
-
-  // Word 10 (0x028)
-  struct {
-    uint32_t kw : 6;
-    uint32_t kh : 6;
-    uint32_t pad10_0 : 1;
-    uint32_t sx : 2;
-    uint32_t sy : 2;
-    uint32_t pad_left : 5;
-    uint32_t pad_top : 5;
-    uint32_t pad10_1 : 1;
-    uint32_t ox : 2;
-    uint32_t oy : 2;
-  } conv_cfg;
-
-  // Word 11 (0x02C)
-  uint32_t conv_cfg_3d;
-
-  // Word 12 (0x030)
-  struct {
-    uint32_t unicast_en : 1;
-    uint32_t pad0 : 3;
-    uint32_t unicast_cin : 14;
-    uint32_t pad1 : 14;
-  } unicast_cfg;
-
-  // Word 13 (0x034)
-  uint32_t tile_height;
-
-  // Word 14 (0x038)
-  struct {
-    uint32_t pad_bottom : 6;
-    uint32_t pad_top : 6;
-    uint32_t overlap : 14;
-    uint32_t pad0 : 6;
-  } tile_overlap;
-
-  // Word 15 (0x03C)
-  struct {
-    uint32_t pad0 : 2;
-    uint32_t small_src_mode : 2;
-    uint32_t task_type : 4;
-    uint32_t pad1 : 11;
-    uint32_t active_ne : 3;
-    uint32_t pad2 : 1;
-    uint32_t l2_barrier : 1;
-    uint32_t pad3 : 4;
-    uint32_t out_trans : 1;
-    uint32_t pad4 : 3;
-  } maccfg;
-
-  // Word 16 (0x40)
-  struct {
-    uint32_t ocg_size : 3;
-    uint32_t pad0 : 29;
-  } lane_cfg;
-
-  // Word 17 (0x044)
-  struct {
-    uint32_t patch_width : 4;
-    uint32_t patch_height : 5;
-    uint32_t pad0 : 23;
-  } patch_cfg;
-
-  // Word 18 (0x048)
-  struct {
-    uint32_t src1_w_bcast : 1;
-    uint32_t src1_h_bcast : 1;
-    uint32_t src1_d_bcast : 1;
-    uint32_t src1_c_bcast : 1;
-    uint32_t src2_w_bcast : 1;
-    uint32_t src2_h_bcast : 1;
-    uint32_t src2_d_bcast : 1;
-    uint32_t src2_c_bcast : 1;
-    uint32_t src1_trans : 1;
-    uint32_t src2_trans : 1;
-    uint32_t out_trans : 1;
-    uint32_t pad0 : 21;
-  } pe_routing;
-
-  uint32_t nid;    // 0x04C (Word 19)
-  uint32_t dpe;    // 0x050 (Word 20)
-  uint32_t val_21; // 0x054 (Word 21)
-  uint32_t val_22; // 0x058 (Word 22)
-} ane_common_h16_t;
-
-typedef struct {
-  uint32_t startAddr;
-  uint32_t count;
-  const char **names;
-} hwx_reg_range_t;
 
 static const char *lookup_reg_name(uint32_t addr, const hwx_reg_range_t *ranges,
                                    int range_count) {
@@ -496,12 +278,8 @@ const char *get_m4_reg_name(uint32_t addr) {
   return NULL;
 }
 
-typedef struct {
-  const char *name;
-  uint32_t startAddr;
-} hwx_block_info_t;
 
-void dump_hw_blocks(const uint32_t *reg_values, const bool *reg_valid,
+void dump_hw_blocks(const hwx_state_t *state,
                     const hwx_block_info_t *blocks, int count,
                     const char *(*name_lookup)(uint32_t)) {
   printf("        --- HW Block Register State ---\n");
@@ -511,7 +289,7 @@ void dump_hw_blocks(const uint32_t *reg_values, const bool *reg_valid,
     uint32_t word_end = word_start + 0x100; // Look ahead 0x400 bytes
 
     for (uint32_t r = word_start; r < word_end; r++) {
-      if (reg_valid[r]) {
+      if (state->valid[r]) {
         if (!printed_header) {
           printf("        %s:\n", blocks[b].name);
           printed_header = true;
@@ -519,903 +297,18 @@ void dump_hw_blocks(const uint32_t *reg_values, const bool *reg_valid,
         uint32_t addr = r * 4;
         const char *reg_name = name_lookup(addr);
         if (reg_name) {
-          printf("          0x%05x: 0x%08x (%s)\n", addr, reg_values[r],
+          printf("          0x%05x: 0x%08x (%s)\n", addr, state->values[r],
                  reg_name);
         } else {
-          printf("          0x%05x: 0x%08x\n", addr, reg_values[r]);
+          printf("          0x%05x: 0x%08x\n", addr, state->values[r]);
         }
       }
     }
   }
 }
 
-// [0x5500] KernelDMA Source Block
-typedef struct {
-  struct {
-    uint32_t pad0 : 6;
-    uint32_t master_enable : 1; // Bit 6
-    uint32_t pad1 : 25;
-  } master_cfg;      // Word 0 (0x5500)
-  uint32_t pad1;     // Word 1
-  uint32_t prefetch; // Word 2 (0x5508)
-  uint32_t pad2[3];  // Word 3-5
-  uint32_t stridex;  // Word 6 (0x5518)
-  uint32_t stridey;  // Word 7 (0x551C)
 
-  struct {
-    uint32_t en : 1;
-    uint32_t pad0 : 3;
-    uint32_t cache_hint : 4;
-    uint32_t dataset_id : 8;
-    uint32_t user_tag : 8;
-    uint32_t pad1 : 8;
-  } coeff_cfg[16]; // Word 8-23 (0x5520-0x555C)
 
-  uint32_t coeff_base[16]; // Word 24-39 (0x5560-0x559C)
-  uint32_t coeff_size[16]; // Word 40-55 (0x55A0-0x55DC)
-
-  struct {
-    uint32_t en : 1;
-    uint32_t pad0 : 3;
-    uint32_t cache_hint : 4;
-    uint32_t pad1 : 8;
-    uint32_t user_tag : 8;
-    uint32_t pad2 : 8;
-  } bias_cfg; // Word 56 (0x55E0)
-
-  uint32_t pad3[3];
-
-  struct {
-    uint32_t en : 1;
-    uint32_t pad0 : 3;
-    uint32_t cache_hint : 4;
-    uint32_t pad1 : 8;
-    uint32_t user_tag : 8;
-    uint32_t pad2 : 8;
-  } post_scale_cfg; // Word 60 (0x55F0)
-
-  uint32_t pad4[3];
-
-  struct {
-    uint32_t en : 1;
-    uint32_t pad0 : 3;
-    uint32_t cache_hint : 4;
-    uint32_t pad1 : 8;
-    uint32_t user_tag : 8;
-    uint32_t pad2 : 8;
-  } palette_cfg; // Word 64 (0x5600)
-
-  uint32_t pad5[3];
-
-  struct {
-    uint32_t en : 1;
-    uint32_t pad0 : 3;
-    uint32_t cache_hint : 4;
-    uint32_t pad1 : 8;
-    uint32_t user_tag : 8;
-    uint32_t pad2 : 8;
-  } non_linear_cfg; // Word 68 (0x5610)
-} __attribute__((packed)) ane_kerneldma_src_h16_t;
-
-typedef struct {
-  struct {
-    uint32_t flush : 1;                // Bit 0
-    uint32_t enable : 1;               // Bit 1
-    uint32_t task_sync : 2;            // Bits 2-3 (WaitPrev:3, PostDone:2)
-    uint32_t early_term : 5;           // Bits 4-8
-    uint32_t footprint_limiter : 1;    // Bit 9
-    uint32_t pad1 : 6;                 // Bits 10-15
-    uint32_t footprint_threshold : 16; // Bits 16-31
-  } control;                           // 0x5900 (Word 0)
-
-  struct {
-    uint32_t bandwidth_limit : 10;  // Bits 0-9
-    uint32_t pad0 : 6;              // Bits 10-15
-    uint32_t sieve2 : 4;            // Bits 16-19
-    uint32_t telemetry_age_out : 4; // Bits 20-23
-    uint32_t pad1 : 8;              // Bits 24-31
-  } pre0;                           // 0x5904 (Word 1)
-
-  struct {
-    uint32_t sieve1 : 14; // Bits 0-13
-    uint32_t pad0 : 18;   // Bits 14-31
-  } pre1;                 // 0x5908 (Word 2)
-
-  uint32_t pad0[3]; // 0x590c, 0x5910, 0x5914
-
-  struct {
-    uint32_t pad0 : 7;           // Bits 0-6
-    uint32_t dsid_and_size : 23; // Bits 7-29
-    uint32_t pad1 : 2;           // Bits 30-31
-  } dsid;                        // 0x5918 (Word 6)
-
-  struct {
-    uint32_t pad0 : 17;           // Bits 0-16
-    uint32_t footprint_arg2 : 11; // Bits 17-27
-    uint32_t pad1 : 4;            // Bits 28-31
-  } footprint_arg;                // 0x591c (Word 7)
-
-  struct {
-    uint16_t arg1;    // Bits 0-15 (Half)
-    uint16_t arg2;    // Bits 16-31 (Half)
-  } early_term_arg12; // 0x5920 (Word 8)
-
-  struct {
-    uint16_t flush_arg; // Bits 0-15 (Half)
-    uint16_t pad0;      // Bits 16-31
-  } flush_reg;          // 0x5924 (Word 9)
-
-  struct {
-    uint8_t arg3;     // Bits 0-7 (Byte)
-    uint8_t pad0;     // Bits 8-15
-    uint8_t arg4;     // Bits 16-23 (Byte)
-    uint8_t pad1;     // Bits 24-31
-  } early_term_arg34; // 0x5928 (Word 10)
-
-  struct {
-    uint32_t enable : 1; // Bit 0
-    uint32_t pad0 : 3;   // Bits 1-3
-    uint32_t delay : 4;  // Bits 4-7
-    uint32_t min : 8;    // Bits 8-15
-    uint32_t max : 8;    // Bits 16-23
-    uint32_t scale : 8;  // Bits 24-31
-  } backoff;             // 0x592c (Word 11)
-} __attribute__((packed)) ane_cachedma_h16_t;
-
-// [0x4D00] TileDMA Source Block
-typedef struct {
-  struct {
-    uint32_t en : 1;
-    uint32_t pad0 : 7;
-    uint32_t dataset_id : 8;
-    uint32_t user_tag : 8;
-    uint32_t format : 4;
-    uint32_t pad1 : 4;
-  } src1cfg; // Word 0
-
-  struct {
-    uint32_t en : 1;
-    uint32_t pad0 : 7;
-    uint32_t dataset_id : 8;
-    uint32_t user_tag : 8;
-    uint32_t pad1 : 4;
-    uint32_t dep_mode : 2;
-    uint32_t pad2 : 2;
-  } src2cfg; // Word 1
-
-  uint32_t src1base_lo; // Word 2
-  uint32_t src1base_hi; // Word 3
-  uint32_t src2base_lo; // Word 4
-  uint32_t src2base_hi; // Word 5
-
-  uint32_t src1rows;   // Word 6
-  uint32_t src1chans;  // Word 7
-  uint32_t src1depths; // Word 8
-  uint32_t src1groups; // Word 9
-
-  uint32_t pad0[2]; // Word 10-11
-
-  uint32_t src2rows;   // Word 12
-  uint32_t src2chans;  // Word 13
-  uint32_t src2depths; // Word 14
-  uint32_t src2groups; // Word 15
-
-  uint32_t pad1[4]; // Word 16-19
-
-  uint32_t src1meta_lo;   // Word 20
-  uint32_t src1meta_hi;   // Word 21
-  uint32_t src1meta_size; // Word 22
-  uint32_t src2meta_lo;   // Word 23
-  uint32_t src2meta_hi;   // Word 24
-  uint32_t src2meta_size; // Word 25
-
-  uint32_t src1memfmt; // Word 26
-  uint32_t src2memfmt; // Word 27
-
-  uint32_t pad2[10];        // Word 28-37
-  uint32_t src1pixeloff[4]; // Word 38-41
-  uint32_t src2pixeloff[4]; // Word 42-45
-} __attribute__((packed)) ane_tiledma_src_h16_t;
-
-// [0x5100] TileDma Destination Block
-typedef struct {
-  struct {
-    uint32_t en : 1;
-    uint32_t pad0 : 3;
-    uint32_t cache_hint : 4;
-    uint32_t dataset_id : 8;
-    uint32_t user_tag : 8;
-    uint32_t pad1 : 8;
-  } dstcfg; // Word 0
-
-  uint32_t dstpadding; // Word 1
-
-  uint32_t dstbase_lo; // Word 2
-  uint32_t dstbase_hi; // Word 3
-
-  uint32_t dstrows;   // Word 4
-  uint32_t dstchans;  // Word 5
-  uint32_t dstdepths; // Word 6
-  uint32_t dstgroups; // Word 7
-
-  uint32_t dstinternalcfg; // Word 8
-  uint32_t pad0;           // Word 9
-
-  uint32_t dstmeta_lo; // Word 10
-  uint32_t dstmeta_hi; // Word 11
-  uint32_t dstfmtmode; // Word 12
-  uint32_t pad1;       // Word 13
-
-  uint32_t dstcompstatus; // Word 14
-  uint32_t pad2;          // Word 15
-
-  uint32_t dstcompressioncfg; // Word 16
-  uint32_t pad3;              // Word 17
-
-  uint32_t dstcompsize_lo; // Word 18
-  uint32_t dstcompsize_hi; // Word 19
-
-  uint32_t dstpixeloffset; // Word 20
-} __attribute__((packed)) ane_tiledma_dst_h16_t;
-
-// [0x4900] Neural Engine (NE) Block (M4 specific mapping)
-typedef struct {
-  // Word 0 (0x4900)
-  struct {
-    uint32_t kernel_fmt : 2;         // [1:0]
-    uint32_t palettized_en : 1;      // [2]
-    uint32_t pad0 : 1;               // [3]
-    uint32_t palettized_bits : 4;    // [7:4]
-    uint32_t sparse_fmt : 1;         // [8]
-    uint32_t pad1_0 : 1;             // [9]
-    uint32_t group_kernel_reuse : 1; // [10]
-    uint32_t pad1_1 : 4;             // [14:11]
-    uint32_t sparse_binary : 1;      // [15]
-    uint32_t alignment_fmt : 1;      // [16]
-    uint32_t pad2 : 4;               // [20:17]
-    uint32_t sparse_block_size : 3;  // [23:21]
-    uint32_t asym_quant_en : 1;      // [24]
-    uint32_t pad3 : 7;
-  } kernel_cfg;
-
-  // Word 1 (0x4904)
-  struct {
-    uint32_t op_mode : 3;           // [2:0]
-    uint32_t kernel_mode : 1;       // [3]
-    uint32_t ne_bias_en : 1;        // [4]
-    uint32_t passthrough_en : 1;    // [5]
-    uint32_t matrix_bias_en : 1;    // [6]
-    uint32_t pad0 : 1;              // [7]
-    uint32_t binary_point : 6;      // [13:8]
-    uint32_t post_scale_en : 1;     // [14]
-    uint32_t pad1 : 1;              // [15]
-    uint32_t non_linear_mode : 2;   // [17:16]
-    uint32_t padding_mode : 1;      // [18]
-    uint32_t max_pool_mode : 1;     // [19]
-    uint32_t arg_output_select : 4; // [23:20]
-    uint32_t pad2 : 2;              // [25:24]
-    uint32_t double_int8_en : 1;    // [26]
-    uint32_t pad3 : 5;
-  } mac_cfg;
-
-  // Word 2 (0x4908)
-  struct {
-    uint32_t matrix_vector_bias : 16;
-    uint32_t pad0 : 16;
-  } matrix_bias;
-
-  // Word 3 (0x490C)
-  struct {
-    uint32_t val : 21;
-    uint32_t pad0 : 11;
-  } ne_bias;
-
-  // Word 4 (0x4910)
-  struct {
-    uint32_t val : 21;
-    uint32_t pad0 : 11;
-  } post_scale;
-
-  // Word 5 (0x4914)
-  struct {
-    uint32_t key_mask : 8;   // [7:0]
-    uint32_t cmp_bit : 3;    // [10:8]
-    uint32_t pad0 : 1;       // [11]
-    uint32_t sense_axis : 2; // [13:12]
-    uint32_t pad1 : 2;       // [15:14]
-    uint32_t sense_bit : 4;  // [19:16]
-    uint32_t mode : 1;       // [20]
-    uint32_t pad2 : 11;
-  } rcas_cfg;
-
-  // Word 6 (0x4918)
-  struct {
-    uint32_t round_mode : 2;   // [1:0]
-    uint32_t pad0 : 2;         // [3:2]
-    uint32_t integer_bits : 5; // [8:4]
-    uint32_t pad1 : 23;
-  } st_round_cfg;
-
-  // Words 7-10 (0x491C, 4920, 4924, 4928)
-  uint32_t st_round_seed[4];
-
-  // Word 11 (0x492C)
-  struct {
-    uint32_t quant_zero_point : 8; // [7:0]
-    uint32_t pad0 : 24;
-  } quant;
-
-} ane_ne_h16_t;
-
-// [0x4500] Planar Engine (PE) Block (M4 specific mapping)
-typedef struct {
-  // Word 0 (0x4500)
-  struct {
-    uint32_t op : 6;   // [5:0]
-    uint32_t cond : 3; // [8:6]
-    uint32_t pad0 : 7; // [15:9]
-    uint32_t src1 : 1; // [16]
-    uint32_t pad1 : 1; // [17]
-    uint32_t src2 : 2; // [19:18]
-    uint32_t pad2 : 12;
-  } pe_cfg;
-
-  uint32_t bias;         // Word 1 (0x4504)
-  uint32_t scale;        // Word 2 (0x4508)
-  uint32_t final_scale;  // Word 3 (0x450C)
-  uint32_t pre_scale;    // Word 4 (0x4510)
-  uint32_t final_scale2; // Word 5 (0x4514)
-  uint32_t res[8];       // Words 6-13
-  struct {
-    uint32_t input_relu : 1;
-    uint32_t output_relu : 1;
-    uint32_t zero_point : 8;
-    uint32_t pad : 22;
-  } quant; // Word 14 (0x4538)
-} ane_pe_h16_t;
-
-// [0x4100] L2 Cache Control Block (M4 specific mapping - 41 registers)
-typedef struct {
-  // Word 0 (0x4100)
-  struct {
-    uint32_t pad0 : 2;
-    uint32_t padding_mode : 2; // [3:2]
-    uint32_t src1_fifo : 1;    // [4]
-    uint32_t pad1 : 1;
-    uint32_t src1_double : 1; // [6]
-    uint32_t pad2 : 9;
-    uint32_t barrier : 1; // [16]
-    uint32_t pad3 : 15;
-  } l2_control;
-
-  // Word 1 (0x4104)
-  struct {
-    uint32_t pad0 : 2;
-    uint32_t src_type : 2; // [3:2]
-    uint32_t pad1 : 2;
-    uint32_t dma_fmt : 2;       // [7:6]
-    uint32_t interleave : 4;    // [11:8]
-    uint32_t offset_y_lsbs : 4; // [15:12]
-    uint32_t pad2 : 9;
-    uint32_t compression : 1; // [25]
-    uint32_t pad3 : 6;
-  } src1_cfg;
-
-  // Word 2 (0x4108)
-  struct {
-    uint32_t pad0 : 2;
-    uint32_t src_type : 2; // [3:2]
-    uint32_t pad1 : 4;
-    uint32_t interleave : 4; // [11:8]
-    uint32_t pad2 : 13;
-    uint32_t compression : 1; // [25]
-    uint32_t pad3 : 6;
-  } src2_cfg;
-
-  uint32_t l2_pad3; // Word 3 (0x410c)
-
-  // Dense 17-bit packed tensor blocks (Bits 4:20)
-  struct {
-    uint32_t base : 17;
-    uint32_t pad0 : 15;
-    uint32_t channel_stride : 17;
-    uint32_t pad1 : 15;
-    uint32_t row_stride : 17;
-    uint32_t pad2 : 15;
-    uint32_t depth_stride : 17;
-    uint32_t pad3 : 15;
-    uint32_t group_stride : 17;
-    uint32_t pad4 : 15;
-  } src1; // Words 4-8
-
-  struct {
-    uint32_t base : 17;
-    uint32_t pad0 : 15;
-    uint32_t channel_stride : 17;
-    uint32_t pad1 : 15;
-    uint32_t row_stride : 17;
-    uint32_t pad2 : 15;
-    uint32_t depth_stride : 17;
-    uint32_t pad3 : 15;
-    uint32_t group_stride : 17;
-    uint32_t pad4 : 15;
-  } src2; // Words 9-13
-
-  struct {
-    uint32_t base : 17;
-    uint32_t pad0 : 15;
-    uint32_t channel_stride : 17;
-    uint32_t pad1 : 15;
-    uint32_t depth_stride : 17;
-    uint32_t pad2 : 15;
-    uint32_t group_stride : 17;
-    uint32_t pad3 : 15;
-  } srcidx; // Words 14-17
-
-  // Word 18 (0x4148)
-  struct {
-    uint32_t pad0 : 3;
-    uint32_t bfr_mode : 1;      // [3]
-    uint32_t crop_offset_x : 3; // [6:4]
-    uint32_t pad1 : 1;
-    uint32_t interleave : 4; // [11:8]
-    uint32_t res_type : 2;   // [13:12]
-    uint32_t pad2 : 11;
-    uint32_t compression : 1; // [25]
-    uint32_t pad3 : 6;
-  } result_cfg;
-
-  struct {
-    uint32_t base : 17;
-    uint32_t pad0 : 15;
-    uint32_t channel_stride : 17;
-    uint32_t pad1 : 15;
-    uint32_t row_stride : 17;
-    uint32_t pad2 : 15;
-    uint32_t depth_stride : 17;
-    uint32_t pad3 : 15;
-    uint32_t group_stride : 17;
-    uint32_t pad4 : 15;
-  } result; // Words 19-23
-
-  uint32_t l2_res24; // 0x4160
-  uint32_t l2_res25; // 0x4164 (WrapCfg)
-  uint32_t l2_res26; // 0x4168
-  uint32_t l2_res27; // 0x416c
-  uint32_t l2_res28; // 0x4170
-
-  // Word 29 (0x4174)
-  struct {
-    uint32_t wrap_index : 16;
-    uint32_t wrap_start_offset : 16;
-  } result_wrap_idx_off;
-
-  uint32_t l2_res30; // 0x4178
-
-  // Words 31-35 (Secondary Result)
-  struct {
-    uint32_t base : 17;
-    uint32_t pad0 : 15;
-    uint32_t channel_stride : 17;
-    uint32_t pad1 : 15;
-    uint32_t row_stride : 17;
-    uint32_t pad2 : 15;
-    uint32_t depth_stride : 17;
-    uint32_t pad3 : 15;
-    uint32_t group_stride : 17;
-    uint32_t pad4 : 15;
-  } result2;
-
-  uint32_t l2_res36; // 0x4190
-  uint32_t l2_res37; // 0x4194
-  uint32_t l2_res38; // 0x4198
-
-  // Word 39 (0x419c)
-  struct {
-    uint32_t wrap_addr : 12;
-    uint32_t pad0 : 4;
-    uint32_t wrap_addr_offset : 11;
-    uint32_t pad1 : 5;
-  } result_wrap_addr;
-
-  uint32_t l2_res40; // 0x41a0
-
-} __attribute__((packed)) ane_l2_h16_t;
-
-// [0x0000] M1 Common Registers
-typedef struct {
-  // 0x0000 Common.InDim
-  struct {
-    uint32_t w_in : 15;
-    uint32_t pad0 : 1;
-    uint32_t h_in : 15;
-    uint32_t pad1 : 1;
-  } indim;
-  uint32_t pad2; // 0x12C
-
-  // 0x130 Common.ChCfg
-  struct {
-    uint32_t infmt : 2;
-    uint32_t pad0 : 2;
-    uint32_t outfmt : 2;
-    uint32_t pad1 : 26;
-  } chcfg;
-
-  // 0x134 Common.Cin
-  struct {
-    uint32_t c_in : 17;
-    uint32_t pad0 : 15;
-  } cin;
-
-  // 0x138 Common.Cout
-  struct {
-    uint32_t c_out : 17;
-    uint32_t pad0 : 15;
-  } cout;
-
-  // 0x13c Common.OutDim
-  struct {
-    uint32_t w_out : 15;
-    uint32_t pad0 : 1;
-    uint32_t h_out : 15;
-    uint32_t pad1 : 1;
-  } outdim;
-
-  uint32_t pad3; // 0x140
-
-  // 0x144 Common.ConvCfg
-  struct {
-    uint32_t kw : 5;
-    uint32_t kh : 5;
-    uint32_t ocg_size : 3;
-    uint32_t sx : 2;
-    uint32_t sy : 2;
-    uint32_t px : 5;
-    uint32_t py : 5;
-    uint32_t pad0 : 1;
-    uint32_t ox : 2;
-    uint32_t oy : 2;
-  } convcfg;
-
-  uint32_t pad4; // 0x148
-
-  // 0x14c Common.GroupConvCfg
-  struct {
-    uint32_t num_groups : 13;
-    uint32_t pad0 : 1;
-    uint32_t unicast_en : 1;
-    uint32_t elem_mult_mode : 1;
-    uint32_t unicast_cin : 16;
-  } groupcfg;
-
-  // 0x150 Common.TileCfg
-  struct {
-    uint32_t tile_height : 16;
-    uint32_t pad0 : 16;
-  } tilecfg;
-
-  uint32_t pad5[2]; // 0x154-0x158
-
-  // 0x15c Common.Cfg
-  struct {
-    uint32_t pad0 : 2;
-    uint32_t small_src_mode : 1;
-    uint32_t pad1 : 5;
-    uint32_t sh_pref : 3;
-    uint32_t pad2 : 1;
-    uint32_t sh_min : 3;
-    uint32_t pad3 : 1;
-    uint32_t sh_max : 3;
-    uint32_t active_ne : 3;
-    uint32_t ctx_switch_in : 1;
-    uint32_t pad4 : 1;
-    uint32_t ctx_switch_out : 1;
-    uint32_t pad5 : 1;
-    uint32_t acc_db_buf_en : 1;
-    uint32_t pad6 : 5;
-  } cfg;
-
-  struct {
-    uint32_t tid : 16;
-    uint32_t task_q : 4;
-    uint32_t task_nid : 8;
-    uint32_t pad0 : 4;
-  } task_info; // 0x160
-
-  struct {
-    uint32_t category : 4;
-    uint32_t pad0 : 28;
-  } dpe; // 0x164
-
-} __attribute__((packed)) ane_common_h13_t;
-
-// [0x1e0] L2
-typedef struct {
-  struct {
-    uint32_t input_relu : 1;
-    uint32_t padding_mode : 2;
-    uint32_t pad0 : 29;
-  } l2cfg; // 0x1E0
-
-  struct {
-    uint32_t type : 2;
-    uint32_t dep : 2;
-    uint32_t alias_conv_src : 1;
-    uint32_t alias_conv_rslt : 1;
-    uint32_t fmt : 2;
-    uint32_t interleave : 4;
-    uint32_t cmpv : 4;
-    uint32_t offch : 3;
-    uint32_t pad0 : 1;
-    uint32_t alias_planar_src : 1;
-    uint32_t pad1 : 1;
-    uint32_t alias_planar_rslt : 1;
-    uint32_t pad2 : 9;
-  } scfg; // 0x1E4
-
-  struct {
-    uint32_t pad0 : 4;
-    uint32_t addr : 17;
-    uint32_t pad1 : 11;
-  } srcbase; // 0x1E8
-
-  struct {
-    uint32_t pad0 : 4;
-    uint32_t stride : 17;
-    uint32_t pad1 : 11;
-  } src_chan_stride; // 0x1EC
-
-  struct {
-    uint32_t pad0 : 4;
-    uint32_t stride : 17;
-    uint32_t pad1 : 11;
-  } src_row_stride; // 0x1F0
-
-  uint32_t pad3[(0x210 - 0x1F4) / 4];
-
-  struct {
-    uint32_t type : 2;
-    uint32_t bfrmode : 2;
-    uint32_t alias_conv_src : 1;
-    uint32_t alias_conv_rslt : 1;
-    uint32_t fmt : 2;
-    uint32_t interleave : 4;
-    uint32_t cmpv : 4;
-    uint32_t offch : 3;
-    uint32_t pad0 : 1;
-    uint32_t alias_planar_src : 1;
-    uint32_t pad1 : 1;
-    uint32_t alias_planar_rslt : 1;
-    uint32_t pad2 : 9;
-  } rcfg; // 0x210
-} __attribute__((packed)) ane_l2_h13_t;
-
-// [0xC800] Neural Engine (NE) Block
-typedef struct {
-  // Word 0 (0xC800)
-  struct {
-    uint32_t kernel_fmt : 2;
-    uint32_t palettized_en : 1;
-    uint32_t pad0 : 1;
-    uint32_t palettized_bits : 4;
-    uint32_t sparse_fmt : 1;
-    uint32_t pad1 : 1;
-    uint32_t group_kernel_reuse : 1;
-    uint32_t pad2 : 21;
-  } kernel_cfg;
-
-  // Word 1 (0xC804)
-  struct {
-    uint32_t op_mode : 4;
-    uint32_t kernel_mode : 1;
-    uint32_t bias_mode : 1;
-    uint32_t pad0 : 1;
-    uint32_t matrix_bias_en : 1;
-    uint32_t pad1 : 1;
-    uint32_t binary_point : 4;
-    uint32_t pad2 : 1;
-    uint32_t post_scale_mode : 1;
-    uint32_t pad3 : 1;
-    uint32_t non_linear_mode : 2;
-    uint32_t pad4 : 14;
-  } mac_cfg;
-
-  // Word 2 (0x248)
-  struct {
-    uint32_t matrix_vector_bias : 16;
-    uint32_t pad0 : 16;
-  } matrix_vector_bias;
-
-  // Word 3 (0x24c)
-  struct {
-    uint32_t acc_bias : 16;
-    uint32_t acc_bias_shift : 5;
-    uint32_t pad0 : 11;
-  } acc_bias;
-
-  // Word 4 (0x250)
-  struct {
-    uint32_t post_scale : 16;
-    uint32_t post_scale_right_shift : 5;
-    uint32_t pad0 : 11;
-  } post_scale;
-
-} __attribute__((packed)) ane_ne_h13_t;
-
-// [0x16c] TileDMA Source Block (M1 mapping)
-typedef struct {
-  struct {
-    uint32_t en : 1;
-    uint32_t pad0 : 3;
-    uint32_t cache_hint : 4;
-    uint32_t cache_hint_reuse : 4;
-    uint32_t cache_hint_noreuse : 4;
-    uint32_t dep_mode : 4;
-    uint32_t pad1 : 12;
-  } src_dma_config; // 0x16c
-
-  uint32_t pad2; // 0x170
-
-  struct {
-    uint32_t pad0 : 6;
-    uint32_t addr : 26;
-  } base_addr; // 0x174
-
-  struct {
-    uint32_t pad0 : 6;
-    uint32_t stride : 26;
-  } row_stride; // 0x178
-
-  struct {
-    uint32_t pad0 : 6;
-    uint32_t stride : 26;
-  } plane_stride; // 0x17c
-
-  struct {
-    uint32_t pad0 : 6;
-    uint32_t stride : 26;
-  } depth_stride; // 0x180
-
-  struct {
-    uint32_t pad0 : 6;
-    uint32_t stride : 26;
-  } group_stride; // 0x184
-
-  uint32_t pad3[(0x1a4 - 0x188) / 4];
-
-  struct {
-    uint32_t fmt_mode : 2;
-    uint32_t pad0 : 2;
-    uint32_t truncate : 2;
-    uint32_t pad1 : 2;
-    uint32_t shift : 1;
-    uint32_t pad2 : 3;
-    uint32_t mem_fmt : 2;
-    uint32_t pad3 : 2;
-    uint32_t offset_ch : 3;
-    uint32_t pad4 : 5;
-    uint32_t interleave : 4;
-    uint32_t cmp_vec : 4;
-  } fmt; // 0x1a4
-
-  uint32_t pad4[(0x1bc - 0x1a8) / 4];
-
-  uint32_t pixel_offset[4]; // 0x1bc - 0x1c8
-
-  uint32_t pad5[(0x1f8 - 0x1cc) / 4];
-
-} __attribute__((packed)) ane_tiledma_src_h13_t;
-
-// [0x8800] Planar Engine (PE) Block
-// Corresponds to range 0x22c-0x238 in ane_hwx.tex
-typedef struct {
-  struct {
-    uint32_t pad0 : 1;
-    uint32_t enable : 1;
-    uint32_t op_mode : 3;
-    uint32_t relu_en : 1;
-    uint32_t cond : 1;
-    uint32_t pad1 : 9;
-    uint32_t first_source : 1;
-    uint32_t pad2 : 1;
-    uint32_t second_source : 2;
-    uint32_t pad3 : 12;
-  } cfg; // 0x8800 (offset 0x22c in tex)
-
-  struct {
-    uint16_t bias;
-    uint16_t scale;
-  } bias_scale; // 0x8804 (offset 0x230 in tex)
-
-  struct {
-    uint16_t pre_scale;
-    uint16_t pad0;
-  } pre_scale; // 0x8808 (offset 0x234 in tex)
-
-  struct {
-    uint32_t final_scale;
-  } final_scale; // 0x880c (offset 0x238 in tex)
-} __attribute__((packed)) ane_pe_h13_t;
-
-// [0xc0] KernelDMA Config block
-typedef struct {
-  // to be added
-  uint32_t pad0;
-  uint32_t pad1;
-
-  struct {
-    uint32_t en : 1;
-    uint32_t pad0 : 3;
-    uint32_t cache_hint : 4;
-    uint32_t pad1 : 24;
-  } coeff_dma_config[16]; // 0xc0 - 0xfc
-
-  struct {
-    uint32_t pad0 : 6;
-    uint32_t addr : 26;
-  } coeff_base_addr[16]; // 0x100 - 0x13c
-
-  uint32_t coeff_bfr_size[16]; // 0x140 - 0x17c
-} __attribute__((packed)) ane_kerneldma_h13_t;
-
-// [0x258] TileDMA Destination Block
-typedef struct {
-  struct {
-    uint32_t en : 1;
-    uint32_t pad0 : 3;
-    uint32_t cache_hint : 4;
-    uint32_t pad1 : 14;
-    uint32_t pad2 : 2;
-    uint32_t l2bfrmode : 1;
-    uint32_t bypass_eow : 1;
-    uint32_t pad3 : 4;
-  } dst_dma_config; // 0x258
-
-  struct {
-    uint32_t pad0 : 6;
-    uint32_t addr : 26;
-  } base_addr; // 0x25c
-
-  struct {
-    uint32_t pad0 : 6;
-    uint32_t stride : 26;
-  } row_stride; // 0x260
-
-  struct {
-    uint32_t pad0 : 6;
-    uint32_t stride : 26;
-  } plane_stride; // 0x264
-
-  struct {
-    uint32_t pad0 : 6;
-    uint32_t stride : 26;
-  } depth_stride; // 0x268
-
-  struct {
-    uint32_t pad0 : 6;
-    uint32_t stride : 26;
-  } group_stride; // 0x26c
-
-  struct {
-    uint32_t fmt_mode : 2;
-    uint32_t pad0 : 2;
-    uint32_t truncate : 2;
-    uint32_t pad1 : 2;
-    uint32_t shift : 1;
-    uint32_t pad2 : 3;
-    uint32_t mem_fmt : 2;
-    uint32_t pad3 : 2;
-    uint32_t offset_ch : 3;
-    uint32_t pad4 : 1;
-    uint32_t zero_pad_last : 1;
-    uint32_t zero_pad_first : 1;
-    uint32_t cmp_vec_fill : 1;
-    uint32_t pad5 : 1;
-    uint32_t interleave : 4;
-    uint32_t cmp_vec : 4;
-  } fmt; // 0x270
-
-} __attribute__((packed)) ane_tiledma_dst_h13_t;
 
 const char *get_arch_name(uint32_t subtype) {
   switch (subtype) {
@@ -1483,10 +376,10 @@ const char *get_ch_fmt_name(uint32_t fmt) {
   }
 }
 
-void print_common_h13(const uint32_t *reg_values, const bool *reg_valid) {
+void print_common_h13(const hwx_state_t *state) {
   printf("        --- Common (0x0000) ---\n");
   const ane_common_h13_t *common =
-      (const ane_common_h13_t *)&reg_values[H13_COMMON_START / 4];
+      (const ane_common_h13_t *)&state->values[H13_COMMON_START / 4];
 
   uint16_t win = common->indim.w_in;
   uint16_t hin = common->indim.h_in;
@@ -1523,9 +416,9 @@ void print_common_h13(const uint32_t *reg_values, const bool *reg_valid) {
          common->task_info.task_nid);
 }
 
-void print_l2_h13(const uint32_t *reg_values, const bool *reg_valid) {
+void print_l2_h13(const hwx_state_t *state) {
   printf("        --- L2 (0x4800) ---\n");
-  const ane_l2_h13_t *l2 = (const ane_l2_h13_t *)&reg_values[H13_L2_START / 4];
+  const ane_l2_h13_t *l2 = (const ane_l2_h13_t *)&state->values[H13_L2_START / 4];
   printf("        L2Cfg: InputRelu=%d PaddingMode=%u\n", l2->l2cfg.input_relu,
          l2->l2cfg.padding_mode);
   printf("        L2 SourceCfg: Type=%u Dep=%u Fmt=%u Intrlv=%u CmpV=%u "
@@ -1542,9 +435,9 @@ void print_l2_h13(const uint32_t *reg_values, const bool *reg_valid) {
          l2->rcfg.cmpv, l2->rcfg.offch);
 }
 
-void print_ne_h13(const uint32_t *reg_values, const bool *reg_valid) {
+void print_ne_h13(const hwx_state_t *state) {
   printf("        --- Neural Engine (0xC800) ---\n");
-  const ane_ne_h13_t *ne = (const ane_ne_h13_t *)&reg_values[H13_NE_START / 4];
+  const ane_ne_h13_t *ne = (const ane_ne_h13_t *)&state->values[H13_NE_START / 4];
   printf("        NE MACCfg: OpMode=%u NLMode=%u KernelMode=%d BiasMode=%d "
          "BinaryPoint=%u\n",
          ne->mac_cfg.op_mode, ne->mac_cfg.non_linear_mode,
@@ -1563,9 +456,9 @@ void print_ne_h13(const uint32_t *reg_values, const bool *reg_valid) {
          ne->post_scale.post_scale, ne->post_scale.post_scale_right_shift);
 }
 
-void print_pe_h13(const uint32_t *reg_values, const bool *reg_valid) {
-  const ane_pe_h13_t *pe = (const ane_pe_h13_t *)&reg_values[H13_PE_START / 4];
-  if (reg_valid[H13_PE_START / 4]) {
+void print_pe_h13(const hwx_state_t *state) {
+  const ane_pe_h13_t *pe = (const ane_pe_h13_t *)&state->values[H13_PE_START / 4];
+  if (state->valid[H13_PE_START / 4]) {
     printf("        --- Planar Engine (0x8800) ---\n");
     printf("        PECfg: En=%d OpMode=%u ReluEn=%d Cond=%u FirstSrc=%u "
            "SecondSrc=%u\n",
@@ -1578,9 +471,9 @@ void print_pe_h13(const uint32_t *reg_values, const bool *reg_valid) {
   }
 }
 
-void print_tiledma_src_h13(const uint32_t *reg_values, const bool *reg_valid) {
+void print_tiledma_src_h13(const hwx_state_t *state) {
   const ane_tiledma_src_h13_t *tsrc =
-      (const ane_tiledma_src_h13_t *)&reg_values[H13_TILEDMA_SRC_START / 4];
+      (const ane_tiledma_src_h13_t *)&state->values[H13_TILEDMA_SRC_START / 4];
   printf("        --- TileDMA Source (0x13800) ---\n");
   printf("        Src1DMAConfig: En=%d CacheHint=%u DepMode=%u\n",
          tsrc->src_dma_config.en, tsrc->src_dma_config.cache_hint,
@@ -1598,9 +491,9 @@ void print_tiledma_src_h13(const uint32_t *reg_values, const bool *reg_valid) {
          tsrc->fmt.cmp_vec);
 }
 
-void print_tiledma_dst_h13(const uint32_t *reg_values, const bool *reg_valid) {
+void print_tiledma_dst_h13(const hwx_state_t *state) {
   const ane_tiledma_dst_h13_t *tdst =
-      (const ane_tiledma_dst_h13_t *)&reg_values[H13_TILEDMA_DST_START / 4];
+      (const ane_tiledma_dst_h13_t *)&state->values[H13_TILEDMA_DST_START / 4];
   printf("        --- TileDMA Destination (0x17800) ---\n");
   printf("        DstDMAConfig: En=%d CacheHint=%u L2BfrMode=%d "
          "BypassEOW=%d\n",
@@ -1620,9 +513,9 @@ void print_tiledma_dst_h13(const uint32_t *reg_values, const bool *reg_valid) {
          tdst->fmt.cmp_vec);
 }
 
-void print_kerneldma_h13(const uint32_t *reg_values, const bool *reg_valid) {
+void print_kerneldma_h13(const hwx_state_t *state) {
   const ane_kerneldma_h13_t *k =
-      (const ane_kerneldma_h13_t *)&reg_values[H13_KERNELDMA_START / 4];
+      (const ane_kerneldma_h13_t *)&state->values[H13_KERNELDMA_START / 4];
   printf("        --- KernelDMA (0x1F800) ---\n");
   for (int i = 0; i < 16; i++) {
     if (k->coeff_dma_config[i].en) {
@@ -1633,16 +526,16 @@ void print_kerneldma_h13(const uint32_t *reg_values, const bool *reg_valid) {
   }
 }
 
-void print_common_h16(const uint32_t *reg_values, const bool *reg_valid) {
+void print_common_h16(const hwx_state_t *state) {
   printf("        --- Common Config ---\n");
   ane_common_h16_t common =
-      *(ane_common_h16_t *)&reg_values[H16_COMMON_START / 4];
+      *(ane_common_h16_t *)&state->values[H16_COMMON_START / 4];
 
-  if (reg_valid[(H16_COMMON_START + 0x4) / 4] ||
-      reg_valid[(H16_COMMON_START + 0x8) / 4] ||
-      reg_valid[(H16_COMMON_START + 0xC) / 4] ||
-      reg_valid[(H16_COMMON_START + 0x10) / 4] ||
-      reg_valid[H16_COMMON_START / 4]) {
+  if (state->valid[(H16_COMMON_START + 0x4) / 4] ||
+      state->valid[(H16_COMMON_START + 0x8) / 4] ||
+      state->valid[(H16_COMMON_START + 0xC) / 4] ||
+      state->valid[(H16_COMMON_START + 0x10) / 4] ||
+      state->valid[H16_COMMON_START / 4]) {
     const char *infmt_name = get_ch_fmt_name(common.ch_cfg.infmt);
     const char *outfmt_name = get_ch_fmt_name(common.ch_cfg.outfmt);
     printf("        InDim     : W=%u H=%u C=%u D=%u Type=%s\n", common.inwidth,
@@ -1651,37 +544,37 @@ void print_common_h16(const uint32_t *reg_values, const bool *reg_valid) {
            common.outheight, common.outchannels, common.outdepth, outfmt_name);
   }
 
-  if (reg_valid[(H16_COMMON_START + 0x24) / 4]) {
+  if (state->valid[(H16_COMMON_START + 0x24) / 4]) {
     printf("        NumGroups : %u\n", common.num_groups);
   }
 
-  if (reg_valid[(H16_COMMON_START + 0x28) / 4]) {
+  if (state->valid[(H16_COMMON_START + 0x28) / 4]) {
     printf("        ConvCfg   : K=%ux%u S=%ux%u P(left/top)=%ux%u O=%ux%u\n",
            common.conv_cfg.kw, common.conv_cfg.kh, common.conv_cfg.sx,
            common.conv_cfg.sy, common.conv_cfg.pad_left,
            common.conv_cfg.pad_top, common.conv_cfg.ox, common.conv_cfg.oy);
   }
 
-  if (reg_valid[(H16_COMMON_START + 0x2C) / 4]) {
+  if (state->valid[(H16_COMMON_START + 0x2C) / 4]) {
     printf("        ConvCfg3D : 0x%08x\n", common.conv_cfg_3d);
   }
 
-  if (reg_valid[(H16_COMMON_START + 0x30) / 4]) {
+  if (state->valid[(H16_COMMON_START + 0x30) / 4]) {
     printf("        Unicast   : Cin=%u En=%d\n", common.unicast_cfg.unicast_cin,
            common.unicast_cfg.unicast_en);
   }
 
-  if (reg_valid[(H16_COMMON_START + 0x34) / 4]) {
+  if (state->valid[(H16_COMMON_START + 0x34) / 4]) {
     printf("        TileHeight: %u\n", common.tile_height);
   }
 
-  if (reg_valid[(H16_COMMON_START + 0x38) / 4]) {
+  if (state->valid[(H16_COMMON_START + 0x38) / 4]) {
     printf("        TileOverlap: %u (Top=%u Bottom=%u)\n",
            common.tile_overlap.overlap, common.tile_overlap.pad_top,
            common.tile_overlap.pad_bottom);
   }
 
-  if (reg_valid[(H16_COMMON_START + 0x3C) / 4]) {
+  if (state->valid[(H16_COMMON_START + 0x3C) / 4]) {
     printf("        MACCfg    : ActiveNE=%u SmallSrc=%u TaskType=%u L2Barr=%d "
            "OutTrans=%d\n",
            common.maccfg.active_ne, common.maccfg.small_src_mode,
@@ -1689,11 +582,11 @@ void print_common_h16(const uint32_t *reg_values, const bool *reg_valid) {
            common.maccfg.out_trans);
   }
 
-  if (reg_valid[(H16_COMMON_START + 0x40) / 4]) {
+  if (state->valid[(H16_COMMON_START + 0x40) / 4]) {
     printf("        LaneCfg   : OCGSize=%u\n", common.lane_cfg.ocg_size);
   }
 
-  if (reg_valid[(H16_COMMON_START + 0x48) / 4]) {
+  if (state->valid[(H16_COMMON_START + 0x48) / 4]) {
     printf("        PERouting : S1WB=%d S1HB=%d S1DB=%d S1CB=%d S2WB=%d "
            "S2HB=%d S2DB=%d S2CB=%d S1T=%d S2T=%d OT=%d\n",
            common.pe_routing.src1_w_bcast, common.pe_routing.src1_h_bcast,
@@ -1704,17 +597,17 @@ void print_common_h16(const uint32_t *reg_values, const bool *reg_valid) {
            common.pe_routing.out_trans);
   }
 
-  if (reg_valid[(H16_COMMON_START + 0x4C) / 4])
+  if (state->valid[(H16_COMMON_START + 0x4C) / 4])
     printf("        NID       : 0x%08x\n", common.nid);
-  if (reg_valid[(H16_COMMON_START + 0x50) / 4])
+  if (state->valid[(H16_COMMON_START + 0x50) / 4])
     printf("        DPE       : 0x%08x\n", common.dpe);
 }
 
-void print_ne_h16(const uint32_t *reg_values, const bool *reg_valid) {
-  ane_ne_h16_t ne = *(ane_ne_h16_t *)&reg_values[H16_NE_START / 4];
+void print_ne_h16(const hwx_state_t *state) {
+  ane_ne_h16_t ne = *(ane_ne_h16_t *)&state->values[H16_NE_START / 4];
   printf("        --- Neural Engine Config ---\n");
 
-  if (reg_valid[H16_NE_START / 4]) {
+  if (state->valid[H16_NE_START / 4]) {
     printf("        KernelCfg: Fmt=%s Palettized=%d (%dbit) SparseFmt=%d "
            "AsymQuant=%d\n",
            get_ch_fmt_name(ne.kernel_cfg.kernel_fmt),
@@ -1722,7 +615,7 @@ void print_ne_h16(const uint32_t *reg_values, const bool *reg_valid) {
            ne.kernel_cfg.sparse_fmt, ne.kernel_cfg.asym_quant_en);
   }
 
-  if (reg_valid[(H16_NE_START + 0x4) / 4]) {
+  if (state->valid[(H16_NE_START + 0x4) / 4]) {
     printf("        MACCfg: OpMode=%d KernelMode=%d BiasEn=%d Passthrough=%d "
            "MVBiasEn=%d BinaryPoint=%u PostScaleEn=%d NonLinear=%d\n"
            "                PaddingMode=%d MaxPoolMode=%d "
@@ -1736,197 +629,197 @@ void print_ne_h16(const uint32_t *reg_values, const bool *reg_valid) {
            ne.mac_cfg.double_int8_en);
   }
 
-  if (reg_valid[(H16_NE_START + 0x8) / 4])
+  if (state->valid[(H16_NE_START + 0x8) / 4])
     printf("        MatrixBias: 0x%04x\n", ne.matrix_bias.matrix_vector_bias);
-  if (reg_valid[(H16_NE_START + 0x0c) / 4])
+  if (state->valid[(H16_NE_START + 0x0c) / 4])
     printf("        NEBias: 0x%06x\n", ne.ne_bias.val);
-  if (reg_valid[(H16_NE_START + 0x10) / 4])
+  if (state->valid[(H16_NE_START + 0x10) / 4])
     printf("        PostScale: 0x%06x\n", ne.post_scale.val);
 
-  if (reg_valid[(H16_NE_START + 0x14) / 4]) {
+  if (state->valid[(H16_NE_START + 0x14) / 4]) {
     printf("        RcasConfig: KeyMask=0x%02x CmpBit=%d SenseAxis=%d "
            "SenseBit=%d Mode=%d\n",
            ne.rcas_cfg.key_mask, ne.rcas_cfg.cmp_bit, ne.rcas_cfg.sense_axis,
            ne.rcas_cfg.sense_bit, ne.rcas_cfg.mode);
   }
 
-  if (reg_valid[(H16_NE_START + 0x18) / 4]) {
+  if (state->valid[(H16_NE_START + 0x18) / 4]) {
     printf("        RoundModeCfg: Mode=%d IntegerBits=%d\n",
            ne.st_round_cfg.round_mode, ne.st_round_cfg.integer_bits);
   }
 
-  if (reg_valid[(H16_NE_START + 0x1c) / 4]) {
+  if (state->valid[(H16_NE_START + 0x1c) / 4]) {
     printf("        SRSeeds: 0x%08x 0x%08x 0x%08x 0x%08x\n",
            ne.st_round_seed[0], ne.st_round_seed[1], ne.st_round_seed[2],
            ne.st_round_seed[3]);
   }
 
-  if (reg_valid[(H16_NE_START + 0x2c) / 4])
+  if (state->valid[(H16_NE_START + 0x2c) / 4])
     printf("        QuantZeroPoint: %d\n", ne.quant.quant_zero_point);
 }
 
-void print_pe_h16(const uint32_t *reg_values, const bool *reg_valid) {
-  ane_pe_h16_t pe = *(ane_pe_h16_t *)&reg_values[H16_PE_START / 4];
+void print_pe_h16(const hwx_state_t *state) {
+  ane_pe_h16_t pe = *(ane_pe_h16_t *)&state->values[H16_PE_START / 4];
   printf("        --- Planar Engine Config ---\n");
 
-  if (reg_valid[H16_PE_START / 4]) {
+  if (state->valid[H16_PE_START / 4]) {
     printf("        PEConfig: Op=%d Cond=%d Src1=%d Src2=%d\n", pe.pe_cfg.op,
            pe.pe_cfg.cond, pe.pe_cfg.src1, pe.pe_cfg.src2);
   }
-  if (reg_valid[(H16_PE_START + 0x4) / 4])
+  if (state->valid[(H16_PE_START + 0x4) / 4])
     printf("        PEBias   : 0x%05x (%f)\n", pe.bias & 0x7FFFF,
            decode_f19(pe.bias));
-  if (reg_valid[(H16_PE_START + 0x8) / 4])
+  if (state->valid[(H16_PE_START + 0x8) / 4])
     printf("        PEScale  : 0x%05x (%f)\n", pe.scale & 0x7FFFF,
            decode_f19(pe.scale));
-  if (reg_valid[(H16_PE_START + 0x0c) / 4])
+  if (state->valid[(H16_PE_START + 0x0c) / 4])
     printf("        PEFScale : 0x%05x (%f)\n", pe.final_scale & 0x7FFFF,
            decode_f19(pe.final_scale));
-  if (reg_valid[(H16_PE_START + 0x10) / 4])
+  if (state->valid[(H16_PE_START + 0x10) / 4])
     printf("        PEPScale : 0x%05x (%f)\n", pe.pre_scale & 0x7FFFF,
            decode_f19(pe.pre_scale));
-  if (reg_valid[(H16_PE_START + 0x14) / 4])
+  if (state->valid[(H16_PE_START + 0x14) / 4])
     printf("        PEFScale2: 0x%05x (%f)\n", pe.final_scale2 & 0x7FFFF,
            decode_f19(pe.final_scale2));
-  if (reg_valid[(H16_PE_START + 0x38) / 4]) {
+  if (state->valid[(H16_PE_START + 0x38) / 4]) {
     printf("        PEQuant: InReLU=%d OutReLU=%d ZeroPoint=%d\n",
            pe.quant.input_relu, pe.quant.output_relu, pe.quant.zero_point);
   }
 }
 
-void print_l2_h16(const uint32_t *reg_values, const bool *reg_valid) {
-  ane_l2_h16_t l2 = *(ane_l2_h16_t *)&reg_values[H16_L2_START / 4];
+void print_l2_h16(const hwx_state_t *state) {
+  ane_l2_h16_t l2 = *(ane_l2_h16_t *)&state->values[H16_L2_START / 4];
   printf("        --- L2 Cache Control ---\n");
 
-  if (reg_valid[H16_L2_START / 4]) {
+  if (state->valid[H16_L2_START / 4]) {
     printf("        L2Control: Padding=%d Src1FIFO=%d Src1Double=%d "
            "Barrier=%d\n",
            l2.l2_control.padding_mode, l2.l2_control.src1_fifo,
            l2.l2_control.src1_double, l2.l2_control.barrier);
   }
-  if (reg_valid[(H16_L2_START + 0x04) / 4]) {
+  if (state->valid[(H16_L2_START + 0x04) / 4]) {
     printf("        Src1Cfg  : Type=%d DmaFmt=%d Interleave=%d OffY=%d "
            "Comp=%d\n",
            l2.src1_cfg.src_type, l2.src1_cfg.dma_fmt, l2.src1_cfg.interleave,
            l2.src1_cfg.offset_y_lsbs, l2.src1_cfg.compression);
   }
-  if (reg_valid[(H16_L2_START + 0x08) / 4]) {
+  if (state->valid[(H16_L2_START + 0x08) / 4]) {
     printf("        Src2Cfg  : Type=%d Interleave=%d Comp=%d\n",
            l2.src2_cfg.src_type, l2.src2_cfg.interleave,
            l2.src2_cfg.compression);
   }
-  if (reg_valid[(H16_L2_START + 0x10) / 4]) {
+  if (state->valid[(H16_L2_START + 0x10) / 4]) {
     printf("        Src1  : BaseAddr=0x%05x CStride=0x%05x "
            "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
            l2.src1.base, l2.src1.channel_stride, l2.src1.row_stride,
            l2.src1.depth_stride, l2.src1.group_stride);
   }
-  if (reg_valid[(H16_L2_START + 0x24) / 4]) {
+  if (state->valid[(H16_L2_START + 0x24) / 4]) {
     printf("        Src2  : BaseAddr=0x%05x CStride=0x%05x "
            "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
            l2.src2.base, l2.src2.channel_stride, l2.src2.row_stride,
            l2.src2.depth_stride, l2.src2.group_stride);
   }
-  if (reg_valid[(H16_L2_START + 0x38) / 4]) {
+  if (state->valid[(H16_L2_START + 0x38) / 4]) {
     printf("        SrcIdx: BaseAddr=0x%05x CStride=0x%05x "
            "DStride=0x%05x GStride=0x%05x\n",
            l2.srcidx.base, l2.srcidx.channel_stride, l2.srcidx.depth_stride,
            l2.srcidx.group_stride);
   }
-  if (reg_valid[(H16_L2_START + 0x48) / 4]) {
+  if (state->valid[(H16_L2_START + 0x48) / 4]) {
     printf("        ResCfg: BfrMode=%d CropX=%d Interleave=%d Type=%d "
            "Comp=%d\n",
            l2.result_cfg.bfr_mode, l2.result_cfg.crop_offset_x,
            l2.result_cfg.interleave, l2.result_cfg.res_type,
            l2.result_cfg.compression);
   }
-  if (reg_valid[(H16_L2_START + 0x4c) / 4]) {
+  if (state->valid[(H16_L2_START + 0x4c) / 4]) {
     printf("        Result: BaseAddr=0x%05x CStride=0x%05x "
            "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
            l2.result.base, l2.result.channel_stride, l2.result.row_stride,
            l2.result.depth_stride, l2.result.group_stride);
   }
-  if (reg_valid[(H16_L2_START + 0x7c) / 4]) {
+  if (state->valid[(H16_L2_START + 0x7c) / 4]) {
     printf("        Res2 / L2Wr: BaseAddr=0x%05x CStride=0x%05x "
            "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
            l2.result2.base, l2.result2.channel_stride, l2.result2.row_stride,
            l2.result2.depth_stride, l2.result2.group_stride);
   }
-  if (reg_valid[(H16_L2_START + 0x74) / 4]) {
+  if (state->valid[(H16_L2_START + 0x74) / 4]) {
     printf("        ResultWrap: Index=0x%x StartOffset=0x%x\n",
            l2.result_wrap_idx_off.wrap_index,
            l2.result_wrap_idx_off.wrap_start_offset);
   }
-  if (reg_valid[(H16_L2_START + 0x9c) / 4]) {
+  if (state->valid[(H16_L2_START + 0x9c) / 4]) {
     printf("        ResultWrap: Addr=0x%x AddrOffset=0x%x\n",
            l2.result_wrap_addr.wrap_addr, l2.result_wrap_addr.wrap_addr_offset);
   }
 }
 
-void print_tiledma_src_h16(const uint32_t *reg_values, const bool *reg_valid) {
-  ane_tiledma_src_h16_t *src =
-      (ane_tiledma_src_h16_t *)&reg_values[H16_TILEDMA_SRC_START / 4];
+void print_tiledma_src_h16(const hwx_state_t *state) {
+  const ane_tiledma_src_h16_t *src =
+      (const ane_tiledma_src_h16_t *)&state->values[H16_TILEDMA_SRC_START / 4];
   printf("        --- TileDMA Source (0x4D00) ---\n");
-  if (reg_valid[H16_TILEDMA_SRC_START / 4]) {
+  if (state->valid[H16_TILEDMA_SRC_START / 4]) {
     printf("        Src1DMAConfig: En=%d DSID=%u Tag=%u Format=%u\n",
            src->src1cfg.en, src->src1cfg.dataset_id, src->src1cfg.user_tag,
            src->src1cfg.format);
   }
-  if (reg_valid[(H16_TILEDMA_SRC_START + 0x04) / 4]) {
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x04) / 4]) {
     printf("        Src2DMAConfig: En=%d DSID=%u Tag=%u DepMode=%u\n",
            src->src2cfg.en, src->src2cfg.dataset_id, src->src2cfg.user_tag,
            src->src2cfg.dep_mode);
   }
-  if (reg_valid[(H16_TILEDMA_SRC_START + 0x18) / 4]) {
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x18) / 4]) {
     printf("        Src1Strides: RowStride=0x%08x PlaneStride=0x%08x "
            "DepthStride=0x%08x GroupStride=0x%08x\n",
            src->src1rows, src->src1chans, src->src1depths, src->src1groups);
   }
-  if (reg_valid[(H16_TILEDMA_SRC_START + 0x30) / 4]) {
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x30) / 4]) {
     printf("        Src2Strides: RowStride=0x%08x PlaneStride=0x%08x "
            "DepthStride=0x%08x GroupStride=0x%08x\n",
            src->src2rows, src->src2chans, src->src2depths, src->src2groups);
   }
-  if (reg_valid[(H16_TILEDMA_SRC_START + 0x50) / 4]) {
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x50) / 4]) {
     printf("        Src1MetaData: Addr=0x%08x%08x Size=0x%08x\n",
            src->src1meta_hi, src->src1meta_lo, src->src1meta_size);
   }
-  if (reg_valid[(H16_TILEDMA_SRC_START + 0x5c) / 4]) {
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x5c) / 4]) {
     printf("        Src2MetaData: Addr=0x%08x%08x Size=0x%08x\n",
            src->src2meta_hi, src->src2meta_lo, src->src2meta_size);
   }
-  if (reg_valid[(H16_TILEDMA_SRC_START + 0x68) / 4]) {
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x68) / 4]) {
     printf("        Src1Fmt: 0x%08x, Src2Fmt: 0x%08x\n", src->src1memfmt,
            src->src2memfmt);
   }
 }
 
-void print_tiledma_dst_h16(const uint32_t *reg_values, const bool *reg_valid) {
+void print_tiledma_dst_h16(const hwx_state_t *state) {
   ane_tiledma_dst_h16_t *dst =
-      (ane_tiledma_dst_h16_t *)&reg_values[H16_TILEDMA_DST_START / 4];
+      (ane_tiledma_dst_h16_t *)&state->values[H16_TILEDMA_DST_START / 4];
   printf("        --- TileDMA Destination (0x5100) ---\n");
-  if (reg_valid[H16_TILEDMA_DST_START / 4]) {
+  if (state->valid[H16_TILEDMA_DST_START / 4]) {
     printf("        DstDMAConfig: En=%d CacheHint=%u DSID=%u Tag=%u\n",
            dst->dstcfg.en, dst->dstcfg.cache_hint, dst->dstcfg.dataset_id,
            dst->dstcfg.user_tag);
   }
-  if (reg_valid[(H16_TILEDMA_DST_START + 0x10) / 4]) {
+  if (state->valid[(H16_TILEDMA_DST_START + 0x10) / 4]) {
     printf("        DstStrides: RowStride=0x%08x PlaneStride=0x%08x "
            "DepthStride=0x%08x GroupStride=0x%08x\n",
            dst->dstrows, dst->dstchans, dst->dstdepths, dst->dstgroups);
   }
 }
 
-void print_kerneldma_h16(const uint32_t *reg_values, const bool *reg_valid) {
+void print_kerneldma_h16(const hwx_state_t *state) {
   ane_kerneldma_src_h16_t *k =
-      (ane_kerneldma_src_h16_t *)&reg_values[H16_KERNELDMA_START / 4];
+      (ane_kerneldma_src_h16_t *)&state->values[H16_KERNELDMA_START / 4];
   printf("        --- KernelDMA Source (0x5500) ---\n");
-  if (reg_valid[H16_KERNELDMA_START / 4])
+  if (state->valid[H16_KERNELDMA_START / 4])
     printf("        MasterConfig: MasterEnable=%d\n",
            k->master_cfg.master_enable);
   for (int i = 0; i < 16; i++) {
-    if (reg_valid[(H16_KERNELDMA_START + 0x20) / 4 + i] ||
-        reg_valid[(H16_KERNELDMA_START + 0x60) / 4 + i]) {
+    if (state->valid[(H16_KERNELDMA_START + 0x20) / 4 + i] ||
+        state->valid[(H16_KERNELDMA_START + 0x60) / 4 + i]) {
       printf("        Coeff[%d]: En=%d CacheHint=%u DSID=%u Tag=%u "
              "Base=0x%08x "
              "Size=0x%08x\n",
@@ -1935,55 +828,55 @@ void print_kerneldma_h16(const uint32_t *reg_values, const bool *reg_valid) {
              k->coeff_base[i], k->coeff_size[i]);
     }
   }
-  if (reg_valid[(H16_KERNELDMA_START + 0xe0) / 4])
+  if (state->valid[(H16_KERNELDMA_START + 0xe0) / 4])
     printf("        Bias: En=%d CacheHint=%u Tag=%u\n", k->bias_cfg.en,
            k->bias_cfg.cache_hint, k->bias_cfg.user_tag);
-  if (reg_valid[(H16_KERNELDMA_START + 0xf0) / 4])
+  if (state->valid[(H16_KERNELDMA_START + 0xf0) / 4])
     printf("        PostScale: En=%d CacheHint=%u Tag=%u\n",
            k->post_scale_cfg.en, k->post_scale_cfg.cache_hint,
            k->post_scale_cfg.user_tag);
-  if (reg_valid[(H16_KERNELDMA_START + 0x100) / 4])
+  if (state->valid[(H16_KERNELDMA_START + 0x100) / 4])
     printf("        Palette: En=%d CacheHint=%u Tag=%u\n", k->palette_cfg.en,
            k->palette_cfg.cache_hint, k->palette_cfg.user_tag);
-  if (reg_valid[(H16_KERNELDMA_START + 0x110) / 4])
+  if (state->valid[(H16_KERNELDMA_START + 0x110) / 4])
     printf("        NonLinear: En=%d CacheHint=%u Tag=%u\n",
            k->non_linear_cfg.en, k->non_linear_cfg.cache_hint,
            k->non_linear_cfg.user_tag);
 }
 
-void print_cachedma_h16(const uint32_t *reg_values, const bool *reg_valid) {
+void print_cachedma_h16(const hwx_state_t *state) {
   ane_cachedma_h16_t cdma =
-      *(ane_cachedma_h16_t *)&reg_values[H16_CACHEDMA_START / 4];
+      *(ane_cachedma_h16_t *)&state->values[H16_CACHEDMA_START / 4];
   printf("        --- CacheDMA & Telemetry (0x5900) ---\n");
-  if (reg_valid[H16_CACHEDMA_START / 4]) {
+  if (state->valid[H16_CACHEDMA_START / 4]) {
     printf("        Control: Flush=%d En=%d TaskSync=0x%x ET=0x%x FL=%d "
            "Thresh=0x%04x\n",
            cdma.control.flush, cdma.control.enable, cdma.control.task_sync,
            cdma.control.early_term, cdma.control.footprint_limiter,
            cdma.control.footprint_threshold);
   }
-  if (reg_valid[(H16_CACHEDMA_START + 0x04) / 4]) {
+  if (state->valid[H16_CACHEDMA_START / 4 + 1]) {
     printf("        Pre0: BWLimit=%u Sieve2=%u AgeOut=%u\n",
            cdma.pre0.bandwidth_limit, cdma.pre0.sieve2,
            cdma.pre0.telemetry_age_out);
   }
-  if (reg_valid[(H16_CACHEDMA_START + 0x08) / 4])
+  if (state->valid[(H16_CACHEDMA_START + 0x08) / 4])
     printf("        Pre1: Sieve1=%u\n", cdma.pre1.sieve1);
-  if (reg_valid[(H16_CACHEDMA_START + 0x18) / 4])
+  if (state->valid[(H16_CACHEDMA_START + 0x18) / 4])
     printf("        DSID: DSID_Size=0x%x\n", cdma.dsid.dsid_and_size);
-  if (reg_valid[(H16_CACHEDMA_START + 0x1c) / 4])
+  if (state->valid[(H16_CACHEDMA_START + 0x1c) / 4])
     printf("        Footprint: Arg2=0x%x\n", cdma.footprint_arg.footprint_arg2);
-  if (reg_valid[(H16_CACHEDMA_START + 0x20) / 4]) {
+  if (state->valid[(H16_CACHEDMA_START + 0x20) / 4]) {
     printf("        ET_Args12: Arg1=0x%04x Arg2=0x%04x\n",
            cdma.early_term_arg12.arg1, cdma.early_term_arg12.arg2);
   }
-  if (reg_valid[(H16_CACHEDMA_START + 0x24) / 4])
+  if (state->valid[(H16_CACHEDMA_START + 0x24) / 4])
     printf("        Flush: Arg=0x%04x\n", cdma.flush_reg.flush_arg);
-  if (reg_valid[(H16_CACHEDMA_START + 0x28) / 4]) {
+  if (state->valid[(H16_CACHEDMA_START + 0x28) / 4]) {
     printf("        ET_Args34: Arg3=0x%02x Arg4=0x%02x\n",
            cdma.early_term_arg34.arg3, cdma.early_term_arg34.arg4);
   }
-  if (reg_valid[(H16_CACHEDMA_START + 0x2c) / 4]) {
+  if (state->valid[(H16_CACHEDMA_START + 0x2c) / 4]) {
     printf("        BackOff: En=%d Delay=%u Min=%u Max=%u Scale=%u\n",
            cdma.backoff.enable, cdma.backoff.delay, cdma.backoff.min,
            cdma.backoff.max, cdma.backoff.scale);
@@ -2014,16 +907,15 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len, BOOL dump_reg_blocks) {
              td->kbase.kbase2, td->kbase.kbase3);
     }
 
-    uint32_t reg_values[0x20000] = {0};
-    bool reg_valid[0x20000] = {false};
+    hwx_state_t state = {0};
 
     // Modern Stream Parse
     if (offset + sizeof(ane_td_header_h13_t) <= total_len) {
       const uint32_t *words = (const uint32_t *)(td + 1);
       uint32_t max_payload_bytes =
           (total_len > offset + sizeof(ane_td_header_h13_t))
-              ? (uint32_t)(total_len - offset - sizeof(ane_td_header_h13_t))
-              : 0;
+               ? (uint32_t)(total_len - offset - sizeof(ane_td_header_h13_t))
+               : 0;
       uint32_t num_words = max_payload_bytes / 4;
 
       if (td->next_pointer > offset + sizeof(ane_td_header_h13_t)) {
@@ -2048,9 +940,9 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len, BOOL dump_reg_blocks) {
           if (w_idx >= num_words)
             break;
           // Mask addr just in case it exceeds our struct buffer logic
-          if (addr + i < 0x20000) {
-            reg_values[addr + i] = words[w_idx];
-            reg_valid[addr + i] = true;
+          if (addr + i < HW_MAX_REGS) {
+            state.values[addr + i] = words[w_idx];
+            state.valid[addr + i] = true;
           }
           w_idx++;
         }
@@ -2059,13 +951,13 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len, BOOL dump_reg_blocks) {
 
     if (offset + sizeof(ane_td_header_h13_t) <= total_len) {
 
-      print_common_h13(reg_values, reg_valid);
-      print_l2_h13(reg_values, reg_valid);
-      print_pe_h13(reg_values, reg_valid);
-      print_ne_h13(reg_values, reg_valid);
-      print_tiledma_src_h13(reg_values, reg_valid);
-      print_tiledma_dst_h13(reg_values, reg_valid);
-      print_kerneldma_h13(reg_values, reg_valid);
+      print_common_h13(&state);
+      print_l2_h13(&state);
+      print_pe_h13(&state);
+      print_ne_h13(&state);
+      print_tiledma_src_h13(&state);
+      print_tiledma_dst_h13(&state);
+      print_kerneldma_h13(&state);
 
       if (dump_reg_blocks) {
         hwx_block_info_t blocks[] = {
@@ -2077,7 +969,7 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len, BOOL dump_reg_blocks) {
             {"[0x17800] TileDMA Destination", H13_TILEDMA_DST_START},
             {"[0x1F800] KernelDMA Source", H13_KERNELDMA_START},
         };
-        dump_hw_blocks(reg_values, reg_valid, blocks, 7, get_m1_reg_name);
+        dump_hw_blocks(&state, blocks, 7, get_m1_reg_name);
       }
     }
 
@@ -2125,8 +1017,7 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
       printf("        TDID: 0x%04x\n", m4h->tdid);
     }
 
-    uint32_t reg_values[0x8000] = {0};
-    bool reg_valid[0x8000] = {false};
+    hwx_state_t state = {0};
 
     // Phase 4: Verbose Register Logging
     const uint32_t *words = (const uint32_t *)(ptr + offset);
@@ -2146,9 +1037,9 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
         num_regs = (header >> 15) & 0x3F;
         for (int j = 0; j <= num_regs && i < num_words; j++) {
           uint32_t current_addr = word_addr + j;
-          if (current_addr < 0x8000) {
-            reg_values[current_addr] = words[i];
-            reg_valid[current_addr] = true;
+          if (current_addr < HW_MAX_REGS) {
+            state.values[current_addr] = words[i];
+            state.valid[current_addr] = true;
           }
           i++;
         }
@@ -2160,9 +1051,9 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
         // V11 Masked commands always include the base register value first
         if (i < num_words) {
           uint32_t current_addr = word_addr;
-          if (current_addr < 0x8000) {
-            reg_values[current_addr] = words[i];
-            reg_valid[current_addr] = true;
+          if (current_addr < HW_MAX_REGS) {
+            state.values[current_addr] = words[i];
+            state.valid[current_addr] = true;
           }
           i++;
         }
@@ -2171,9 +1062,9 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
         for (int bit = 0; bit < 16 && i < num_words; bit++) {
           if ((mask >> bit) & 1) {
             uint32_t current_addr = word_addr + bit + 1;
-            if (current_addr < 0x8000) {
-              reg_values[current_addr] = words[i];
-              reg_valid[current_addr] = true;
+            if (current_addr < HW_MAX_REGS) {
+              state.values[current_addr] = words[i];
+              state.valid[current_addr] = true;
             }
             i++;
           }
@@ -2183,14 +1074,14 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
     printf("        Stream Parse: OK (End index %d/%d)\n", i, num_words);
 
     // Decode HW Blocks using specialized decoders
-    print_common_h16(reg_values, reg_valid);
-    print_l2_h16(reg_values, reg_valid);
-    print_pe_h16(reg_values, reg_valid);
-    print_ne_h16(reg_values, reg_valid);
-    print_tiledma_src_h16(reg_values, reg_valid);
-    print_tiledma_dst_h16(reg_values, reg_valid);
-    print_kerneldma_h16(reg_values, reg_valid);
-    print_cachedma_h16(reg_values, reg_valid);
+    print_common_h16(&state);
+    print_l2_h16(&state);
+    print_pe_h16(&state);
+    print_ne_h16(&state);
+    print_tiledma_src_h16(&state);
+    print_tiledma_dst_h16(&state);
+    print_kerneldma_h16(&state);
+    print_cachedma_h16(&state);
 
     if (dump_reg_blocks) {
       hwx_block_info_t blocks[] = {
@@ -2203,7 +1094,7 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
           {"[0x5500] KernelDMA Source", H16_KERNELDMA_START},
           {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START},
       };
-      dump_hw_blocks(reg_values, reg_valid, blocks, 8, get_m4_reg_name);
+      dump_hw_blocks(&state, blocks, 8, get_m4_reg_name);
     }
 
     if (offset + size_bytes > total_len)
@@ -2345,6 +1236,180 @@ const char *get_cmd_name(uint32_t cmd) {
   }
 }
 
+static void handle_segment_64(const struct mach_header_64 *header,
+                              const struct load_command *lc, NSData *data,
+                              BOOL dump_hexdump, BOOL dump_reg_blocks) {
+  const struct segment_command_64 *seg = (const struct segment_command_64 *)lc;
+  printf("  Segment Name: %s\n", seg->segname);
+  printf("  VM Addr: 0x%llx\n", seg->vmaddr);
+  printf("  VM Size: 0x%llx\n", seg->vmsize);
+  printf("  File Off: 0x%llx\n", seg->fileoff);
+  printf("  File Size: 0x%llx\n", seg->filesize);
+  printf("  Num Sections: %u\n", seg->nsects);
+
+  const struct section_64 *sect =
+      (const struct section_64 *)((const uint8_t *)lc +
+                                  sizeof(struct segment_command_64));
+  for (uint32_t j = 0; j < seg->nsects; j++) {
+    if ((const uint8_t *)(sect + 1) > (const uint8_t *)data.bytes + data.length)
+      break;
+    printf("    Section %u:\n", j);
+    printf("      Name: %s\n", sect->sectname);
+    printf("      Segment: %s\n", sect->segname);
+    printf("      Addr: 0x%llx\n", sect->addr);
+    printf("      Size: 0x%llx\n", sect->size);
+    printf("      Offset: 0x%x\n", sect->offset);
+    printf("      Flags: 0x%x\n", sect->flags);
+
+    if (strcmp(seg->segname, "__TEXT") == 0) {
+      if (sect->offset + sect->size <= data.length) {
+        const uint8_t *section_ptr = (const uint8_t *)data.bytes + sect->offset;
+        size_t section_size = (size_t)sect->size;
+
+        if (strcmp(sect->sectname, "__text") == 0 ||
+            strcmp(sect->sectname, "__TEXT") == 0) {
+          uint32_t instr_ver = get_instruction_set_version(header->cpusubtype);
+          if (instr_ver >= 11) {
+            decode_ane_td_m4(section_ptr, section_size, header->cpusubtype,
+                             dump_reg_blocks);
+          } else {
+            decode_ane_td(section_ptr, section_size, dump_reg_blocks);
+          }
+          if (dump_hexdump) {
+            hex_dump(sect->sectname, section_ptr, section_size);
+          }
+        }
+      }
+    }
+    sect++;
+  }
+}
+
+static void handle_symtab(const struct load_command *lc, NSData *data,
+                          BOOL dump_all_symbols) {
+  const struct symtab_command *sym = (const struct symtab_command *)lc;
+  printf("  Symbol Table Offset: 0x%x\n", sym->symoff);
+  printf("  Num Symbols: %u\n", sym->nsyms);
+  printf("  String Table Offset: 0x%x\n", sym->stroff);
+
+  if (sym->nsyms > 0 && sym->symoff < data.length) {
+    uint32_t max_syms = dump_all_symbols ? sym->nsyms : 5;
+    if (!dump_all_symbols && sym->nsyms > 5) {
+      printf("    (Printing first 5 symbols - use -s to see all)\n");
+    } else {
+      printf("    (Printing %u symbols)\n", max_syms);
+    }
+
+    const struct nlist_64 *list =
+        (const struct nlist_64 *)(data.bytes + sym->symoff);
+    const char *strtab = (const char *)(data.bytes + sym->stroff);
+
+    for (uint32_t k = 0; k < max_syms; k++) {
+      if ((const uint8_t *)(list + 1) > (const uint8_t *)data.bytes + data.length)
+        break;
+      const char *name = "";
+      if (list->n_un.n_strx < sym->strsize) {
+        name = strtab + list->n_un.n_strx;
+      }
+      printf("    [%u] %s @ 0x%llx\n", k, name, list->n_value);
+      list++;
+    }
+  }
+}
+
+static void handle_thread(const struct load_command *lc, BOOL dump_threads) {
+  if (!dump_threads)
+    return;
+  uint32_t internal_offset = 8;
+  uint32_t flavor_idx = 0;
+  while (internal_offset + 8 <= lc->cmdsize) {
+    const uint32_t *content =
+        (const uint32_t *)((const uint8_t *)lc + internal_offset);
+    uint32_t flavor = content[0];
+    uint32_t count = content[1];
+    printf("  Flavor Set %u: Flavor=%u Count=%u\n", flavor_idx++, flavor,
+           count);
+
+    internal_offset += 8;
+    const uint32_t *state = content + 2;
+    printf("    State:\n");
+    for (uint32_t k = 0; k < count; k++) {
+      if (internal_offset + 4 > lc->cmdsize)
+        break;
+      if (k % 4 == 0)
+        printf("      [%03u]:", k);
+      printf(" 0x%08x", state[k]);
+      if (k % 4 == 3 || k == count - 1)
+        printf("\n");
+      internal_offset += 4;
+    }
+  }
+}
+
+static void handle_note(const struct load_command *lc, NSData *data) {
+  if (lc->cmdsize < sizeof(struct note_command))
+    return;
+  const struct note_command *nc = (const struct note_command *)lc;
+  printf("  Data Owner: %.16s\n", nc->data_owner);
+  printf("  Offset: 0x%llx\n", nc->offset);
+  printf("  Size: 0x%llx\n", nc->size);
+
+  if (nc->offset + nc->size <= data.length) {
+    const char *note_data = (const char *)data.bytes + nc->offset;
+    uint64_t check_len = nc->size < 256 ? nc->size : 256;
+    BOOL printable = YES;
+    for (uint64_t k = 0; k < check_len; k++) {
+      char c = note_data[k];
+      if (c != 0 && (c < 32 || c > 126)) {
+        if (c != '\n' && c != '\r' && c != '\t') {
+          printable = NO;
+          break;
+        }
+      }
+    }
+
+    if (printable && nc->size > 0) {
+      char *buf = malloc(nc->size + 1);
+      if (buf) {
+        memcpy(buf, note_data, nc->size);
+        buf[nc->size] = '\0';
+        printf("  Content:\n%s\n", buf);
+        free(buf);
+      }
+    } else {
+      printf("  (Binary Content or too large to verify text)\n");
+    }
+  }
+}
+
+static void handle_mapped_region(const struct load_command *lc) {
+  const uint32_t *raw = (const uint32_t *)lc;
+  uint32_t count = lc->cmdsize / 4;
+  printf("  (LC_ANE_MAPPED_REGION)\n");
+  if (count > 6) {
+    const char *str = (const char *)(raw + 6);
+    const char *end_ptr = (const char *)lc + lc->cmdsize;
+    if (str < end_ptr) {
+      printf("    Region: 0x%08x Name: %s\n", raw[4], str);
+    }
+  }
+}
+
+static void handle_ident(const struct load_command *lc) {
+  if (lc->cmdsize > 8) {
+    uint32_t len = lc->cmdsize - 8;
+    char *buf = malloc(len + 1);
+    if (buf) {
+      memcpy(buf, (const char *)lc + 8, len);
+      buf[len] = '\0';
+      printf("  Ident: %s\n", buf);
+      free(buf);
+    }
+  } else {
+    printf("  (Empty Ident)\n");
+  }
+}
+
 void print_macho_headers(NSData *data, BOOL dump_all_symbols, BOOL dump_threads,
                          BOOL dump_hexdump, BOOL dump_reg_blocks) {
   if (data.length < sizeof(struct mach_header_64)) {
@@ -2389,174 +1454,20 @@ void print_macho_headers(NSData *data, BOOL dump_all_symbols, BOOL dump_threads,
 
     if (lc->cmd == LC_SEGMENT_64) {
       if (offset + sizeof(struct segment_command_64) <= data.length) {
-        const struct segment_command_64 *seg =
-            (const struct segment_command_64 *)lc;
-        printf("  Segment Name: %s\n", seg->segname);
-        printf("  VM Addr: 0x%llx\n", seg->vmaddr);
-        printf("  VM Size: 0x%llx\n", seg->vmsize);
-        printf("  File Off: 0x%llx\n", seg->fileoff);
-        printf("  File Size: 0x%llx\n", seg->filesize);
-        printf("  Num Sections: %u\n", seg->nsects);
-
-        const struct section_64 *sect =
-            (const struct section_64 *)(data.bytes + offset +
-                                        sizeof(struct segment_command_64));
-        for (uint32_t j = 0; j < seg->nsects; j++) {
-          if ((uintptr_t)(sect + 1) > (uintptr_t)(data.bytes + data.length))
-            break;
-          printf("    Section %u:\n", j);
-          printf("      Name: %s\n", sect->sectname);
-          printf("      Segment: %s\n", sect->segname);
-          printf("      Addr: 0x%llx\n", sect->addr);
-          printf("      Size: 0x%llx\n", sect->size);
-          printf("      Offset: 0x%x\n", sect->offset);
-          printf("      Flags: 0x%x\n", sect->flags);
-
-          if (strcmp(seg->segname, "__TEXT") == 0) {
-            if (sect->offset + sect->size <= data.length) {
-              const uint8_t *section_ptr =
-                  (const uint8_t *)data.bytes + sect->offset;
-              size_t section_size = (size_t)sect->size;
-
-              if (strcmp(sect->sectname, "__text") == 0 ||
-                  strcmp(sect->sectname, "__TEXT") == 0) {
-                uint32_t instr_ver =
-                    get_instruction_set_version(header->cpusubtype);
-                if (instr_ver >= 11) {
-                  // v11+ Dense format (Burst/Scatter)
-                  decode_ane_td_m4(section_ptr, section_size,
-                                   header->cpusubtype, dump_reg_blocks);
-                } else {
-                  // v7- and similar (Stream format)
-                  decode_ane_td(section_ptr, section_size, dump_reg_blocks);
-                }
-                if (dump_hexdump) {
-                  hex_dump(sect->sectname, section_ptr, section_size);
-                }
-              }
-            }
-          }
-
-          sect++;
-        }
+        handle_segment_64(header, lc, data, dump_hexdump, dump_reg_blocks);
       }
     } else if (lc->cmd == LC_SYMTAB) {
       if (offset + sizeof(struct symtab_command) <= data.length) {
-        const struct symtab_command *sym = (const struct symtab_command *)lc;
-        printf("  Symbol Table Offset: 0x%x\n", sym->symoff);
-        printf("  Num Symbols: %u\n", sym->nsyms);
-        printf("  String Table Offset: 0x%x\n", sym->stroff);
-
-        if (sym->nsyms > 0 && sym->symoff < data.length) {
-          uint32_t max_syms = dump_all_symbols ? sym->nsyms : 5;
-          if (!dump_all_symbols && sym->nsyms > 5) {
-            printf("    (Printing first 5 symbols - use -s to see all)\n");
-          } else {
-            printf("    (Printing %u symbols)\n", max_syms);
-          }
-
-          const struct nlist_64 *list =
-              (const struct nlist_64 *)(data.bytes + sym->symoff);
-          const char *strtab = (const char *)(data.bytes + sym->stroff);
-
-          for (uint32_t k = 0; k < max_syms; k++) {
-            if ((uintptr_t)(list + 1) > (uintptr_t)(data.bytes + data.length))
-              break;
-            const char *name = "";
-            if (list->n_un.n_strx < sym->strsize) {
-              name = strtab + list->n_un.n_strx;
-            }
-            printf("    [%u] %s @ 0x%llx\n", k, name, list->n_value);
-            list++;
-          }
-        }
+        handle_symtab(lc, data, dump_all_symbols);
       }
     } else if (lc->cmd == LC_THREAD || lc->cmd == LC_UNIXTHREAD) {
-      if (dump_threads) {
-        uint32_t internal_offset = 8;
-        uint32_t flavor_idx = 0;
-        while (internal_offset + 8 <= lc->cmdsize) {
-          const uint32_t *content =
-              (const uint32_t *)((const uint8_t *)lc + internal_offset);
-          uint32_t flavor = content[0];
-          uint32_t count = content[1];
-          printf("  Flavor Set %u: Flavor=%u Count=%u\n", flavor_idx++, flavor,
-                 count);
-
-          internal_offset += 8;
-          const uint32_t *state = content + 2;
-          printf("    State:\n");
-          for (uint32_t k = 0; k < count; k++) {
-            if (internal_offset + 4 > lc->cmdsize)
-              break;
-            if (k % 4 == 0)
-              printf("      [%03u]:", k);
-            printf(" 0x%08x", state[k]);
-            if (k % 4 == 3 || k == count - 1)
-              printf("\n");
-            internal_offset += 4;
-          }
-        }
-      } else {
-      }
+      handle_thread(lc, dump_threads);
     } else if (lc->cmd == LC_NOTE) {
-      if (lc->cmdsize >= sizeof(struct note_command)) {
-        const struct note_command *nc = (const struct note_command *)lc;
-        printf("  Data Owner: %.16s\n", nc->data_owner);
-        printf("  Offset: 0x%llx\n", nc->offset);
-        printf("  Size: 0x%llx\n", nc->size);
-
-        if (nc->offset + nc->size <= data.length) {
-          const char *note_data = (const char *)data.bytes + nc->offset;
-          uint64_t check_len = nc->size < 256 ? nc->size : 256;
-          BOOL printable = YES;
-          for (uint64_t k = 0; k < check_len; k++) {
-            char c = note_data[k];
-            if (c != 0 && (c < 32 || c > 126)) {
-              if (c != '\n' && c != '\r' && c != '\t') {
-                printable = NO;
-                break;
-              }
-            }
-          }
-
-          if (printable && nc->size > 0) {
-            char *buf = malloc(nc->size + 1);
-            if (buf) {
-              memcpy(buf, note_data, nc->size);
-              buf[nc->size] = '\0';
-              printf("  Content:\n%s\n", buf);
-              free(buf);
-            }
-          } else {
-            printf("  (Binary Content or too large to verify text)\n");
-          }
-        }
-      }
+      handle_note(lc, data);
     } else if (lc->cmd == LC_ANE_MAPPED_REGION) {
-      const uint32_t *raw = (const uint32_t *)lc;
-      uint32_t count = lc->cmdsize / 4;
-      printf("  (LC_ANE_MAPPED_REGION)\n");
-      if (count > 6) {
-        const char *str = (const char *)(raw + 6);
-        const char *end_ptr = (const char *)lc + lc->cmdsize;
-        if (str < end_ptr) {
-          printf("    Region: 0x%08x Name: %s\n", raw[4], str);
-        }
-      }
+      handle_mapped_region(lc);
     } else if (lc->cmd == LC_IDENT) {
-      if (lc->cmdsize > 8) {
-        uint32_t len = lc->cmdsize - 8;
-        char *buf = malloc(len + 1);
-        if (buf) {
-          memcpy(buf, (const char *)lc + 8, len);
-          buf[len] = '\0';
-          printf("  Ident: %s\n", buf);
-          free(buf);
-        }
-      } else {
-        printf("  (Empty Ident)\n");
-      }
+      handle_ident(lc);
     }
 
     offset += lc->cmdsize;

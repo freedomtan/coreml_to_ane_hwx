@@ -6,7 +6,7 @@ The `ZinAneTd<17u>` object maps internal offsets to hardware register blocks as 
 | :--- | :--- | :--- | :--- | :--- |
 | `+0x1f8` | `0x17` | `0x0000` | `0x005C` | Common (InDim, OutDim, Patch, PETra) |
 | `+0x3a8` | `0x29` | `0x4100` | `0x41A4` | L2 Cache / Buffer |
-| `+0x454` | `0x0f` | `0x4500` | `0x4538` | PE (Planar Engine) |
+| `+0x454` | `0x15` | `0x4500` | `0x4550` | PE (Planar Engine) |
 | `+0x498` | `0x0c` | `0x4900` | `0x4930` | NE (Neural Engine) |
 | `+0x25c` | `0x51` | `0x4d00` | `0x4E44` | TileDmaSrc (Engine Control) |
 | `+0x4d0` | `0x15` | `0x5100` | `0x5154` | TileDmaDst (Engine Control) |
@@ -191,11 +191,11 @@ Size: 12 registers (`0x30` bytes, `0x0c` words).
 | :--- | :--- | :--- | :--- |
 | **0x5900** | `+0x52c` | **CacheDMAControl** | **Flush**: Bit 0, **Enable**: Bit 1, **TaskSync**: WaitPrev:3, PostDone:2, **EarlyTerm**: 4-6, **FootprintLimiter**: Bit 9, **FootprintThreshold**: 16-31. |
 | **0x5904** | `+0x530` | **CacheDMAPre0** | **BandwidthLimit**: 0-9, **Sieve2**: 16-19, **TelemetryAgeOut**: 20-23. |
-| **0x5908** | `+0x534** | **CacheDMAPre1** | **Sieve1**: 0-13. |
+| **0x5908** | `+0x534` | **CacheDMAPre1** | **Sieve1**: 0-13. |
 | **0x590C** | `+0x538` | **CacheDMAPad3** | Reserved / Unknown. |
 | **0x5910** | `+0x53c` | **CacheDMAPad4** | Reserved / Unknown. |
 | **0x5914** | `+0x540` | **CacheDMAPad5** | Reserved / Unknown (Maybe DstCrop in Some contexts). |
-| **0x5918** | `+0x544** | **CacheDMADsid** | **DSIDAndSize**: Bits 7-29. |
+| **0x5918** | `+0x544` | **CacheDMADsid** | **DSIDAndSize**: Bits 7-29. |
 | **0x591C** | `+0x548` | **CacheDMAFootprint**| **FootprintArg2**: Bits 17-27. |
 | **0x5920** | `+0x54c` | **EarlyTermArg12** | **Arg1**: Bits 0-15 (`strh`), **Arg2**: Bits 16-31 (`strh`). |
 | **0x5924** | `+0x550` | **CacheDMAFlushArg**| **FlushArg**: Bits 0-15 (`strh`). |
@@ -204,30 +204,25 @@ Size: 12 registers (`0x30` bytes, `0x0c` words).
 
 ### Planar Engine (PE) (0x4500 block, Object `+0x454`)
 This block controls the Planar Engine (PE) which handles element-wise operations, pooling, and scaling.
-Size: 15 registers (`0x3C` bytes).
+Size: 15 registers (`0xf` words, `0x3c` bytes).
 
-| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
+| HW Addr | Index | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4500** | `+0x454` | **PE_Config** | **OpMode**: 0-5 (0=Add, 1=Sub, 2=Min, 3=Max, 4=Mul, 5=Div/Recip), **Condition**: 6-8, **FirstSource**: 16, **SecondSource**: 18-19. |
-| **0x4504** | `+0x458` | **PE_Bias** | 19-bit Floating Point (F19: $1+8+10$) bias value. |
-| **0x4508** | `+0x45c` | **PE_Scale** | 19-bit Floating Point (F19: $1+8+10$) scale value. |
-| **0x450C** | `+0x460` | **PE_FinalScale** | 19-bit Floating Point (F19: $1+8+10$) final scale value. |
-| **0x4510** | `+0x464` | **PE_PreScale** | 19-bit Floating Point (F19: $1+8+10$) pre-scale value. |
-| **0x4514** | `+0x468` | **PE_FinalScale2** | 19-bit Floating Point (F19: $1+8+10$) final scale value 2. |
-| **0x4518** | `+0x46c` | **PE_Reserved1** | Reserved / Unknown. |
-| **0x451C** | `+0x470` | **PE_Reserved2** | Reserved / Unknown. |
-| **0x4520** | `+0x474` | **PE_Reserved3** | Reserved / Unknown. |
-| **0x4524** | `+0x478` | **PE_Reserved4** | Reserved / Unknown. |
-| **0x4528** | `+0x47c` | **PE_Reserved5** | Reserved / Unknown. |
-| **0x452C** | `+0x480` | **PE_Reserved6** | Reserved / Unknown. |
-| **0x4530** | `+0x484` | **PE_Reserved7** | Reserved / Unknown. |
-| **0x4534** | `+0x488` | **PE_Reserved8** | Reserved / Unknown. |
-| **0x4538** | `+0x48c` | **PE_Quant** | **InputReLU**: Bit 0, **OutputReLU**: Bit 8, **QuantZeroPoint**: Bits 16-23. |
+| **0x4500** | Word 0 | **PE_Config** | **OpMode**: 0-5 (0=Add, 1=Sub, 2=Min, 3=Max, 4=Mul, 5=Div/Recip), **Condition**: 6-8 (0=True, 1=LT, 2=LE, 3=EQ, 4=NE, 5=GE, 6=GT), **FirstSource**: 16, **SecondSource**: 18-19. |
+| **0x4504** | Word 1 | **PE_Bias** | 19-bit Floating Point (F19) bias value. |
+| **0x4508** | Word 2 | **PE_Scale** | 19-bit Floating Point (F19) scale value. |
+| **0x450C** | Word 3 | **PE_Reserved1** | Unknown configuration flags. |
+| **0x4510** | Word 4 | **PE_PreScale** | 19-bit Floating Point (F19) pre-scale value. |
+| **0x4514** | Word 5 | **PE_FinalScale** | 19-bit Floating Point (F19) final scale value. |
+| **0x4518-0x4534** | Words 6-13 | **PE_Reserved[8]** | Reserved. |
+| **0x4538** | Word 14 | **PE_Quant** | **ZeroPoint**: Bits 16-23. (Note: ReLU flags moved to L2). |
 
-#### Extended PE Controls (0x44D0 block, Object `+0x434`)
-These registers coordinate with the PE for indexing and transpositions.
-- **0x44D0** (Object `+0x434`): **PE_IndexMode** (Bits 16-18), **PE_IndexTranspose** (Bit 26), **PE_MaxIndex** (Bits 0-15).
-- **0x44D4** (Object `+0x438`): **PE_IndexBroadcast** (Bits 24-25).
+#### PE Indexing Extension (0x44D0 block, Object `+0x434`)
+These registers coordinate with the PE for indexing operations.
+
+| HW Addr | Index | Register Name | Bit-Field Mapping |
+| :--- | :--- | :--- | :--- |
+| **0x44D0** | Word 0 | **PE_IndexCfg** | **MaxIndex**: 0-15, **IndexingEn**: 16. |
 
 ##### L2 Cache / Buffer (0x4100 block, Object `+0x3a8`)
 The L2 block handles local buffering and tensor tiling.
@@ -235,7 +230,7 @@ Size: 41 registers (`0xA4` bytes, `0x29` words).
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4100** | `+0x3a8` | **L2_Control** | **PaddingMode**: 2-3, **Src1FIFOMode**: 4, **Src1DoubleRate**: 6, **Barrier**: 16. |
+| **0x4100** | `+0x3a8` | **L2_Control** | **Src1ReLU**: Bit 0, **PaddingMode**: 2-3, **Src2ReLU**: Bit 4, **Src1DoubleRate**: 6, **Barrier**: 16. |
 | **0x4104** | `+0x3ac` | **L2_Src1Cfg** | **SourceType**: 2-3, **DmaFormat**: 6-7, **Interleave**: 8-11, **OffsetYlsbs**: 12-15, **Compression**: 25. |
 | **0x4108** | `+0x3b0` | **L2_Src2Cfg** | **SourceType**: 2-3, **Interleave**: 8-11, **Compression**: 25. |
 | **0x410C** | `+0x3b4` | **L2_Pad3** | Reserved / Unknown. |

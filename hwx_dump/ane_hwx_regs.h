@@ -557,40 +557,14 @@ typedef struct {
 
 } ane_ne_h16_t;
 
-// [0x4500] Planar Engine (PE) Block (M4 specific mapping)
-typedef struct {
-  // Word 0 (0x4500)
-  struct {
-    uint32_t op : 6;   // [5:0]
-    uint32_t cond : 3; // [8:6]
-    uint32_t pad0 : 7; // [15:9]
-    uint32_t src1 : 1; // [16]
-    uint32_t pad1 : 1; // [17]
-    uint32_t src2 : 2; // [19:18]
-    uint32_t pad2 : 12;
-  } pe_cfg;
-
-  uint32_t bias;         // Word 1 (0x4504)
-  uint32_t scale;        // Word 2 (0x4508)
-  uint32_t final_scale;  // Word 3 (0x450C)
-  uint32_t pre_scale;    // Word 4 (0x4510)
-  uint32_t final_scale2; // Word 5 (0x4514)
-  uint32_t res[8];       // Words 6-13
-  struct {
-    uint32_t input_relu : 1;
-    uint32_t output_relu : 1;
-    uint32_t zero_point : 8;
-    uint32_t pad : 22;
-  } quant; // Word 14 (0x4538)
-} ane_pe_h16_t;
-
 // [0x4100] L2 Cache Control Block (M4 specific mapping - 41 registers)
 typedef struct {
   // Word 0 (0x4100)
   struct {
-    uint32_t pad0 : 2;
+    uint32_t src1_relu : 1;    // [0]
+    uint32_t pad0 : 1;         // [1]
     uint32_t padding_mode : 2; // [3:2]
-    uint32_t src1_fifo : 1;    // [4]
+    uint32_t src2_relu : 1;    // [4]
     uint32_t pad1 : 1;
     uint32_t src1_double : 1; // [6]
     uint32_t pad2 : 9;
@@ -731,6 +705,46 @@ typedef struct {
   uint32_t l2_res40; // 0x41a0
 
 } __attribute__((packed)) ane_l2_h16_t;
+
+// [0x44D0] PE Extension / Indexing Block
+typedef struct {
+  struct {
+    uint32_t max_index : 16;  // [15:0]
+    uint32_t indexing_en : 1; // [16]
+    uint32_t pad : 15;
+  } pe_index_cfg;
+  uint32_t res[11];
+} ane_pe_index_t;
+
+// [0x4500] Planar Engine (PE) Block (M4 specific mapping)
+typedef struct {
+  // Word 0 (0x4500)
+  struct {
+    uint32_t op : 6;    // [5:0]
+    uint32_t cond : 3;  // [8:6]
+    uint32_t pad0 : 7;  // [15:9]
+    uint32_t src1 : 1;  // [16]
+    uint32_t pad1 : 1;  // [17]
+    uint32_t src2 : 2;  // [19:18]
+    uint32_t pad2 : 12;
+  } pe_cfg;
+
+  uint32_t bias;        // Word 1 (0x4504) - F19
+  uint32_t scale;       // Word 2 (0x4508) - F19
+  uint32_t res3;        // Word 3 (0x450C)
+  uint32_t pre_scale;   // Word 4 (0x4510) - F19
+  uint32_t final_scale; // Word 5 (0x4514) - F19
+  uint32_t res6[8];     // Words 6-13
+
+  // Word 14 (0x4538)
+  struct {
+    uint32_t pad0 : 16;
+    uint32_t zero_point : 8; // [23:16]
+    uint32_t pad1 : 8;
+  } quant;
+
+  uint32_t res15; // Word 15
+} ane_pe_h16_t;
 
 // [0x0000] M1 Common Registers
 typedef struct {

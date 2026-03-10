@@ -6,8 +6,6 @@
 
 #import "ane_hwx_regs.h"
 
-
-
 static const char *lookup_reg_name(uint32_t addr, const hwx_reg_range_t *ranges,
                                    int range_count) {
   for (int i = 0; i < range_count; i++) {
@@ -48,16 +46,17 @@ const char *get_m1_reg_name(uint32_t addr) {
   static const char *ne_names[] = {"KernelCfg", "MACCfg", "MatrixVectorBias",
                                    "AccBias", "PostScale"};
   static const char *tdma_src_names[] = {
-      "DMAConfig", "pad0",      "BaseAddr",   "RowStride",   "PlaneStride",
-      "DepthStride", "GroupStride", "pad1",       "pad2",        "pad3",
-      "pad4",      "pad5",      "pad6",       "pad7",        "Fmt",
-      "pad8",      "pad9",      "pad10",      "pad11",       "pad12",
+      "DMAConfig",    "pad0",         "BaseAddr",     "RowStride",
+      "PlaneStride",  "DepthStride",  "GroupStride",  "pad1",
+      "pad2",         "pad3",         "pad4",         "pad5",
+      "pad6",         "pad7",         "Fmt",          "pad8",
+      "pad9",         "pad10",        "pad11",        "pad12",
       "PixelOffset0", "PixelOffset1", "PixelOffset2", "PixelOffset3"};
   static const char *tdma_dst_names[] = {
-      "DMAConfig", "BaseAddr", "RowStride", "PlaneStride", "DepthStride",
-      "GroupStride", "Fmt"};
-  static const char *kdma_names[] = {
-      "Unknown", "Unknown", "CoeffDMAConfig", "CoeffBaseAddr", "CoeffBfrSize"};
+      "DMAConfig",   "BaseAddr",    "RowStride", "PlaneStride",
+      "DepthStride", "GroupStride", "Fmt"};
+  static const char *kdma_names[] = {"Unknown", "Unknown", "CoeffDMAConfig",
+                                     "CoeffBaseAddr", "CoeffBfrSize"};
 
   static const hwx_reg_range_t m1_ranges[] = {
       {H13_COMMON_START, 16, common_names},
@@ -95,53 +94,102 @@ const char *get_m4_reg_name(uint32_t addr) {
       "L2_Res36",          "L2_Res37",          "L2_Res38",
       "L2_ResultWrapAddr", "L2_Res40"};
   static const char *pe_names[] = {
-      "PE_Config",    "PE_Bias",        "PE_Scale",     "PE_FinalScale",
-      "PE_PreScale",  "PE_FinalScale2", "PE_Reserved1", "PE_Reserved2",
-      "PE_Reserved3", "PE_Reserved4",   "PE_Reserved5", "PE_Reserved6",
-      "PE_Reserved7", "PE_Reserved8",   "PE_Quant"};
+      "PE_Config",    "PE_Bias",        "PE_Scale",     "PE_Reserved1",
+      "PE_PreScale",  "PE_FinalScale",  "PE_Reserved2", "PE_Reserved3",
+      "PE_Reserved4", "PE_Reserved5",   "PE_Reserved6", "PE_Reserved7",
+      "PE_Reserved8", "PE_Reserved9",   "PE_Quant",     "PE_Reserved10"};
   static const char *ne_names[] = {
-      "KernelCfg", "MACCfg",     "MatrixVectorBias", "NEBias",
-      "PostScale", "RcasConfig", "RoundModeCfg",     "SRSeed0",
-      "SRSeed1",   "SRSeed2",    "SRSeed3",          "QuantZeroPoint"};
+      "KernelCfg", "MACCfg", "MatrixVectorBias", "NEBias", "NEPostScale",
+      "RcasConfig", "RoundModeCfg", "SRSeed[0]", "SRSeed[1]", "SRSeed[2]",
+      "SRSeed[3]", "QuantZeroPoint"};
   static const char *cdma_names[] = {
       "CacheDMAControl",  "CacheDMAPre0",      "CacheDMAPre1",
       "CacheDMAPad3",     "CacheDMAPad4",      "CacheDMAPad5",
       "CacheDMADsid",     "CacheDMAFootprint", "EarlyTermArg12",
       "CacheDMAFlushArg", "EarlyTermArg34",    "TelemetryBackOff"};
-  static const char *pe_aux_names[] = {"PE_IndexMode", "pad", "PE_IndexBroadcast"};
-  static const char *tdma_src_names[] = {
-      "Src1DMAConfig", "Src2DMAConfig",     "Src1BaseAddrLo", "Src1BaseAddrHi",
-      "Src2BaseAddrLo", "Src2BaseAddrHi",    "Src1RowStride",  "Src1PlaneStride",
-      "Src1DepthStride", "Src1GroupStride",   "pad0",           "pad1",
-      "Src2RowStride",  "Src2PlaneStride",   "Src2DepthStride", "Src2GroupStride",
-      "pad2",           "pad3",              "pad4",           "pad5",
-      "Src1MetaDataAddrLo", "pad6",           "Src1MetaDataSize", "Src2MetaDataAddrLo",
-      "pad7",           "Src2MetaDataSize", "Src1Fmt",         "Src2Fmt",
-      "pad8",           "pad9",              "pad10",          "pad11",
-      "pad12",          "pad13",             "pad14",          "pad15",
-      "pad16",          "pad17",             "Src1PixelOffset", "pad18",
-      "pad19",          "pad20",             "Src2PixelOffset"};
+  static const char *pe_index_names[] = {"PE_IndexCfg"};
+  static const char *tdma_src_names[] = {"Src1DMAConfig",
+                                         "Src2DMAConfig",
+                                         "Src1BaseAddrLo",
+                                         "Src1BaseAddrHi",
+                                         "Src2BaseAddrLo",
+                                         "Src2BaseAddrHi",
+                                         "Src1RowStride",
+                                         "Src1PlaneStride",
+                                         "Src1DepthStride",
+                                         "Src1GroupStride",
+                                         "pad0",
+                                         "pad1",
+                                         "Src2RowStride",
+                                         "Src2PlaneStride",
+                                         "Src2DepthStride",
+                                         "Src2GroupStride",
+                                         "pad2",
+                                         "pad3",
+                                         "pad4",
+                                         "pad5",
+                                         "Src1MetaDataAddrLo",
+                                         "pad6",
+                                         "Src1MetaDataSize",
+                                         "Src2MetaDataAddrLo",
+                                         "pad7",
+                                         "Src2MetaDataSize",
+                                         "Src1Fmt",
+                                         "Src2Fmt",
+                                         "pad8",
+                                         "pad9",
+                                         "pad10",
+                                         "pad11",
+                                         "pad12",
+                                         "pad13",
+                                         "pad14",
+                                         "pad15",
+                                         "pad16",
+                                         "pad17",
+                                         "Src1PixelOffset",
+                                         "pad18",
+                                         "pad19",
+                                         "pad20",
+                                         "Src2PixelOffset"};
   static const char *tdma_dst_names[] = {
-      "DstDMAConfig", "pad0",             "DstBaseAddrLo",    "DstBaseAddrHi",
-      "DstRowStride", "DstPlaneStride",    "DstDepthStride",   "DstGroupStride",
-      "DstInternalCfg", "pad1",            "DstMetaDataAddrLo", "DstMetaDataAddrHi",
-      "DstFmtMode",   "pad2",             "DstCompStatus",    "pad3",
-      "DstCompressionCfg", "pad4",          "DstCompSizeLo",    "DstCompSizeHi",
+      "DstDMAConfig",      "pad0",
+      "DstBaseAddrLo",     "DstBaseAddrHi",
+      "DstRowStride",      "DstPlaneStride",
+      "DstDepthStride",    "DstGroupStride",
+      "DstInternalCfg",    "pad1",
+      "DstMetaDataAddrLo", "DstMetaDataAddrHi",
+      "DstFmtMode",        "pad2",
+      "DstCompStatus",     "pad3",
+      "DstCompressionCfg", "pad4",
+      "DstCompSizeLo",     "DstCompSizeHi",
       "DstPixelOffset"};
-  static const char *kdma_names[] = {
-      "KDMA_MasterConfig", "pad0",             "KDMA_Prefetch",    "pad1",
-      "pad2",             "pad3",             "KDMA_StrideX",     "KDMA_StrideY",
-      "CoeffDMAConfig",   "CoeffBaseAddr",    "CoeffBfrSize",     "pad4",
-      "BiasDMAConfig",    "pad5",             "PostScaleDMAConfig", "pad6",
-      "PaletteDMAConfig", "pad7",             "NLutDMAConfig"};
+  static const char *kdma_names[] = {"KDMA_MasterConfig",
+                                     "pad0",
+                                     "KDMA_Prefetch",
+                                     "pad1",
+                                     "pad2",
+                                     "pad3",
+                                     "KDMA_StrideX",
+                                     "KDMA_StrideY",
+                                     "CoeffDMAConfig",
+                                     "CoeffBaseAddr",
+                                     "CoeffBfrSize",
+                                     "pad4",
+                                     "BiasDMAConfig",
+                                     "pad5",
+                                     "PostScaleDMAConfig",
+                                     "pad6",
+                                     "PaletteDMAConfig",
+                                     "pad7",
+                                     "NLutDMAConfig"};
 
   static const hwx_reg_range_t m4_ranges[] = {
       {H16_COMMON_START, 23, common_names},
       {H16_L2_START, 41, l2_names},
+      {0x44D0, 1, pe_index_names},
       {H16_PE_START, 15, pe_names},
       {H16_NE_START, 12, ne_names},
       {H16_CACHEDMA_START, 12, cdma_names},
-      {H16_PE_START - 0x30, 3, pe_aux_names},
       {H16_TILEDMA_SRC_START, 43, tdma_src_names},
       {H16_TILEDMA_DST_START, 21, tdma_dst_names},
       {H16_KERNELDMA_START, 19, kdma_names},
@@ -150,10 +198,8 @@ const char *get_m4_reg_name(uint32_t addr) {
   return lookup_reg_name(addr, m4_ranges, 9);
 }
 
-
-void dump_hw_blocks(const hwx_state_t *state,
-                    const hwx_block_info_t *blocks, int count,
-                    const char *(*name_lookup)(uint32_t)) {
+void dump_hw_blocks(const hwx_state_t *state, const hwx_block_info_t *blocks,
+                    int count, const char *(*name_lookup)(uint32_t)) {
   printf("        --- HW Block Register State ---\n");
   for (int b = 0; b < count; b++) {
     bool printed_header = false;
@@ -178,9 +224,6 @@ void dump_hw_blocks(const hwx_state_t *state,
     }
   }
 }
-
-
-
 
 const char *get_arch_name(uint32_t subtype) {
   switch (subtype) {
@@ -290,7 +333,8 @@ void print_common_h13(const hwx_state_t *state) {
 
 void print_l2_h13(const hwx_state_t *state) {
   printf("        --- L2 (0x4800) ---\n");
-  const ane_l2_h13_t *l2 = (const ane_l2_h13_t *)&state->values[H13_L2_START / 4];
+  const ane_l2_h13_t *l2 =
+      (const ane_l2_h13_t *)&state->values[H13_L2_START / 4];
   printf("        L2Cfg: InputRelu=%d PaddingMode=%u\n", l2->l2cfg.input_relu,
          l2->l2cfg.padding_mode);
   printf("        L2 SourceCfg: Type=%u Dep=%u Fmt=%u Intrlv=%u CmpV=%u "
@@ -309,7 +353,8 @@ void print_l2_h13(const hwx_state_t *state) {
 
 void print_ne_h13(const hwx_state_t *state) {
   printf("        --- Neural Engine (0xC800) ---\n");
-  const ane_ne_h13_t *ne = (const ane_ne_h13_t *)&state->values[H13_NE_START / 4];
+  const ane_ne_h13_t *ne =
+      (const ane_ne_h13_t *)&state->values[H13_NE_START / 4];
   printf("        NE MACCfg: OpMode=%u NLMode=%u KernelMode=%d BiasMode=%d "
          "BinaryPoint=%u\n",
          ne->mac_cfg.op_mode, ne->mac_cfg.non_linear_mode,
@@ -329,7 +374,8 @@ void print_ne_h13(const hwx_state_t *state) {
 }
 
 void print_pe_h13(const hwx_state_t *state) {
-  const ane_pe_h13_t *pe = (const ane_pe_h13_t *)&state->values[H13_PE_START / 4];
+  const ane_pe_h13_t *pe =
+      (const ane_pe_h13_t *)&state->values[H13_PE_START / 4];
   if (state->valid[H13_PE_START / 4]) {
     printf("        --- Planar Engine (0x8800) ---\n");
     printf("        PECfg: En=%d OpMode=%u ReluEn=%d Cond=%u FirstSrc=%u "
@@ -535,28 +581,37 @@ void print_pe_h16(const hwx_state_t *state) {
   printf("        --- Planar Engine Config ---\n");
 
   if (state->valid[H16_PE_START / 4]) {
-    printf("        PEConfig: Op=%d Cond=%d Src1=%d Src2=%d\n", pe.pe_cfg.op,
+    printf("        PE Config: Op=%d Cond=%d Src1=%d Src2=%d\n", pe.pe_cfg.op,
            pe.pe_cfg.cond, pe.pe_cfg.src1, pe.pe_cfg.src2);
   }
   if (state->valid[(H16_PE_START + 0x4) / 4])
-    printf("        PEBias   : 0x%05x (%f)\n", pe.bias & 0x7FFFF,
+    printf("        PE Bias   : 0x%05x (%f)\n", pe.bias & 0x7FFFF,
            decode_f19(pe.bias));
   if (state->valid[(H16_PE_START + 0x8) / 4])
-    printf("        PEScale  : 0x%05x (%f)\n", pe.scale & 0x7FFFF,
+    printf("        PE Scale  : 0x%05x (%f)\n", pe.scale & 0x7FFFF,
            decode_f19(pe.scale));
   if (state->valid[(H16_PE_START + 0x0c) / 4])
-    printf("        PEFScale : 0x%05x (%f)\n", pe.final_scale & 0x7FFFF,
+    printf("        PE Final Scale : 0x%05x (%f)\n", pe.final_scale & 0x7FFFF,
            decode_f19(pe.final_scale));
   if (state->valid[(H16_PE_START + 0x10) / 4])
-    printf("        PEPScale : 0x%05x (%f)\n", pe.pre_scale & 0x7FFFF,
+    printf("        PE Pre Scale : 0x%05x (%f)\n", pe.pre_scale & 0x7FFFF,
            decode_f19(pe.pre_scale));
   if (state->valid[(H16_PE_START + 0x14) / 4])
-    printf("        PEFScale2: 0x%05x (%f)\n", pe.final_scale2 & 0x7FFFF,
-           decode_f19(pe.final_scale2));
+    printf("        PE Final Scale: 0x%05x (%f)\n", pe.final_scale & 0x7FFFF,
+           decode_f19(pe.final_scale));
   if (state->valid[(H16_PE_START + 0x38) / 4]) {
-    printf("        PEQuant: InReLU=%d OutReLU=%d ZeroPoint=%d\n",
-           pe.quant.input_relu, pe.quant.output_relu, pe.quant.zero_point);
+    printf("        PE Quant: ZeroPoint=%d\n", pe.quant.zero_point);
   }
+}
+
+void print_pe_index_h16(const hwx_state_t *state) {
+  uint32_t addr = 0x44D0;
+  if (!state->valid[addr / 4])
+    return;
+  ane_pe_index_t idx = *(ane_pe_index_t *)&state->values[addr / 4];
+  printf("        --- PE Indexing ---\n");
+  printf("        PE IndexCfg: MaxIndex=%d Enable=%d\n",
+         idx.pe_index_cfg.max_index, idx.pe_index_cfg.indexing_en);
 }
 
 void print_l2_h16(const hwx_state_t *state) {
@@ -564,10 +619,11 @@ void print_l2_h16(const hwx_state_t *state) {
   printf("        --- L2 Cache Control ---\n");
 
   if (state->valid[H16_L2_START / 4]) {
-    printf("        L2Control: Padding=%d Src1FIFO=%d Src1Double=%d "
-           "Barrier=%d\n",
-           l2.l2_control.padding_mode, l2.l2_control.src1_fifo,
-           l2.l2_control.src1_double, l2.l2_control.barrier);
+    printf("        L2Control: Src1ReLU=%d Src2ReLU=%d Padding=%d "
+           "Src1Double=%d Barrier=%d\n",
+           l2.l2_control.src1_relu, l2.l2_control.src2_relu,
+           l2.l2_control.padding_mode, l2.l2_control.src1_double,
+           l2.l2_control.barrier);
   }
   if (state->valid[(H16_L2_START + 0x04) / 4]) {
     printf("        Src1Cfg  : Type=%d DmaFmt=%d Interleave=%d OffY=%d "
@@ -759,6 +815,7 @@ void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
   if (state->instr_ver >= 11) {
     print_common_h16(state);
     print_ne_h16(state);
+    print_pe_index_h16(state);
     print_pe_h16(state);
     print_l2_h16(state);
     print_tiledma_src_h16(state);
@@ -817,7 +874,8 @@ void report_hwx_state_json(const hwx_state_t *state) {
       uint32_t addr = r * 4;
       const char *name = name_lookup(addr);
       NSMutableDictionary *reg = [NSMutableDictionary dictionary];
-      [reg setObject:[NSString stringWithFormat:@"0x%05x", addr] forKey:@"addr"];
+      [reg setObject:[NSString stringWithFormat:@"0x%05x", addr]
+              forKey:@"addr"];
       [reg setObject:[NSString stringWithFormat:@"0x%08x", state->values[r]]
               forKey:@"val"];
       if (name)
@@ -828,17 +886,16 @@ void report_hwx_state_json(const hwx_state_t *state) {
   [dict setObject:regs forKey:@"registers"];
 
   NSError *error;
-  NSData *data = [NSJSONSerialization
-      dataWithJSONObject:dict
-                 options:NSJSONWritingPrettyPrinted
-                   error:&error];
+  NSData *data =
+      [NSJSONSerialization dataWithJSONObject:dict
+                                      options:NSJSONWritingPrettyPrinted
+                                        error:&error];
   if (data) {
     NSString *jsonString = [[NSString alloc] initWithData:data
                                                  encoding:NSUTF8StringEncoding];
     printf("%s\n", [jsonString UTF8String]);
   }
 }
-
 
 void decode_ane_td(const uint8_t *ptr, size_t total_len, uint32_t subtype,
                    BOOL dump_reg_blocks, BOOL dump_json) {
@@ -861,9 +918,10 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len, uint32_t subtype,
              td->next_pointer, td->flags.tsr, td->flags.tse, td->base_ene.ene);
       printf("        RBase: %d/%d WBase: %d TBase: %d\n", td->base_ene.rbase0,
              td->base_ene.rbase1, td->base_ene.wbase, td->base_ene.tbase);
-      if (td->kbase.kbe0 || td->kbase.kbe1 || td->kbase.kbe2 || td->kbase.kbe3) {
-        printf("        KBase: %d/%d/%d/%d\n", td->kbase.kbase0, td->kbase.kbase1,
-               td->kbase.kbase2, td->kbase.kbase3);
+      if (td->kbase.kbe0 || td->kbase.kbe1 || td->kbase.kbe2 ||
+          td->kbase.kbe3) {
+        printf("        KBase: %d/%d/%d/%d\n", td->kbase.kbase0,
+               td->kbase.kbase1, td->kbase.kbase2, td->kbase.kbase3);
       }
     } else {
       task_idx++;
@@ -878,8 +936,8 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len, uint32_t subtype,
       const uint32_t *words = (const uint32_t *)(td + 1);
       uint32_t max_payload_bytes =
           (total_len > offset + sizeof(ane_td_header_h13_t))
-               ? (uint32_t)(total_len - offset - sizeof(ane_td_header_h13_t))
-               : 0;
+              ? (uint32_t)(total_len - offset - sizeof(ane_td_header_h13_t))
+              : 0;
       uint32_t num_words = max_payload_bytes / 4;
 
       if (td->next_pointer > offset + sizeof(ane_td_header_h13_t)) {
@@ -1156,7 +1214,8 @@ const char *get_cmd_name(uint32_t cmd) {
 
 static void handle_segment_64(const struct mach_header_64 *header,
                               const struct load_command *lc, NSData *data,
-                              BOOL dump_hexdump, BOOL dump_reg_blocks, BOOL dump_json) {
+                              BOOL dump_hexdump, BOOL dump_reg_blocks,
+                              BOOL dump_json) {
   const struct segment_command_64 *seg = (const struct segment_command_64 *)lc;
   printf("  Segment Name: %s\n", seg->segname);
   printf("  VM Addr: 0x%llx\n", seg->vmaddr);
@@ -1224,7 +1283,8 @@ static void handle_symtab(const struct load_command *lc, NSData *data,
     const char *strtab = (const char *)(data.bytes + sym->stroff);
 
     for (uint32_t k = 0; k < max_syms; k++) {
-      if ((const uint8_t *)(list + 1) > (const uint8_t *)data.bytes + data.length)
+      if ((const uint8_t *)(list + 1) >
+          (const uint8_t *)data.bytes + data.length)
         break;
       const char *name = "";
       if (list->n_un.n_strx < sym->strsize) {
@@ -1330,7 +1390,8 @@ static void handle_ident(const struct load_command *lc) {
 }
 
 void print_macho_headers(NSData *data, BOOL dump_all_symbols, BOOL dump_threads,
-                         BOOL dump_hexdump, BOOL dump_reg_blocks, BOOL dump_json) {
+                         BOOL dump_hexdump, BOOL dump_reg_blocks,
+                         BOOL dump_json) {
   if (data.length < sizeof(struct mach_header_64)) {
     printf("Error: File too small.\n");
     return;
@@ -1373,7 +1434,8 @@ void print_macho_headers(NSData *data, BOOL dump_all_symbols, BOOL dump_threads,
 
     if (lc->cmd == LC_SEGMENT_64) {
       if (offset + sizeof(struct segment_command_64) <= data.length) {
-        handle_segment_64(header, lc, data, dump_hexdump, dump_reg_blocks, dump_json);
+        handle_segment_64(header, lc, data, dump_hexdump, dump_reg_blocks,
+                          dump_json);
       }
     } else if (lc->cmd == LC_SYMTAB) {
       if (offset + sizeof(struct symtab_command) <= data.length) {
@@ -1421,7 +1483,8 @@ int main(int argc, char *const argv[]) {
         break;
       case '?':
       default:
-        printf("Usage: %s [-s] [-t] [-r] [-x] [-j] <path_to_hwx>\n", getprogname());
+        printf("Usage: %s [-s] [-t] [-r] [-x] [-j] <path_to_hwx>\n",
+               getprogname());
         return 1;
       }
     }

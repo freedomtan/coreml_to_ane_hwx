@@ -1383,6 +1383,448 @@ const char *get_ch_fmt_name(uint32_t fmt) {
   }
 }
 
+void print_common_h13(const uint32_t *reg_values, const bool *reg_valid) {
+  printf("        --- Common (0x0000) ---\n");
+  const ane_common_h13_t *common = (const ane_common_h13_t *)&reg_values[0];
+
+  uint16_t win = common->indim.w_in;
+  uint16_t hin = common->indim.h_in;
+  uint32_t cin = common->cin.c_in;
+
+  uint16_t wout = common->outdim.w_out;
+  uint16_t hout = common->outdim.h_out;
+  uint32_t cout = common->cout.c_out;
+
+  const char *infmt_name = get_ch_fmt_name(common->chcfg.infmt);
+  const char *outfmt_name = get_ch_fmt_name(common->chcfg.outfmt);
+
+  printf("        %u x %u x %u (%s) -> %u x %u x %u (%s)\n", win, hin, cin, infmt_name, wout, hout,
+         cout, outfmt_name);
+
+  if (common->convcfg.kw != 0 || common->convcfg.kh != 0) {
+    printf("        ConvCfg: K=%ux%u S=%ux%u P=%ux%u\n", common->convcfg.kw, common->convcfg.kh,
+           common->convcfg.sx, common->convcfg.sy, common->convcfg.px, common->convcfg.py);
+
+    printf("        GroupConvCfg: Groups=%u UnicastEn=%d ElemMult=%d "
+           "UnicastCin=%u\n",
+           common->groupcfg.num_groups, common->groupcfg.unicast_en, common->groupcfg.elem_mult_mode,
+           common->groupcfg.unicast_cin);
+  }
+
+  printf("        Cfg: ActiveNE=%u SmallSrc=%u ShPref=%u ShMin=%u ShMax=%u "
+         "AccDB=%u\n",
+         common->cfg.active_ne, common->cfg.small_src_mode, common->cfg.sh_pref, common->cfg.sh_min,
+         common->cfg.sh_max, common->cfg.acc_db_buf_en);
+
+  printf("        TaskInfo: TID=0x%04x Q=%u NID=0x%02x\n", common->task_info.tid,
+         common->task_info.task_q, common->task_info.task_nid);
+}
+
+void print_l2_h13(const uint32_t *reg_values, const bool *reg_valid) {
+  printf("        --- L2 (0x4800) ---\n");
+  const ane_l2_h13_t *l2 = (const ane_l2_h13_t *)&reg_values[0x4800 / 4];
+  printf("        L2Cfg: InputRelu=%d PaddingMode=%u\n", l2->l2cfg.input_relu,
+         l2->l2cfg.padding_mode);
+  printf("        L2 SourceCfg: Type=%u Dep=%u Fmt=%u Intrlv=%u CmpV=%u "
+         "OffCh=%u\n",
+         l2->scfg.type, l2->scfg.dep, l2->scfg.fmt, l2->scfg.interleave, l2->scfg.cmpv, l2->scfg.offch);
+  printf("        L2 Src1: Base=0x%05x ChanStride=0x%05x RowStride=0x%05x\n", l2->srcbase.addr,
+         l2->src_chan_stride.stride, l2->src_row_stride.stride);
+
+  printf("        L2 ResultCfg: Type=%u Bfr=%u Fmt=%u Intrlv=%u CmpV=%u "
+         "OffCh=%u\n",
+         l2->rcfg.type, l2->rcfg.bfrmode, l2->rcfg.fmt, l2->rcfg.interleave, l2->rcfg.cmpv,
+         l2->rcfg.offch);
+}
+
+void print_ne_h13(const uint32_t *reg_values, const bool *reg_valid) {
+  printf("        --- Neural Engine (0xC800) ---\n");
+  const ane_ne_h13_t *ne = (const ane_ne_h13_t *)&reg_values[0xC800 / 4];
+  printf("        NE MACCfg: OpMode=%u NLMode=%u KernelMode=%d BiasMode=%d "
+         "BinaryPoint=%u\n",
+         ne->mac_cfg.op_mode, ne->mac_cfg.non_linear_mode, ne->mac_cfg.kernel_mode,
+         ne->mac_cfg.bias_mode, ne->mac_cfg.binary_point);
+  printf("        NE KernelCfg: Fmt=%s PalettizedEn=%d PalettizeBits=%u "
+         "SparseFmt=%d GroupKernelReuse=%d\n",
+         get_ch_fmt_name(ne->kernel_cfg.kernel_fmt), ne->kernel_cfg.palettized_en,
+         ne->kernel_cfg.palettized_bits, ne->kernel_cfg.sparse_fmt,
+         ne->kernel_cfg.group_kernel_reuse);
+  printf("        NE MatrixVectorBias: 0x%04x\n", ne->matrix_vector_bias.matrix_vector_bias);
+  printf("        NE AccBias: 0x%04x Shift=%u\n", ne->acc_bias.acc_bias,
+         ne->acc_bias.acc_bias_shift);
+  printf("        NE PostScale: 0x%04x RightShift=%u\n", ne->post_scale.post_scale,
+         ne->post_scale.post_scale_right_shift);
+}
+
+void print_pe_h13(const uint32_t *reg_values, const bool *reg_valid) {
+  const ane_pe_h13_t *pe = (const ane_pe_h13_t *)&reg_values[0x8800 / 4];
+  if (reg_valid[0x8800 / 4]) {
+    printf("        --- Planar Engine (0x8800) ---\n");
+    printf("        PECfg: En=%d OpMode=%u ReluEn=%d Cond=%u FirstSrc=%u "
+           "SecondSrc=%u\n",
+           pe->cfg.enable, pe->cfg.op_mode, pe->cfg.relu_en, pe->cfg.cond, pe->cfg.first_source,
+           pe->cfg.second_source);
+    printf("        PEBiasScale: Bias=0x%04x Scale=0x%04x\n", pe->bias_scale.bias, pe->bias_scale.scale);
+    printf("        PEPreScale: 0x%04x PEFinalScale: 0x%08x\n", pe->pre_scale.pre_scale,
+           pe->final_scale.final_scale);
+  }
+}
+
+void print_tiledma_src_h13(const uint32_t *reg_values, const bool *reg_valid) {
+  const ane_tiledma_src_h13_t *tsrc = (const ane_tiledma_src_h13_t *)&reg_values[0x13800 / 4];
+  printf("        --- TileDMA Source (0x13800) ---\n");
+  printf("        Src1DMAConfig: En=%d CacheHint=%u DepMode=%u\n", tsrc->src_dma_config.en,
+         tsrc->src_dma_config.cache_hint, tsrc->src_dma_config.dep_mode);
+  printf("        Src1Strides: Base=0x%05x Row=0x%05x Plane=0x%05x "
+         "Depth=0x%05x Group=0x%05x\n",
+         tsrc->base_addr.addr, tsrc->row_stride.stride, tsrc->plane_stride.stride,
+         tsrc->depth_stride.stride, tsrc->group_stride.stride);
+
+  printf("        Src1Fmt: FmtMode=%u Trunc=%u Shift=%u MemFmt=%u "
+         "OffCh=%u Intrlv=%u CmpV=%u\n",
+         tsrc->fmt.fmt_mode, tsrc->fmt.truncate, tsrc->fmt.shift, tsrc->fmt.mem_fmt,
+         tsrc->fmt.offset_ch, tsrc->fmt.interleave, tsrc->fmt.cmp_vec);
+}
+
+void print_tiledma_dst_h13(const uint32_t *reg_values, const bool *reg_valid) {
+  const ane_tiledma_dst_h13_t *tdst = (const ane_tiledma_dst_h13_t *)&reg_values[0x17800 / 4];
+  printf("        --- TileDMA Destination (0x17800) ---\n");
+  printf("        DstDMAConfig: En=%d CacheHint=%u L2BfrMode=%d "
+         "BypassEOW=%d\n",
+         tdst->dst_dma_config.en, tdst->dst_dma_config.cache_hint, tdst->dst_dma_config.l2bfrmode,
+         tdst->dst_dma_config.bypass_eow);
+  printf("        DstStrides: Base=0x%05x Row=0x%05x Plane=0x%05x "
+         "Depth=0x%05x Group=0x%05x\n",
+         tdst->base_addr.addr, tdst->row_stride.stride, tdst->plane_stride.stride,
+         tdst->depth_stride.stride, tdst->group_stride.stride);
+
+  printf("        DstFmt: FmtMode=%u Trunc=%u Shift=%u MemFmt=%u "
+         "OffCh=%u ZPLast=%d ZPFirst=%d Fill=%d Intrlv=%u CmpV=%u\n",
+         tdst->fmt.fmt_mode, tdst->fmt.truncate, tdst->fmt.shift, tdst->fmt.mem_fmt,
+         tdst->fmt.offset_ch, tdst->fmt.zero_pad_last, tdst->fmt.zero_pad_first,
+         tdst->fmt.cmp_vec_fill, tdst->fmt.interleave, tdst->fmt.cmp_vec);
+}
+
+void print_kerneldma_h13(const uint32_t *reg_values, const bool *reg_valid) {
+  const ane_kerneldma_h13_t *k = (const ane_kerneldma_h13_t *)&reg_values[0x1F800 / 4];
+  printf("        --- KernelDMA (0x1F800) ---\n");
+  for (int i = 0; i < 16; i++) {
+    if (k->coeff_dma_config[i].en) {
+      printf("        Coeff[%d]: En=%d CacheHint=%u Base=0x%08x Size=0x%08x\n", i,
+             k->coeff_dma_config[i].en, k->coeff_dma_config[i].cache_hint, k->coeff_base_addr[i].addr,
+             k->coeff_bfr_size[i]);
+    }
+  }
+}
+
+void print_common_h16(const uint32_t *reg_values, const bool *reg_valid) {
+  printf("        --- Common Config ---\n");
+  ane_common_h16_t common = *(ane_common_h16_t *)&reg_values[0];
+
+  if (reg_valid[1] || reg_valid[2] || reg_valid[3] || reg_valid[4] || reg_valid[0]) {
+    const char *infmt_name = get_ch_fmt_name(common.ch_cfg.infmt);
+    const char *outfmt_name = get_ch_fmt_name(common.ch_cfg.outfmt);
+    printf("        InDim     : W=%u H=%u C=%u D=%u Type=%s\n", common.inwidth, common.inheight,
+           common.inchannels, common.indepth, infmt_name);
+    printf("        OutDim    : W=%u H=%u C=%u D=%u Type=%s\n", common.outwidth, common.outheight,
+           common.outchannels, common.outdepth, outfmt_name);
+  }
+
+  if (reg_valid[9]) {
+    printf("        NumGroups : %u\n", common.num_groups);
+  }
+
+  if (reg_valid[10]) {
+    printf("        ConvCfg   : K=%ux%u S=%ux%u P(left/top)=%ux%u O=%ux%u\n", common.conv_cfg.kw,
+           common.conv_cfg.kh, common.conv_cfg.sx, common.conv_cfg.sy, common.conv_cfg.pad_left,
+           common.conv_cfg.pad_top, common.conv_cfg.ox, common.conv_cfg.oy);
+  }
+
+  if (reg_valid[11]) {
+    printf("        ConvCfg3D : 0x%08x\n", common.conv_cfg_3d);
+  }
+
+  if (reg_valid[12]) {
+    printf("        Unicast   : Cin=%u En=%d\n", common.unicast_cfg.unicast_cin,
+           common.unicast_cfg.unicast_en);
+  }
+
+  if (reg_valid[13]) {
+    printf("        TileHeight: %u\n", common.tile_height);
+  }
+
+  if (reg_valid[14]) {
+    printf("        TileOverlap: %u (Top=%u Bottom=%u)\n", common.tile_overlap.overlap,
+           common.tile_overlap.pad_top, common.tile_overlap.pad_bottom);
+  }
+
+  if (reg_valid[15]) {
+    printf("        MACCfg    : ActiveNE=%u SmallSrc=%u TaskType=%u L2Barr=%d "
+           "OutTrans=%d\n",
+           common.maccfg.active_ne, common.maccfg.small_src_mode, common.maccfg.task_type,
+           common.maccfg.l2_barrier, common.maccfg.out_trans);
+  }
+
+  if (reg_valid[16]) {
+    printf("        LaneCfg   : OCGSize=%u\n", common.lane_cfg.ocg_size);
+  }
+
+  if (reg_valid[18]) {
+    printf("        PERouting : S1WB=%d S1HB=%d S1DB=%d S1CB=%d S2WB=%d "
+           "S2HB=%d S2DB=%d S2CB=%d S1T=%d S2T=%d OT=%d\n",
+           common.pe_routing.src1_w_bcast, common.pe_routing.src1_h_bcast,
+           common.pe_routing.src1_d_bcast, common.pe_routing.src1_c_bcast,
+           common.pe_routing.src2_w_bcast, common.pe_routing.src2_h_bcast,
+           common.pe_routing.src2_d_bcast, common.pe_routing.src2_c_bcast,
+           common.pe_routing.src1_trans, common.pe_routing.src2_trans, common.pe_routing.out_trans);
+  }
+
+  if (reg_valid[19]) printf("        NID       : 0x%08x\n", common.nid);
+  if (reg_valid[20]) printf("        DPE       : 0x%08x\n", common.dpe);
+}
+
+void print_ne_h16(const uint32_t *reg_values, const bool *reg_valid) {
+  ane_ne_h16_t ne = *(ane_ne_h16_t *)&reg_values[0x4900 / 4];
+  printf("        --- Neural Engine Config ---\n");
+
+  if (reg_valid[0x4900 / 4]) {
+    printf("        KernelCfg: Fmt=%s Palettized=%d (%dbit) SparseFmt=%d "
+           "AsymQuant=%d\n",
+           get_ch_fmt_name(ne.kernel_cfg.kernel_fmt), ne.kernel_cfg.palettized_en,
+           ne.kernel_cfg.palettized_bits, ne.kernel_cfg.sparse_fmt, ne.kernel_cfg.asym_quant_en);
+  }
+
+  if (reg_valid[0x4904 / 4]) {
+    printf("        MACCfg: OpMode=%d KernelMode=%d BiasEn=%d Passthrough=%d "
+           "MVBiasEn=%d BinaryPoint=%u PostScaleEn=%d NonLinear=%d\n"
+           "                PaddingMode=%d MaxPoolMode=%d "
+           "arg_output_select=%d "
+           "double_int8_en=%d\n",
+           ne.mac_cfg.op_mode, ne.mac_cfg.kernel_mode, ne.mac_cfg.ne_bias_en,
+           ne.mac_cfg.passthrough_en, ne.mac_cfg.matrix_bias_en, ne.mac_cfg.binary_point,
+           ne.mac_cfg.post_scale_en, ne.mac_cfg.non_linear_mode, ne.mac_cfg.padding_mode,
+           ne.mac_cfg.max_pool_mode, ne.mac_cfg.arg_output_select, ne.mac_cfg.double_int8_en);
+  }
+
+  if (reg_valid[0x4908 / 4]) printf("        MatrixBias: 0x%04x\n", ne.matrix_bias.matrix_vector_bias);
+  if (reg_valid[0x490c / 4]) printf("        NEBias: 0x%06x\n", ne.ne_bias.val);
+  if (reg_valid[0x4910 / 4]) printf("        PostScale: 0x%06x\n", ne.post_scale.val);
+
+  if (reg_valid[0x4914 / 4]) {
+    printf("        RcasConfig: KeyMask=0x%02x CmpBit=%d SenseAxis=%d "
+           "SenseBit=%d Mode=%d\n",
+           ne.rcas_cfg.key_mask, ne.rcas_cfg.cmp_bit, ne.rcas_cfg.sense_axis, ne.rcas_cfg.sense_bit,
+           ne.rcas_cfg.mode);
+  }
+
+  if (reg_valid[0x4918 / 4]) {
+    printf("        RoundModeCfg: Mode=%d IntegerBits=%d\n", ne.st_round_cfg.round_mode,
+           ne.st_round_cfg.integer_bits);
+  }
+
+  if (reg_valid[0x491c / 4]) {
+    printf("        SRSeeds: 0x%08x 0x%08x 0x%08x 0x%08x\n", ne.st_round_seed[0],
+           ne.st_round_seed[1], ne.st_round_seed[2], ne.st_round_seed[3]);
+  }
+
+  if (reg_valid[0x492c / 4]) printf("        QuantZeroPoint: %d\n", ne.quant.quant_zero_point);
+}
+
+void print_pe_h16(const uint32_t *reg_values, const bool *reg_valid) {
+  ane_pe_h16_t pe = *(ane_pe_h16_t *)&reg_values[0x4500 / 4];
+  printf("        --- Planar Engine Config ---\n");
+
+  if (reg_valid[0x4500 / 4]) {
+    printf("        PEConfig: Op=%d Cond=%d Src1=%d Src2=%d\n", pe.pe_cfg.op, pe.pe_cfg.cond,
+           pe.pe_cfg.src1, pe.pe_cfg.src2);
+  }
+  if (reg_valid[0x4504 / 4])
+    printf("        PEBias   : 0x%05x (%f)\n", pe.bias & 0x7FFFF, decode_f19(pe.bias));
+  if (reg_valid[0x4508 / 4])
+    printf("        PEScale  : 0x%05x (%f)\n", pe.scale & 0x7FFFF, decode_f19(pe.scale));
+  if (reg_valid[0x450c / 4])
+    printf("        PEFScale : 0x%05x (%f)\n", pe.final_scale & 0x7FFFF, decode_f19(pe.final_scale));
+  if (reg_valid[0x4510 / 4])
+    printf("        PEPScale : 0x%05x (%f)\n", pe.pre_scale & 0x7FFFF, decode_f19(pe.pre_scale));
+  if (reg_valid[0x4514 / 4])
+    printf("        PEFScale2: 0x%05x (%f)\n", pe.final_scale2 & 0x7FFFF, decode_f19(pe.final_scale2));
+  if (reg_valid[0x4538 / 4]) {
+    printf("        PEQuant: InReLU=%d OutReLU=%d ZeroPoint=%d\n", pe.quant.input_relu,
+           pe.quant.output_relu, pe.quant.zero_point);
+  }
+}
+
+void print_l2_h16(const uint32_t *reg_values, const bool *reg_valid) {
+  ane_l2_h16_t l2 = *(ane_l2_h16_t *)&reg_values[0x4100 / 4];
+  printf("        --- L2 Cache Control ---\n");
+
+  if (reg_valid[0x4100 / 4]) {
+    printf("        L2Control: Padding=%d Src1FIFO=%d Src1Double=%d "
+           "Barrier=%d\n",
+           l2.l2_control.padding_mode, l2.l2_control.src1_fifo, l2.l2_control.src1_double,
+           l2.l2_control.barrier);
+  }
+  if (reg_valid[0x4104 / 4]) {
+    printf("        Src1Cfg  : Type=%d DmaFmt=%d Interleave=%d OffY=%d "
+           "Comp=%d\n",
+           l2.src1_cfg.src_type, l2.src1_cfg.dma_fmt, l2.src1_cfg.interleave,
+           l2.src1_cfg.offset_y_lsbs, l2.src1_cfg.compression);
+  }
+  if (reg_valid[0x4108 / 4]) {
+    printf("        Src2Cfg  : Type=%d Interleave=%d Comp=%d\n", l2.src2_cfg.src_type,
+           l2.src2_cfg.interleave, l2.src2_cfg.compression);
+  }
+  if (reg_valid[0x4110 / 4]) {
+    printf("        Src1  : BaseAddr=0x%05x CStride=0x%05x "
+           "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
+           l2.src1.base, l2.src1.channel_stride, l2.src1.row_stride, l2.src1.depth_stride,
+           l2.src1.group_stride);
+  }
+  if (reg_valid[0x4124 / 4]) {
+    printf("        Src2  : BaseAddr=0x%05x CStride=0x%05x "
+           "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
+           l2.src2.base, l2.src2.channel_stride, l2.src2.row_stride, l2.src2.depth_stride,
+           l2.src2.group_stride);
+  }
+  if (reg_valid[0x4138 / 4]) {
+    printf("        SrcIdx: BaseAddr=0x%05x CStride=0x%05x "
+           "DStride=0x%05x GStride=0x%05x\n",
+           l2.srcidx.base, l2.srcidx.channel_stride, l2.srcidx.depth_stride, l2.srcidx.group_stride);
+  }
+  if (reg_valid[0x4148 / 4]) {
+    printf("        ResCfg: BfrMode=%d CropX=%d Interleave=%d Type=%d "
+           "Comp=%d\n",
+           l2.result_cfg.bfr_mode, l2.result_cfg.crop_offset_x, l2.result_cfg.interleave,
+           l2.result_cfg.res_type, l2.result_cfg.compression);
+  }
+  if (reg_valid[0x414c / 4]) {
+    printf("        Result: BaseAddr=0x%05x CStride=0x%05x "
+           "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
+           l2.result.base, l2.result.channel_stride, l2.result.row_stride, l2.result.depth_stride,
+           l2.result.group_stride);
+  }
+  if (reg_valid[0x417c / 4]) {
+    printf("        Res2 / L2Wr: BaseAddr=0x%05x CStride=0x%05x "
+           "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
+           l2.result2.base, l2.result2.channel_stride, l2.result2.row_stride,
+           l2.result2.depth_stride, l2.result2.group_stride);
+  }
+  if (reg_valid[0x4174 / 4]) {
+    printf("        ResultWrap: Index=0x%x StartOffset=0x%x\n", l2.result_wrap_idx_off.wrap_index,
+           l2.result_wrap_idx_off.wrap_start_offset);
+  }
+  if (reg_valid[0x419c / 4]) {
+    printf("        ResultWrap: Addr=0x%x AddrOffset=0x%x\n", l2.result_wrap_addr.wrap_addr,
+           l2.result_wrap_addr.wrap_addr_offset);
+  }
+}
+
+void print_tiledma_src_h16(const uint32_t *reg_values, const bool *reg_valid) {
+  ane_tiledma_src_h16_t *src = (ane_tiledma_src_h16_t *)&reg_values[0x4d00 / 4];
+  printf("        --- TileDMA Source (0x4D00) ---\n");
+  if (reg_valid[0x4d00 / 4]) {
+    printf("        Src1DMAConfig: En=%d DSID=%u Tag=%u Format=%u\n", src->src1cfg.en,
+           src->src1cfg.dataset_id, src->src1cfg.user_tag, src->src1cfg.format);
+  }
+  if (reg_valid[0x4d04 / 4]) {
+    printf("        Src2DMAConfig: En=%d DSID=%u Tag=%u DepMode=%u\n", src->src2cfg.en,
+           src->src2cfg.dataset_id, src->src2cfg.user_tag, src->src2cfg.dep_mode);
+  }
+  if (reg_valid[0x4d18 / 4]) {
+    printf("        Src1Strides: RowStride=0x%08x PlaneStride=0x%08x "
+           "DepthStride=0x%08x GroupStride=0x%08x\n",
+           src->src1rows, src->src1chans, src->src1depths, src->src1groups);
+  }
+  if (reg_valid[0x4d30 / 4]) {
+    printf("        Src2Strides: RowStride=0x%08x PlaneStride=0x%08x "
+           "DepthStride=0x%08x GroupStride=0x%08x\n",
+           src->src2rows, src->src2chans, src->src2depths, src->src2groups);
+  }
+  if (reg_valid[0x4d50 / 4]) {
+    printf("        Src1MetaData: Addr=0x%08x%08x Size=0x%08x\n", src->src1meta_hi, src->src1meta_lo,
+           src->src1meta_size);
+  }
+  if (reg_valid[0x4d5c / 4]) {
+    printf("        Src2MetaData: Addr=0x%08x%08x Size=0x%08x\n", src->src2meta_hi, src->src2meta_lo,
+           src->src2meta_size);
+  }
+  if (reg_valid[0x4d68 / 4]) {
+    printf("        Src1Fmt: 0x%08x, Src2Fmt: 0x%08x\n", src->src1memfmt, src->src2memfmt);
+  }
+}
+
+void print_tiledma_dst_h16(const uint32_t *reg_values, const bool *reg_valid) {
+  ane_tiledma_dst_h16_t *dst = (ane_tiledma_dst_h16_t *)&reg_values[0x5100 / 4];
+  printf("        --- TileDMA Destination (0x5100) ---\n");
+  if (reg_valid[0x5100 / 4]) {
+    printf("        DstDMAConfig: En=%d CacheHint=%u DSID=%u Tag=%u\n", dst->dstcfg.en,
+           dst->dstcfg.cache_hint, dst->dstcfg.dataset_id, dst->dstcfg.user_tag);
+  }
+  if (reg_valid[0x5110 / 4]) {
+    printf("        DstStrides: RowStride=0x%08x PlaneStride=0x%08x "
+           "DepthStride=0x%08x GroupStride=0x%08x\n",
+           dst->dstrows, dst->dstchans, dst->dstdepths, dst->dstgroups);
+  }
+}
+
+void print_kerneldma_h16(const uint32_t *reg_values, const bool *reg_valid) {
+  ane_kerneldma_src_h16_t *k = (ane_kerneldma_src_h16_t *)&reg_values[0x5500 / 4];
+  printf("        --- KernelDMA Source (0x5500) ---\n");
+  if (reg_valid[0x5500 / 4]) printf("        MasterConfig: MasterEnable=%d\n", k->master_cfg.master_enable);
+  for (int i = 0; i < 16; i++) {
+    if (reg_valid[0x5520 / 4 + i] || reg_valid[0x5560 / 4 + i]) {
+      printf("        Coeff[%d]: En=%d CacheHint=%u DSID=%u Tag=%u "
+             "Base=0x%08x "
+             "Size=0x%08x\n",
+             i, k->coeff_cfg[i].en, k->coeff_cfg[i].cache_hint, k->coeff_cfg[i].dataset_id,
+             k->coeff_cfg[i].user_tag, k->coeff_base[i], k->coeff_size[i]);
+    }
+  }
+  if (reg_valid[0x55e0 / 4])
+    printf("        Bias: En=%d CacheHint=%u Tag=%u\n", k->bias_cfg.en, k->bias_cfg.cache_hint,
+           k->bias_cfg.user_tag);
+  if (reg_valid[0x55f0 / 4])
+    printf("        PostScale: En=%d CacheHint=%u Tag=%u\n", k->post_scale_cfg.en,
+           k->post_scale_cfg.cache_hint, k->post_scale_cfg.user_tag);
+  if (reg_valid[0x5600 / 4])
+    printf("        Palette: En=%d CacheHint=%u Tag=%u\n", k->palette_cfg.en,
+           k->palette_cfg.cache_hint, k->palette_cfg.user_tag);
+  if (reg_valid[0x5610 / 4])
+    printf("        NonLinear: En=%d CacheHint=%u Tag=%u\n", k->non_linear_cfg.en,
+           k->non_linear_cfg.cache_hint, k->non_linear_cfg.user_tag);
+}
+
+void print_cachedma_h16(const uint32_t *reg_values, const bool *reg_valid) {
+  ane_cachedma_h16_t cdma = *(ane_cachedma_h16_t *)&reg_values[0x5900 / 4];
+  printf("        --- CacheDMA & Telemetry (0x5900) ---\n");
+  if (reg_valid[0x5900 / 4]) {
+    printf("        Control: Flush=%d En=%d TaskSync=0x%x ET=0x%x FL=%d "
+           "Thresh=0x%04x\n",
+           cdma.control.flush, cdma.control.enable, cdma.control.task_sync, cdma.control.early_term,
+           cdma.control.footprint_limiter, cdma.control.footprint_threshold);
+  }
+  if (reg_valid[0x5904 / 4]) {
+    printf("        Pre0: BWLimit=%u Sieve2=%u AgeOut=%u\n", cdma.pre0.bandwidth_limit,
+           cdma.pre0.sieve2, cdma.pre0.telemetry_age_out);
+  }
+  if (reg_valid[0x5908 / 4]) printf("        Pre1: Sieve1=%u\n", cdma.pre1.sieve1);
+  if (reg_valid[0x5918 / 4]) printf("        DSID: DSID_Size=0x%x\n", cdma.dsid.dsid_and_size);
+  if (reg_valid[0x591c / 4]) printf("        Footprint: Arg2=0x%x\n", cdma.footprint_arg.footprint_arg2);
+  if (reg_valid[0x5920 / 4]) {
+    printf("        ET_Args12: Arg1=0x%04x Arg2=0x%04x\n", cdma.early_term_arg12.arg1,
+           cdma.early_term_arg12.arg2);
+  }
+  if (reg_valid[0x5924 / 4]) printf("        Flush: Arg=0x%04x\n", cdma.flush_reg.flush_arg);
+  if (reg_valid[0x5928 / 4]) {
+    printf("        ET_Args34: Arg3=0x%02x Arg4=0x%02x\n", cdma.early_term_arg34.arg3,
+           cdma.early_term_arg34.arg4);
+  }
+  if (reg_valid[0x592c / 4]) {
+    printf("        BackOff: En=%d Delay=%u Min=%u Max=%u Scale=%u\n", cdma.backoff.enable,
+           cdma.backoff.delay, cdma.backoff.min, cdma.backoff.max, cdma.backoff.scale);
+  }
+}
+
 void decode_ane_td(const uint8_t *ptr, size_t total_len) {
   uint32_t offset = 0;
   int task_idx = 0;
@@ -1448,134 +1890,13 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
 
     if (offset + sizeof(ane_td_header_h13_t) <= total_len) {
       printf("        --- HW Block Register State ---\n");
-      // Decode Common Block (0x0000)
-      printf("        --- Common (0x0000) ---\n");
-      const ane_common_h13_t *common = (const ane_common_h13_t *)&reg_values[0];
-
-      uint16_t win = common->indim.w_in;
-      uint16_t hin = common->indim.h_in;
-      uint32_t cin = common->cin.c_in;
-
-      uint16_t wout = common->outdim.w_out;
-      uint16_t hout = common->outdim.h_out;
-      uint32_t cout = common->cout.c_out;
-
-      const char *infmt_name = get_ch_fmt_name(common->chcfg.infmt);
-      const char *outfmt_name = get_ch_fmt_name(common->chcfg.outfmt);
-
-      printf("        %u x %u x %u (%s) -> %u x %u x %u (%s)\n", win, hin, cin, infmt_name, wout,
-             hout, cout, outfmt_name);
-
-      if (common->convcfg.kw != 0 || common->convcfg.kh != 0) {
-        printf("        ConvCfg: K=%ux%u S=%ux%u P=%ux%u\n", common->convcfg.kw, common->convcfg.kh,
-               common->convcfg.sx, common->convcfg.sy, common->convcfg.px, common->convcfg.py);
-
-        printf("        GroupConvCfg: Groups=%u UnicastEn=%d ElemMult=%d "
-               "UnicastCin=%u\n",
-               common->groupcfg.num_groups, common->groupcfg.unicast_en,
-               common->groupcfg.elem_mult_mode, common->groupcfg.unicast_cin);
-      }
-
-      printf("        Cfg: ActiveNE=%u SmallSrc=%u ShPref=%u ShMin=%u ShMax=%u "
-             "AccDB=%u\n",
-             common->cfg.active_ne, common->cfg.small_src_mode, common->cfg.sh_pref,
-             common->cfg.sh_min, common->cfg.sh_max, common->cfg.acc_db_buf_en);
-
-      printf("        TaskInfo: TID=0x%04x Q=%u NID=0x%02x\n", common->task_info.tid,
-             common->task_info.task_q, common->task_info.task_nid);
-
-      // Decode L2 Block (0x4800)
-      printf("        --- L2 (0x4800) ---\n");
-      const ane_l2_h13_t *l2 = (const ane_l2_h13_t *)&reg_values[0x4800 / 4];
-      printf("        L2Cfg: InputRelu=%d PaddingMode=%u\n", l2->l2cfg.input_relu,
-             l2->l2cfg.padding_mode);
-      printf("        L2 SourceCfg: Type=%u Dep=%u Fmt=%u Intrlv=%u CmpV=%u "
-             "OffCh=%u\n",
-             l2->scfg.type, l2->scfg.dep, l2->scfg.fmt, l2->scfg.interleave, l2->scfg.cmpv,
-             l2->scfg.offch);
-      printf("        L2 Src1: Base=0x%05x ChanStride=0x%05x RowStride=0x%05x\n", l2->srcbase.addr,
-             l2->src_chan_stride.stride, l2->src_row_stride.stride);
-
-      printf("        L2 ResultCfg: Type=%u Bfr=%u Fmt=%u Intrlv=%u CmpV=%u "
-             "OffCh=%u\n",
-             l2->rcfg.type, l2->rcfg.bfrmode, l2->rcfg.fmt, l2->rcfg.interleave, l2->rcfg.cmpv,
-             l2->rcfg.offch);
-
-      // Decode NE Block (0xC800)
-      printf("        --- Neural Engine (0xC800) ---\n");
-      const ane_ne_h13_t *ne = (const ane_ne_h13_t *)&reg_values[0xC800 / 4];
-      printf("        NE MACCfg: OpMode=%u NLMode=%u KernelMode=%d BiasMode=%d "
-             "BinaryPoint=%u\n",
-             ne->mac_cfg.op_mode, ne->mac_cfg.non_linear_mode, ne->mac_cfg.kernel_mode,
-             ne->mac_cfg.bias_mode, ne->mac_cfg.binary_point);
-      printf("        NE KernelCfg: Fmt=%s PalettizedEn=%d PalettizeBits=%u "
-             "SparseFmt=%d GroupKernelReuse=%d\n",
-             get_ch_fmt_name(ne->kernel_cfg.kernel_fmt), ne->kernel_cfg.palettized_en,
-             ne->kernel_cfg.palettized_bits, ne->kernel_cfg.sparse_fmt,
-             ne->kernel_cfg.group_kernel_reuse);
-      printf("        NE MatrixVectorBias: 0x%04x\n", ne->matrix_vector_bias.matrix_vector_bias);
-      printf("        NE AccBias: 0x%04x Shift=%u\n", ne->acc_bias.acc_bias,
-             ne->acc_bias.acc_bias_shift);
-      printf("        NE PostScale: 0x%04x RightShift=%u\n", ne->post_scale.post_scale,
-             ne->post_scale.post_scale_right_shift);
-
-      // Decode TileDMA Source (0x13800)
-      const ane_tiledma_src_h13_t *tsrc = (const ane_tiledma_src_h13_t *)&reg_values[0x13800 / 4];
-      printf("        --- TileDMA Source (0x13800) ---\n");
-      printf("        Src1DMAConfig: En=%d CacheHint=%u DepMode=%u\n", tsrc->src_dma_config.en,
-             tsrc->src_dma_config.cache_hint, tsrc->src_dma_config.dep_mode);
-      printf("        Src1Strides: Base=0x%05x Row=0x%05x Plane=0x%05x "
-             "Depth=0x%05x Group=0x%05x\n",
-             tsrc->base_addr.addr, tsrc->row_stride.stride, tsrc->plane_stride.stride,
-             tsrc->depth_stride.stride, tsrc->group_stride.stride);
-
-      printf("        Src1Fmt: FmtMode=%u Trunc=%u Shift=%u MemFmt=%u "
-             "OffCh=%u Intrlv=%u CmpV=%u\n",
-             tsrc->fmt.fmt_mode, tsrc->fmt.truncate, tsrc->fmt.shift, tsrc->fmt.mem_fmt,
-             tsrc->fmt.offset_ch, tsrc->fmt.interleave, tsrc->fmt.cmp_vec);
-
-      // Decode PE Block (0x8800)
-      const ane_pe_h13_t *pe = (const ane_pe_h13_t *)&reg_values[0x8800 / 4];
-      if (reg_valid[0x8800 / 4]) {
-        printf("        --- Planar Engine (0x8800) ---\n");
-        printf("        PECfg: En=%d OpMode=%u ReluEn=%d Cond=%u FirstSrc=%u "
-               "SecondSrc=%u\n",
-               pe->cfg.enable, pe->cfg.op_mode, pe->cfg.relu_en, pe->cfg.cond, pe->cfg.first_source,
-               pe->cfg.second_source);
-        printf("        PEBiasScale: Bias=0x%04x Scale=0x%04x\n", pe->bias_scale.bias,
-               pe->bias_scale.scale);
-        printf("        PEPreScale: 0x%04x PEFinalScale: 0x%08x\n", pe->pre_scale.pre_scale,
-               pe->final_scale.final_scale);
-      }
-
-      // Decode KernelDMA (0x1F800)
-      const ane_kerneldma_h13_t *k = (const ane_kerneldma_h13_t *)&reg_values[0x1F800 / 4];
-      printf("        --- KernelDMA (0x1F800) ---\n");
-      for (int i = 0; i < 16; i++) {
-        if (k->coeff_dma_config[i].en) {
-          printf("        Coeff[%d]: En=%d CacheHint=%u Base=0x%08x Size=0x%08x\n", i,
-                 k->coeff_dma_config[i].en, k->coeff_dma_config[i].cache_hint,
-                 k->coeff_base_addr[i].addr, k->coeff_bfr_size[i]);
-        }
-      }
-
-      // Decode TileDMA Destination (0x17800)
-      const ane_tiledma_dst_h13_t *tdst = (const ane_tiledma_dst_h13_t *)&reg_values[0x17800 / 4];
-      printf("        --- TileDMA Destination (0x17800) ---\n");
-      printf("        DstDMAConfig: En=%d CacheHint=%u L2BfrMode=%d "
-             "BypassEOW=%d\n",
-             tdst->dst_dma_config.en, tdst->dst_dma_config.cache_hint,
-             tdst->dst_dma_config.l2bfrmode, tdst->dst_dma_config.bypass_eow);
-      printf("        DstStrides: Base=0x%05x Row=0x%05x Plane=0x%05x "
-             "Depth=0x%05x Group=0x%05x\n",
-             tdst->base_addr.addr, tdst->row_stride.stride, tdst->plane_stride.stride,
-             tdst->depth_stride.stride, tdst->group_stride.stride);
-
-      printf("        DstFmt: FmtMode=%u Trunc=%u Shift=%u MemFmt=%u "
-             "OffCh=%u ZPLast=%d ZPFirst=%d Fill=%d Intrlv=%u CmpV=%u\n",
-             tdst->fmt.fmt_mode, tdst->fmt.truncate, tdst->fmt.shift, tdst->fmt.mem_fmt,
-             tdst->fmt.offset_ch, tdst->fmt.zero_pad_last, tdst->fmt.zero_pad_first,
-             tdst->fmt.cmp_vec_fill, tdst->fmt.interleave, tdst->fmt.cmp_vec);
+      print_common_h13(reg_values, reg_valid);
+      print_l2_h13(reg_values, reg_valid);
+      print_pe_h13(reg_values, reg_valid);
+      print_ne_h13(reg_values, reg_valid);
+      print_tiledma_src_h13(reg_values, reg_valid);
+      print_tiledma_dst_h13(reg_values, reg_valid);
+      print_kerneldma_h13(reg_values, reg_valid);
 
       if (1) {
         hwx_block_info_t blocks[] = {
@@ -1684,429 +2005,27 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
     }
     printf("        Stream Parse: OK (End index %d/%d)\n", i, num_words);
 
-    // Decode Common Registers from Map M4 Style
-    ane_common_h16_t common;
-    bool has_common = false;
-    for (int j = 0; j < 23; j++) {
-      if (reg_valid[j]) {
-        has_common = true;
-        ((uint32_t *)&common)[j] = reg_values[j];
-      } else {
-        ((uint32_t *)&common)[j] = 0;
-      }
-    }
+    // Decode HW Blocks using specialized decoders
+    printf("        --- HW Block Register State ---\n");
+    print_common_h16(reg_values, reg_valid);
+    print_l2_h16(reg_values, reg_valid);
+    print_pe_h16(reg_values, reg_valid);
+    print_ne_h16(reg_values, reg_valid);
+    print_tiledma_src_h16(reg_values, reg_valid);
+    print_tiledma_dst_h16(reg_values, reg_valid);
+    print_kerneldma_h16(reg_values, reg_valid);
+    print_cachedma_h16(reg_values, reg_valid);
 
-    if (has_common) {
-      // M4 Discrete Block Decoding logic below...
-
-      if (reg_valid[9]) {
-        printf("        Batch     : B=%u\n", common.num_groups);
-      }
-      const char *infmt_name = get_ch_fmt_name(common.ch_cfg.infmt);
-      const char *outfmt_name = get_ch_fmt_name(common.ch_cfg.outfmt);
-      if (reg_valid[1] || reg_valid[2] || reg_valid[3] || reg_valid[4] || reg_valid[0]) {
-        printf("        InDim     : W=%u H=%u C=%u D=%u Type=%s\n", common.inwidth, common.inheight,
-               common.inchannels, common.indepth, infmt_name);
-      }
-      if (reg_valid[5] || reg_valid[6] || reg_valid[7] || reg_valid[8] || reg_valid[0]) {
-        printf("        OutDim    : W=%u H=%u C=%u D=%u Type=%s\n", common.outwidth,
-               common.outheight, common.outchannels, common.outdepth, outfmt_name);
-      }
-
-      if (reg_valid[10]) {
-        printf("        ConvCfg   : K=%ux%u S=%ux%u P=%ux%u O=%ux%u\n", common.conv_cfg.kw,
-               common.conv_cfg.kh, common.conv_cfg.sx, common.conv_cfg.sy, common.conv_cfg.pad_left,
-               common.conv_cfg.pad_top, common.conv_cfg.ox, common.conv_cfg.oy);
-      }
-
-      if (reg_valid[13]) {
-        printf("        TileHeight: %u\n", common.tile_height);
-      }
-
-      if (reg_valid[17]) {
-        printf("        PatchCfg  : %ux%u\n", common.patch_cfg.patch_width,
-               common.patch_cfg.patch_height);
-      }
-
-      if (reg_valid[11]) {
-        printf("        ConvCfg3D : 0x%08x\n", common.conv_cfg_3d);
-      }
-
-      if (reg_valid[12]) {
-        printf("        UnicastCfg: En=%d Cin=%u\n", common.unicast_cfg.unicast_en,
-               common.unicast_cfg.unicast_cin);
-      }
-
-      if (reg_valid[14]) {
-        printf("        Overlap   : Skip=%u PadTop=%u PadBottom=%u\n", common.tile_overlap.overlap,
-               common.tile_overlap.pad_top, common.tile_overlap.pad_bottom);
-      }
-
-      if (reg_valid[15]) {
-        printf("        MacCfg    : TaskType=%u ActiveNE=%u SmallSrcMode=%u "
-               "L2Barrier=%u OutTrans=%u\n",
-               common.maccfg.task_type, common.maccfg.active_ne, common.maccfg.small_src_mode,
-               common.maccfg.l2_barrier, common.maccfg.out_trans);
-      }
-      if (reg_valid[16]) {
-        printf("        LaneCfg   : OCGSize=%u\n", common.lane_cfg.ocg_size);
-      }
-
-      if (reg_valid[18]) {
-        printf("        PERouting : S1WB=%d S1HB=%d S1DB=%d S1CB=%d S2WB=%d "
-               "S2HB=%d S2DB=%d S2CB=%d S1T=%d S2T=%d OT=%d\n",
-               common.pe_routing.src1_w_bcast, common.pe_routing.src1_h_bcast,
-               common.pe_routing.src1_d_bcast, common.pe_routing.src1_c_bcast,
-               common.pe_routing.src2_w_bcast, common.pe_routing.src2_h_bcast,
-               common.pe_routing.src2_d_bcast, common.pe_routing.src2_c_bcast,
-               common.pe_routing.src1_trans, common.pe_routing.src2_trans,
-               common.pe_routing.out_trans);
-      }
-
-      if (reg_valid[19]) {
-        printf("        NID       : 0x%08x\n", common.nid);
-      }
-
-      if (reg_valid[20]) {
-        printf("        DPE       : 0x%08x\n", common.dpe);
-      }
-
-      if (reg_valid[21]) {
-        printf("        Val21     : 0x%08x\n", common.val_21);
-      }
-
-      if (reg_valid[22]) {
-        printf("        Val22     : 0x%08x\n", common.val_22);
-      }
-    }
-
-    // Decode 0x4900 NE Block
-    bool ne_has_valid = false;
-    for (int i = 0x4900 / 4; i < 0x4900 / 4 + 32; i++) {
-      if (reg_valid[i]) ne_has_valid = true;
-    }
-
-    if (ne_has_valid) {
-      ane_ne_h16_t ne = *(ane_ne_h16_t *)&reg_values[0x4900 / 4];
-      printf("        --- Neural Engine Config ---\n");
-
-      if (reg_valid[0x4900 / 4]) {
-        printf("        KernelCfg: Fmt=%s Palettized=%d (%dbit) SparseFmt=%d "
-               "AsymQuant=%d\n",
-               get_ch_fmt_name(ne.kernel_cfg.kernel_fmt), ne.kernel_cfg.palettized_en,
-               ne.kernel_cfg.palettized_bits, ne.kernel_cfg.sparse_fmt,
-               ne.kernel_cfg.asym_quant_en);
-      }
-
-      if (reg_valid[0x4904 / 4]) {
-        printf("        MACCfg: OpMode=%d KernelMode=%d BiasEn=%d Passthrough=%d "
-               "MVBiasEn=%d BinaryPoint=%u PostScaleEn=%d NonLinear=%d\n"
-               "                PaddingMode=%d MaxPoolMode=%d "
-               "arg_output_select=%d "
-               "double_int8_en=%d\n",
-               ne.mac_cfg.op_mode, ne.mac_cfg.kernel_mode, ne.mac_cfg.ne_bias_en,
-               ne.mac_cfg.passthrough_en, ne.mac_cfg.matrix_bias_en, ne.mac_cfg.binary_point,
-               ne.mac_cfg.post_scale_en, ne.mac_cfg.non_linear_mode, ne.mac_cfg.padding_mode,
-               ne.mac_cfg.max_pool_mode, ne.mac_cfg.arg_output_select, ne.mac_cfg.double_int8_en);
-      }
-
-      if (reg_valid[0x4908 / 4]) {
-        printf("        MatrixBias: 0x%04x\n", ne.matrix_bias.matrix_vector_bias);
-      }
-
-      if (reg_valid[0x490c / 4]) {
-        printf("        NEBias: 0x%06x\n", ne.ne_bias.val);
-      }
-
-      if (reg_valid[0x4910 / 4]) {
-        printf("        PostScale: 0x%06x\n", ne.post_scale.val);
-      }
-
-      if (reg_valid[0x4914 / 4]) {
-        printf("        RcasConfig: KeyMask=0x%02x CmpBit=%d SenseAxis=%d "
-               "SenseBit=%d Mode=%d\n",
-               ne.rcas_cfg.key_mask, ne.rcas_cfg.cmp_bit, ne.rcas_cfg.sense_axis,
-               ne.rcas_cfg.sense_bit, ne.rcas_cfg.mode);
-      }
-
-      if (reg_valid[0x4918 / 4]) {
-        printf("        RoundModeCfg: Mode=%d IntegerBits=%d\n", ne.st_round_cfg.round_mode,
-               ne.st_round_cfg.integer_bits);
-      }
-
-      if (reg_valid[0x491c / 4]) {
-        printf("        SRSeeds: 0x%08x 0x%08x 0x%08x 0x%08x\n", ne.st_round_seed[0],
-               ne.st_round_seed[1], ne.st_round_seed[2], ne.st_round_seed[3]);
-      }
-
-      if (reg_valid[0x492c / 4]) {
-        printf("        QuantZeroPoint: %d\n", ne.quant.quant_zero_point);
-      }
-    }
-
-    // Decode 0x4500 PE Block
-    bool pe_has_valid = false;
-    for (int i = 0x4500 / 4; i < 0x4500 / 4 + 25; i++) {
-      if (reg_valid[i]) pe_has_valid = true;
-    }
-
-    if (pe_has_valid) {
-      ane_pe_h16_t pe = *(ane_pe_h16_t *)&reg_values[0x4500 / 4];
-      printf("        --- Planar Engine Config ---\n");
-
-      if (reg_valid[0x4500 / 4]) {
-        printf("        PEConfig: Op=%d Cond=%d Src1=%d Src2=%d\n", pe.pe_cfg.op, pe.pe_cfg.cond,
-               pe.pe_cfg.src1, pe.pe_cfg.src2);
-      }
-      if (reg_valid[0x4504 / 4])
-        printf("        PEBias   : 0x%05x (%f)\n", pe.bias & 0x7FFFF, decode_f19(pe.bias));
-      if (reg_valid[0x4508 / 4])
-        printf("        PEScale  : 0x%05x (%f)\n", pe.scale & 0x7FFFF, decode_f19(pe.scale));
-      if (reg_valid[0x450c / 4])
-        printf("        PEFScale : 0x%05x (%f)\n", pe.final_scale & 0x7FFFF,
-               decode_f19(pe.final_scale));
-      if (reg_valid[0x4510 / 4])
-        printf("        PEPScale : 0x%05x (%f)\n", pe.pre_scale & 0x7FFFF,
-               decode_f19(pe.pre_scale));
-      if (reg_valid[0x4514 / 4])
-        printf("        PEFScale2: 0x%05x (%f)\n", pe.final_scale2 & 0x7FFFF,
-               decode_f19(pe.final_scale2));
-      if (reg_valid[0x4538 / 4]) {
-        printf("        PEQuant: InReLU=%d OutReLU=%d ZeroPoint=%d\n", pe.quant.input_relu,
-               pe.quant.output_relu, pe.quant.zero_point);
-      }
-    }
-
-    // Decode 0x4100 L2 Block (41 registers)
-    bool l2_has_valid = false;
-    for (int i = 0x4100 / 4; i < 0x4100 / 4 + 41; i++) {
-      if (reg_valid[i]) l2_has_valid = true;
-    }
-
-    if (l2_has_valid) {
-      ane_l2_h16_t l2 = *(ane_l2_h16_t *)&reg_values[0x4100 / 4];
-      printf("        --- L2 Cache Control ---\n");
-
-      if (reg_valid[0x4100 / 4]) {
-        printf("        L2Control: Padding=%d Src1FIFO=%d Src1Double=%d "
-               "Barrier=%d\n",
-               l2.l2_control.padding_mode, l2.l2_control.src1_fifo, l2.l2_control.src1_double,
-               l2.l2_control.barrier);
-      }
-      if (reg_valid[0x4104 / 4]) {
-        printf("        Src1Cfg  : Type=%d DmaFmt=%d Interleave=%d OffY=%d "
-               "Comp=%d\n",
-               l2.src1_cfg.src_type, l2.src1_cfg.dma_fmt, l2.src1_cfg.interleave,
-               l2.src1_cfg.offset_y_lsbs, l2.src1_cfg.compression);
-      }
-      if (reg_valid[0x4108 / 4]) {
-        printf("        Src2Cfg  : Type=%d Interleave=%d Comp=%d\n", l2.src2_cfg.src_type,
-               l2.src2_cfg.interleave, l2.src2_cfg.compression);
-      }
-      if (reg_valid[0x4110 / 4]) {
-        printf("        Src1  : BaseAddr=0x%05x CStride=0x%05x "
-               "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
-               l2.src1.base, l2.src1.channel_stride, l2.src1.row_stride, l2.src1.depth_stride,
-               l2.src1.group_stride);
-      }
-      if (reg_valid[0x4124 / 4]) {
-        printf("        Src2  : BaseAddr=0x%05x CStride=0x%05x "
-               "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
-               l2.src2.base, l2.src2.channel_stride, l2.src2.row_stride, l2.src2.depth_stride,
-               l2.src2.group_stride);
-      }
-      if (reg_valid[0x4138 / 4]) {
-        printf("        SrcIdx: BaseAddr=0x%05x CStride=0x%05x "
-               "DStride=0x%05x GStride=0x%05x\n",
-               l2.srcidx.base, l2.srcidx.channel_stride, l2.srcidx.depth_stride,
-               l2.srcidx.group_stride);
-      }
-      if (reg_valid[0x4148 / 4]) {
-        printf("        ResCfg: BfrMode=%d CropX=%d Interleave=%d Type=%d "
-               "Comp=%d\n",
-               l2.result_cfg.bfr_mode, l2.result_cfg.crop_offset_x, l2.result_cfg.interleave,
-               l2.result_cfg.res_type, l2.result_cfg.compression);
-      }
-      if (reg_valid[0x414c / 4]) {
-        printf("        Result: BaseAddr=0x%05x CStride=0x%05x "
-               "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
-               l2.result.base, l2.result.channel_stride, l2.result.row_stride,
-               l2.result.depth_stride, l2.result.group_stride);
-      }
-      if (reg_valid[0x417c / 4]) {
-        printf("        Res2 / L2Wr: BaseAddr=0x%05x CStride=0x%05x "
-               "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
-               l2.result2.base, l2.result2.channel_stride, l2.result2.row_stride,
-               l2.result2.depth_stride, l2.result2.group_stride);
-      }
-      if (reg_valid[0x4174 / 4]) {
-        printf("        ResultWrap: Index=0x%x StartOffset=0x%x\n",
-               l2.result_wrap_idx_off.wrap_index, l2.result_wrap_idx_off.wrap_start_offset);
-      }
-      if (reg_valid[0x419c / 4]) {
-        printf("        ResultWrap: Addr=0x%x AddrOffset=0x%x\n", l2.result_wrap_addr.wrap_addr,
-               l2.result_wrap_addr.wrap_addr_offset);
-      }
-    }
-
-    // Decode 0x4D00 TileDMA Source
-    bool src_has_valid = false;
-    for (int i = 0x4d00 / 4; i < 0x4d00 / 4 + 64; i++) {
-      if (reg_valid[i]) src_has_valid = true;
-    }
-    if (src_has_valid) {
-      ane_tiledma_src_h16_t *src = (ane_tiledma_src_h16_t *)&reg_values[0x4d00 / 4];
-      printf("        --- TileDMA Source (0x4D00) ---\n");
-      if (reg_valid[0x4d00 / 4]) {
-        printf("        Src1DMAConfig: En=%d DSID=%u Tag=%u Format=%u\n", src->src1cfg.en,
-               src->src1cfg.dataset_id, src->src1cfg.user_tag, src->src1cfg.format);
-      }
-      if (reg_valid[0x4d04 / 4]) {
-        printf("        Src2DMAConfig: En=%d DSID=%u Tag=%u DepMode=%u\n", src->src2cfg.en,
-               src->src2cfg.dataset_id, src->src2cfg.user_tag, src->src2cfg.dep_mode);
-      }
-      if (reg_valid[0x4d18 / 4]) {
-        printf("        Src1Strides: RowStride=0x%08x PlaneStride=0x%08x "
-               "DepthStride=0x%08x GroupStride=0x%08x\n",
-               src->src1rows, src->src1chans, src->src1depths, src->src1groups);
-      }
-      if (reg_valid[0x4d30 / 4]) {
-        printf("        Src2Strides: RowStride=0x%08x PlaneStride=0x%08x "
-               "DepthStride=0x%08x GroupStride=0x%08x\n",
-               src->src2rows, src->src2chans, src->src2depths, src->src2groups);
-      }
-      if (reg_valid[0x4d50 / 4]) {
-        printf("        Src1MetaData: Addr=0x%08x%08x Size=0x%08x\n", src->src1meta_hi,
-               src->src1meta_lo, src->src1meta_size);
-      }
-      if (reg_valid[0x4d5c / 4]) {
-        printf("        Src2MetaData: Addr=0x%08x%08x Size=0x%08x\n", src->src2meta_hi,
-               src->src2meta_lo, src->src2meta_size);
-      }
-      if (reg_valid[0x4d68 / 4]) {
-        printf("        Src1Fmt: 0x%08x, Src2Fmt: 0x%08x\n", src->src1memfmt, src->src2memfmt);
-      }
-    }
-
-    // Decode 0x5100 TileDMA Destination
-    bool dst_has_valid = false;
-    for (int i = 0x5100 / 4; i < 0x5100 / 4 + 32; i++) {
-      if (reg_valid[i]) dst_has_valid = true;
-    }
-    if (dst_has_valid) {
-      ane_tiledma_dst_h16_t *dst = (ane_tiledma_dst_h16_t *)&reg_values[0x5100 / 4];
-      printf("        --- TileDMA Destination (0x5100) ---\n");
-      if (reg_valid[0x5100 / 4]) {
-        printf("        DstDMAConfig: En=%d CacheHint=%u DSID=%u Tag=%u\n", dst->dstcfg.en,
-               dst->dstcfg.cache_hint, dst->dstcfg.dataset_id, dst->dstcfg.user_tag);
-      }
-      if (reg_valid[0x5110 / 4]) {
-        printf("        DstStrides: RowStride=0x%08x PlaneStride=0x%08x "
-               "DepthStride=0x%08x GroupStride=0x%08x\n",
-               dst->dstrows, dst->dstchans, dst->dstdepths, dst->dstgroups);
-      }
-    }
-
-    // Decode 0x5500 KernelDMA Source
-    bool kernel_has_valid = false;
-    for (int i = 0x5500 / 4; i < 0x5500 / 4 + 100; i++) {
-      if (reg_valid[i]) kernel_has_valid = true;
-    }
-    if (kernel_has_valid) {
-      ane_kerneldma_src_h16_t *k = (ane_kerneldma_src_h16_t *)&reg_values[0x5500 / 4];
-      printf("        --- KernelDMA Source (0x5500) ---\n");
-      if (reg_valid[0x5500 / 4]) {
-        printf("        MasterConfig: MasterEnable=%d\n", k->master_cfg.master_enable);
-      }
-      for (int i = 0; i < 16; i++) {
-        if (reg_valid[0x5520 / 4 + i] || reg_valid[0x5560 / 4 + i]) {
-          printf("        Coeff[%d]: En=%d CacheHint=%u DSID=%u Tag=%u "
-                 "Base=0x%08x "
-                 "Size=0x%08x\n",
-                 i, k->coeff_cfg[i].en, k->coeff_cfg[i].cache_hint, k->coeff_cfg[i].dataset_id,
-                 k->coeff_cfg[i].user_tag, k->coeff_base[i], k->coeff_size[i]);
-        }
-      }
-      if (reg_valid[0x55e0 / 4]) {
-        printf("        Bias: En=%d CacheHint=%u Tag=%u\n", k->bias_cfg.en, k->bias_cfg.cache_hint,
-               k->bias_cfg.user_tag);
-      }
-      if (reg_valid[0x55f0 / 4]) {
-        printf("        PostScale: En=%d CacheHint=%u Tag=%u\n", k->post_scale_cfg.en,
-               k->post_scale_cfg.cache_hint, k->post_scale_cfg.user_tag);
-      }
-      if (reg_valid[0x5600 / 4]) {
-        printf("        Palette: En=%d CacheHint=%u Tag=%u\n", k->palette_cfg.en,
-               k->palette_cfg.cache_hint, k->palette_cfg.user_tag);
-      }
-      if (reg_valid[0x5610 / 4]) {
-        printf("        NonLinear: En=%d CacheHint=%u Tag=%u\n", k->non_linear_cfg.en,
-               k->non_linear_cfg.cache_hint, k->non_linear_cfg.user_tag);
-      }
-    }
-
-    if (1) {  // Dump key M4 registers mapped to discrete blocks
-      printf("        --- HW Block Register State ---\n");  // Decode 0x5900
-                                                            // CacheDMA & Telemetry
-      bool cdma_has_valid = false;
-      for (int i = 0x5900 / 4; i < 0x5900 / 4 + 13; i++) {
-        if (reg_valid[i]) cdma_has_valid = true;
-      }
-      if (cdma_has_valid) {
-        ane_cachedma_h16_t cdma = *(ane_cachedma_h16_t *)&reg_values[0x5900 / 4];
-        printf("        --- CacheDMA & Telemetry (0x5900) ---\n");
-        if (reg_valid[0x5900 / 4]) {
-          printf("        Control: Flush=%d En=%d TaskSync=0x%x ET=0x%x FL=%d "
-                 "Thresh=0x%04x\n",
-                 cdma.control.flush, cdma.control.enable, cdma.control.task_sync,
-                 cdma.control.early_term, cdma.control.footprint_limiter,
-                 cdma.control.footprint_threshold);
-        }
-        if (reg_valid[0x5904 / 4]) {
-          printf("        Pre0: BWLimit=%u Sieve2=%u AgeOut=%u\n", cdma.pre0.bandwidth_limit,
-                 cdma.pre0.sieve2, cdma.pre0.telemetry_age_out);
-        }
-        if (reg_valid[0x5908 / 4]) {
-          printf("        Pre1: Sieve1=%u\n", cdma.pre1.sieve1);
-        }
-        if (reg_valid[0x5918 / 4]) {
-          printf("        DSID: DSID_Size=0x%x\n", cdma.dsid.dsid_and_size);
-        }
-        if (reg_valid[0x591c / 4]) {
-          printf("        Footprint: Arg2=0x%x\n", cdma.footprint_arg.footprint_arg2);
-        }
-        if (reg_valid[0x5920 / 4]) {
-          printf("        ET_Args12: Arg1=0x%04x Arg2=0x%04x\n", cdma.early_term_arg12.arg1,
-                 cdma.early_term_arg12.arg2);
-        }
-        if (reg_valid[0x5924 / 4]) {
-          printf("        Flush: Arg=0x%04x\n", cdma.flush_reg.flush_arg);
-        }
-        if (reg_valid[0x5928 / 4]) {
-          printf("        ET_Args34: Arg3=0x%02x Arg4=0x%02x\n", cdma.early_term_arg34.arg3,
-                 cdma.early_term_arg34.arg4);
-        }
-        if (reg_valid[0x592c / 4]) {
-          printf("        BackOff: En=%d Delay=%u Min=%u Max=%u Scale=%u\n", cdma.backoff.enable,
-                 cdma.backoff.delay, cdma.backoff.min, cdma.backoff.max, cdma.backoff.scale);
-        }
-      }
-
-      hwx_block_info_t blocks[] = {
-          {"[0x0000] Common Module", 0x0000},      {"[0x4100] L2 Cache Control", 0x4100},
-          {"[0x4500] Planar Engine (PE)", 0x4500}, {"[0x4900] Neural Engine Core (NE)", 0x4900},
-          {"[0x4D00] TileDMA Source", 0x4D00},     {"[0x5100] TileDMA Destination", 0x5100},
-          {"[0x5500] KernelDMA Source", 0x5500},   {"[0x5900] CacheDMA & Telemetry", 0x5900},
-      };
-
-      dump_hw_blocks(reg_values, reg_valid, blocks, 8, get_m4_reg_name);
-    }
+    hwx_block_info_t blocks[] = {
+        {"[0x0000] Common Module", 0x0000},      {"[0x4100] L2 Cache Control", 0x4100},
+        {"[0x4500] Planar Engine (PE)", 0x4500}, {"[0x4900] Neural Engine Core (NE)", 0x4900},
+        {"[0x4D00] TileDMA Source", 0x4D00},     {"[0x5100] TileDMA Destination", 0x5100},
+        {"[0x5500] KernelDMA Source", 0x5500},   {"[0x5900] CacheDMA & Telemetry", 0x5900},
+    };
+    dump_hw_blocks(reg_values, reg_valid, blocks, 8, get_m4_reg_name);
 
     if (offset + size_bytes > total_len) break;
-
-    // Advance with 16-byte alignment
-    uint32_t aligned_size = (size_bytes + 15) & ~15;
-    offset += aligned_size;
+    offset += (size_bytes + 15) & ~15;
   }
 }
 

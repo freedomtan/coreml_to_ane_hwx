@@ -25,6 +25,7 @@
 #define H16_TILEDMA_DST_START 0x5100
 #define H16_KERNELDMA_START 0x5500
 #define H16_CACHEDMA_START 0x5900
+#define H16_PE_EXT_START 0x44D0
 
 typedef struct {
   uint32_t values[HW_MAX_REGS];
@@ -305,6 +306,8 @@ typedef struct {
     uint32_t user_tag : 8;
     uint32_t pad2 : 8;
   } non_linear_cfg; // Word 68 (0x5610)
+
+  uint32_t pad6[3]; // Word 69-71
 } __attribute__((packed)) ane_kerneldma_src_h16_t;
 
 typedef struct {
@@ -398,19 +401,21 @@ typedef struct {
   uint32_t src2base_lo; // Word 4
   uint32_t src2base_hi; // Word 5
 
-  uint32_t src1rows;   // Word 6
-  uint32_t src1chans;  // Word 7
-  uint32_t src1depths; // Word 8
-  uint32_t src1groups; // Word 9
+  uint32_t src1row_stride;   // Word 6
+  uint32_t src1plane_stride;  // Word 7
+  uint32_t src1depth_stride; // Word 8
+  uint32_t src1group_stride; // Word 9
 
-  uint32_t pad0[2]; // Word 10-11
+  uint32_t src2config;  // Word 10
+  uint32_t src2padding; // Word 11
 
-  uint32_t src2rows;   // Word 12
-  uint32_t src2chans;  // Word 13
-  uint32_t src2depths; // Word 14
-  uint32_t src2groups; // Word 15
+  uint32_t src2row_stride;   // Word 12
+  uint32_t src2plane_stride;  // Word 13
+  uint32_t src2depth_stride; // Word 14
+  uint32_t src2group_stride; // Word 15
 
-  uint32_t pad1[4]; // Word 16-19
+  uint32_t src1metadataconfig; // Word 16
+  uint32_t pad1[3];            // Word 17-19
 
   uint32_t src1meta_lo;   // Word 20
   uint32_t src1meta_hi;   // Word 21
@@ -425,6 +430,8 @@ typedef struct {
   uint32_t pad2[10];        // Word 28-37
   uint32_t src1pixeloff[4]; // Word 38-41
   uint32_t src2pixeloff[4]; // Word 42-45
+
+  uint32_t pad3[35]; // Word 46-80 (Size 81)
 } __attribute__((packed)) ane_tiledma_src_h16_t;
 
 // [0x5100] TileDma Destination Block
@@ -443,10 +450,10 @@ typedef struct {
   uint32_t dstbase_lo; // Word 2
   uint32_t dstbase_hi; // Word 3
 
-  uint32_t dstrows;   // Word 4
-  uint32_t dstchans;  // Word 5
-  uint32_t dstdepths; // Word 6
-  uint32_t dstgroups; // Word 7
+  uint32_t dstrow_stride;   // Word 4
+  uint32_t dstplane_stride;  // Word 5
+  uint32_t dstdepth_stride; // Word 6
+  uint32_t dstgroup_stride; // Word 7
 
   uint32_t dstinternalcfg; // Word 8
   uint32_t pad0;           // Word 9

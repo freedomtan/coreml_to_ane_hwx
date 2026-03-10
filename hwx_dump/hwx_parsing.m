@@ -108,49 +108,34 @@ const char *get_m4_reg_name(uint32_t addr) {
       "CacheDMADsid",     "CacheDMAFootprint", "EarlyTermArg12",
       "CacheDMAFlushArg", "EarlyTermArg34",    "TelemetryBackOff"};
   static const char *pe_index_names[] = {"PE_IndexCfg"};
-  static const char *tdma_src_names[] = {"Src1DMAConfig",
-                                         "Src2DMAConfig",
-                                         "Src1BaseAddrLo",
-                                         "Src1BaseAddrHi",
-                                         "Src2BaseAddrLo",
-                                         "Src2BaseAddrHi",
-                                         "Src1RowStride",
-                                         "Src1PlaneStride",
-                                         "Src1DepthStride",
-                                         "Src1GroupStride",
-                                         "pad0",
-                                         "pad1",
-                                         "Src2RowStride",
-                                         "Src2PlaneStride",
-                                         "Src2DepthStride",
-                                         "Src2GroupStride",
-                                         "pad2",
-                                         "pad3",
-                                         "pad4",
-                                         "pad5",
-                                         "Src1MetaDataAddrLo",
-                                         "pad6",
-                                         "Src1MetaDataSize",
-                                         "Src2MetaDataAddrLo",
-                                         "pad7",
-                                         "Src2MetaDataSize",
-                                         "Src1Fmt",
-                                         "Src2Fmt",
-                                         "pad8",
-                                         "pad9",
-                                         "pad10",
-                                         "pad11",
-                                         "pad12",
-                                         "pad13",
-                                         "pad14",
-                                         "pad15",
-                                         "pad16",
-                                         "pad17",
-                                         "Src1PixelOffset",
-                                         "pad18",
-                                         "pad19",
-                                         "pad20",
-                                         "Src2PixelOffset"};
+  static const char *tdma_src_names[81] = {
+      "Src1DMAConfig",      "Src2DMAConfig",      "Src1BaseAddrLo",
+      "Src1BaseAddrHi",      "Src2BaseAddrLo",      "Src2BaseAddrHi",
+      "Src1RowStride",      "Src1PlaneStride",     "Src1DepthStride",
+      "Src1GroupStride",     "Src2Config",         "Src2Padding",
+      "Src2RowStride",      "Src2PlaneStride",     "Src2DepthStride",
+      "Src2GroupStride",     "Src1MetaDataConfig", "pad_17",
+      "pad_18",             "pad_19",             "Src1MetaDataAddrLo",
+      "Src1MetaDataAddrHi", "Src1MetaDataSize",   "Src2MetaDataAddrLo",
+      "Src2MetaDataAddrHi", "Src2MetaDataSize",   "Src1Fmt",
+      "Src2Fmt",            "pad_28",             "pad_29",
+      "pad_30",             "pad_31",             "pad_32",
+      "pad_33",             "pad_34",             "pad_35",
+      "pad_36",             "pad_37",             "Src1PixelOffset[0]",
+      "Src1PixelOffset[1]", "Src1PixelOffset[2]", "Src1PixelOffset[3]",
+      "Src2PixelOffset[0]", "Src2PixelOffset[1]", "Src2PixelOffset[2]",
+      "Src2PixelOffset[3]", "pad_46",             "pad_47",
+      "pad_48",             "pad_49",             "pad_50",
+      "pad_51",             "pad_52",             "pad_53",
+      "pad_54",             "pad_55",             "pad_56",
+      "pad_57",             "pad_58",             "pad_59",
+      "pad_60",             "pad_61",             "pad_62",
+      "pad_63",             "pad_64",             "pad_65",
+      "pad_66",             "pad_67",             "pad_68",
+      "pad_69",             "pad_70",             "pad_71",
+      "pad_72",             "pad_73",             "pad_74",
+      "pad_75",             "pad_76",             "pad_77",
+      "pad_78",             "pad_79",             "pad_80"};
   static const char *tdma_dst_names[] = {
       "DstDMAConfig",      "pad0",
       "DstBaseAddrLo",     "DstBaseAddrHi",
@@ -163,36 +148,42 @@ const char *get_m4_reg_name(uint32_t addr) {
       "DstCompressionCfg", "pad4",
       "DstCompSizeLo",     "DstCompSizeHi",
       "DstPixelOffset"};
-  static const char *kdma_names[] = {"KDMA_MasterConfig",
-                                     "pad0",
-                                     "KDMA_Prefetch",
-                                     "pad1",
-                                     "pad2",
-                                     "pad3",
-                                     "KDMA_StrideX",
-                                     "KDMA_StrideY",
-                                     "CoeffDMAConfig",
-                                     "CoeffBaseAddr",
-                                     "CoeffBfrSize",
-                                     "pad4",
-                                     "BiasDMAConfig",
-                                     "pad5",
-                                     "PostScaleDMAConfig",
-                                     "pad6",
-                                     "PaletteDMAConfig",
-                                     "pad7",
-                                     "NLutDMAConfig"};
+  static const char *kdma_names[72] = {
+      "KDMA_MasterConfig",  "pad_1",              "KDMA_Prefetch",
+      "pad_3",              "pad_4",              "pad_5",
+      "KDMA_StrideX",       "KDMA_StrideY",       "CoeffDMAConfig[0]",
+      "CoeffDMAConfig[1]",  "CoeffDMAConfig[2]",  "CoeffDMAConfig[3]",
+      "CoeffDMAConfig[4]",  "CoeffDMAConfig[5]",  "CoeffDMAConfig[6]",
+      "CoeffDMAConfig[7]",  "CoeffDMAConfig[8]",  "CoeffDMAConfig[9]",
+      "CoeffDMAConfig[10]", "CoeffDMAConfig[11]", "CoeffDMAConfig[12]",
+      "CoeffDMAConfig[13]", "CoeffDMAConfig[14]", "CoeffDMAConfig[15]",
+      "CoeffBaseAddr[0]",   "CoeffBaseAddr[1]",   "CoeffBaseAddr[2]",
+      "CoeffBaseAddr[3]",   "CoeffBaseAddr[4]",   "CoeffBaseAddr[5]",
+      "CoeffBaseAddr[6]",   "CoeffBaseAddr[7]",   "CoeffBaseAddr[8]",
+      "CoeffBaseAddr[9]",   "CoeffBaseAddr[10]",  "CoeffBaseAddr[11]",
+      "CoeffBaseAddr[12]",  "CoeffBaseAddr[13]",  "CoeffBaseAddr[14]",
+      "CoeffBaseAddr[15]",  "CoeffBfrSize[0]",    "CoeffBfrSize[1]",
+      "CoeffBfrSize[2]",    "CoeffBfrSize[3]",    "CoeffBfrSize[4]",
+      "CoeffBfrSize[5]",    "CoeffBfrSize[6]",    "CoeffBfrSize[7]",
+      "CoeffBfrSize[8]",    "CoeffBfrSize[9]",    "CoeffBfrSize[10]",
+      "CoeffBfrSize[11]",   "CoeffBfrSize[12]",   "CoeffBfrSize[13]",
+      "CoeffBfrSize[14]",   "CoeffBfrSize[15]",   "BiasDMAConfig",
+      "pad_57",             "pad_58",             "pad_59",
+      "PostScaleDMAConfig", "pad_61",             "pad_62",
+      "pad_63",             "PaletteDMAConfig",   "pad_65",
+      "pad_66",             "pad_67",             "NLutDMAConfig",
+      "pad_69",             "pad_70",             "pad_71"};
 
   static const hwx_reg_range_t m4_ranges[] = {
       {H16_COMMON_START, 23, common_names},
       {H16_L2_START, 41, l2_names},
-      {0x44D0, 1, pe_index_names},
+      {H16_PE_EXT_START, 1, pe_index_names},
       {H16_PE_START, 15, pe_names},
       {H16_NE_START, 12, ne_names},
       {H16_CACHEDMA_START, 12, cdma_names},
-      {H16_TILEDMA_SRC_START, 43, tdma_src_names},
+      {H16_TILEDMA_SRC_START, 81, tdma_src_names},
       {H16_TILEDMA_DST_START, 21, tdma_dst_names},
-      {H16_KERNELDMA_START, 19, kdma_names},
+      {H16_KERNELDMA_START, 72, kdma_names},
   };
 
   return lookup_reg_name(addr, m4_ranges, 9);
@@ -605,7 +596,7 @@ void print_pe_h16(const hwx_state_t *state) {
 }
 
 void print_pe_index_h16(const hwx_state_t *state) {
-  uint32_t addr = 0x44D0;
+  uint32_t addr = H16_PE_EXT_START;
   if (!state->valid[addr / 4])
     return;
   ane_pe_index_t idx = *(ane_pe_index_t *)&state->values[addr / 4];
@@ -701,12 +692,14 @@ void print_tiledma_src_h16(const hwx_state_t *state) {
   if (state->valid[(H16_TILEDMA_SRC_START + 0x18) / 4]) {
     printf("        Src1Strides: RowStride=0x%08x PlaneStride=0x%08x "
            "DepthStride=0x%08x GroupStride=0x%08x\n",
-           src->src1rows, src->src1chans, src->src1depths, src->src1groups);
+           src->src1row_stride, src->src1plane_stride, src->src1depth_stride,
+           src->src1group_stride);
   }
   if (state->valid[(H16_TILEDMA_SRC_START + 0x30) / 4]) {
     printf("        Src2Strides: RowStride=0x%08x PlaneStride=0x%08x "
            "DepthStride=0x%08x GroupStride=0x%08x\n",
-           src->src2rows, src->src2chans, src->src2depths, src->src2groups);
+           src->src2row_stride, src->src2plane_stride, src->src2depth_stride,
+           src->src2group_stride);
   }
   if (state->valid[(H16_TILEDMA_SRC_START + 0x50) / 4]) {
     printf("        Src1MetaData: Addr=0x%08x%08x Size=0x%08x\n",
@@ -734,7 +727,8 @@ void print_tiledma_dst_h16(const hwx_state_t *state) {
   if (state->valid[(H16_TILEDMA_DST_START + 0x10) / 4]) {
     printf("        DstStrides: RowStride=0x%08x PlaneStride=0x%08x "
            "DepthStride=0x%08x GroupStride=0x%08x\n",
-           dst->dstrows, dst->dstchans, dst->dstdepths, dst->dstgroups);
+           dst->dstrow_stride, dst->dstplane_stride, dst->dstdepth_stride,
+           dst->dstgroup_stride);
   }
 }
 

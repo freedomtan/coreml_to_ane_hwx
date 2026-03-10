@@ -85,7 +85,7 @@ Size: 21 registers (`0x15` words, `0x54` bytes). Dictates fundamental geometries
 
 *Compiler Sub-Struct Note (`ZinAneTdHw_v17`)*: The `ZinGetRegisterProgramming<17u>` getters map directly onto our Common Block layout with a `+0x8` descriptor header offset.
 
-### M4 Block: 0x4900 range (User: PE Section / Symbol: NE)
+### Neural Engine (NE) (0x4900 block, Object `+0x498`)
 Size: 12 registers (`0x30` bytes).
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
@@ -106,83 +106,84 @@ Size: 12 registers (`0x30` bytes).
 ##### KernelDmaSrc (0x5500 block, Object `+0x030`)
 Size: 72 registers (`0x48` words, `0x120` bytes).
 
-| HW Addr | Index | Name | Bit-Field Mapping |
+| HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x5500** | Word 0 | **KDMA_MasterConfig** | **MasterEnable**: 6. |
-| **0x5504** | Word 1 | **KDMA_Reserved1** | Unknown. |
-| **0x5508** | Word 2 | **KDMA_Prefetch** | **EarlyTermEn**: 0, **StopOnError**: 1, **PrefetchRate**: 16-31. |
-| **0x550C** | Word 3 | **KDMA_Reserved2** | Unknown. |
-| **0x5510** | Word 4 | **KDMA_Reserved3** | Unknown. |
-| **0x5514** | Word 5 | **KDMA_Reserved4** | Unknown. |
-| **0x5518** | Word 6 | **KDMA_StrideX** | Stride X (Bits 6-31). |
-| **0x551C** | Word 7 | **KDMA_StrideY** | Stride Y (Bits 6-31). |
-| **0x5520-0x555C**| Words 8-23 | **CoeffDMAConfig[16]**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x5560-0x559C**| Words 24-39| **CoeffBaseAddr[16]** | Base Offset (Bits 6-31, 64-byte aligned). |
-| **0x55A0-0x55DC**| Words 40-55| **CoeffBfrSize[16]** | Buffer Size (Bits 0-31). |
-| **0x55E0** | Word 56 | **BiasDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
-| **0x55F0** | Word 60 | **PostScaleDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
-| **0x5600** | Word 64 | **PaletteDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
-| **0x5610** | Word 68 | **NLutDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
+| **0x5500** | `+0x030` | **KDMA_MasterConfig** | **MasterEnable**: 6. |
+| **0x5504** | `+0x034` | **KDMA_Reserved1** | Unknown. |
+| **0x5508** | `+0x038` | **KDMA_Prefetch** | **EarlyTermEn**: 0, **StopOnError**: 1, **PrefetchRate**: 16-31. |
+| **0x550C** | `+0x03c` | **KDMA_Reserved2** | Unknown. |
+| **0x5510** | `+0x040` | **KDMA_Reserved3** | Unknown. |
+| **0x5514** | `+0x044` | **KDMA_Reserved4** | Unknown. |
+| **0x5518** | `+0x048` | **KDMA_StrideX** | Stride X (Bits 6-31). |
+| **0x551C** | `+0x04c` | **KDMA_StrideY** | Stride Y (Bits 6-31). |
+| **0x5520-0x555C**| `+0x050`..`+0x08c` | **CoeffDMAConfig[16]**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5560-0x559C**| `+0x090`..`+0x0cc` | **CoeffBaseAddr[16]** | Base Offset (Bits 6-31, 64-byte aligned). |
+| **0x55A0-0x55DC**| `+0x0d0`..`+0x10c` | **CoeffBfrSize[16]** | Buffer Size (Bits 0-31). |
+| **0x55E0** | `+0x110` | **BiasDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
+| **0x55F0** | `+0x120` | **PostScaleDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
+| **0x5600** | `+0x130` | **PaletteDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
+| **0x5610** | `+0x140` | **NLutDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
 
 ### TileDMA Source (0x4D00 block, Object `+0x25c`)
 Size: 81 registers (`0x51` words, `0x144` bytes).
 
-| HW Addr | Index | Name | Bit-Field Mapping |
+| HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4D00** | Word 0 | **Src1DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **Format**: 24-27. |
-| **0x4D04** | Word 1 | **Src2DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **DependencyMode**: 28-29. |
-| **0x4D08** | Word 2 | **Src1BaseAddrLo** | Lower 32 bits of 64-bit base address. |
-| **0x4D0C** | Word 3 | **Src1BaseAddrHi** | Upper 32 bits of 64-bit base address. |
-| **0x4D10** | Word 4 | **Src2BaseAddrLo** | Lower 32 bits of 64-bit base address. |
-| **0x4D14** | Word 5 | **Src2BaseAddrHi** | Upper 32 bits of 64-bit base address. |
-| **0x4D18** | Word 6 | **Src1RowStride** | Row stride (Bits 6-31). |
-| **0x4D1C** | Word 7 | **Src1PlaneStride** | Channel (Plane) stride (Bits 6-31). |
-| **0x4D20** | Word 8 | **Src1DepthStride** | Depth stride (Bits 6-31). |
-| **0x4D24** | Word 9 | **Src1GroupStride** | Group stride (Bits 6-31). |
-| **0x4D28** | Word 10 | **Src2Config** | Reserved / Mode Flags. |
-| **0x4D2C** | Word 11 | **Src2Padding** | Reserved / Padding Mode. |
-| **0x4D30** | Word 12 | **Src2RowStride** | Row stride (Bits 6-31). |
-| **0x4D34** | Word 13 | **Src2PlaneStride** | Channel (Plane) stride (Bits 6-31). |
-| **0x4D38** | Word 14 | **Src2DepthStride** | Depth stride (Bits 6-31). |
-| **0x4D3C** | Word 15 | **Src2GroupStride** | Group stride (Bits 6-31). |
-| **0x4D40** | Word 16 | **Src1MetaDataConfig**| MetaData Enable/Flags. |
-| **0x4D50** | Word 20 | **Src1MetaDataAddrLo**| MetaData Buffer Lo (Bits 0-31). |
-| **0x4D54** | Word 21 | **Src1MetaDataAddrHi**| MetaData Buffer Hi (Bits 32-63). |
-| **0x4D58** | Word 22 | **Src1MetaDataSize** | MetaData Size / Config. |
-| **0x4D5C** | Word 23 | **Src2MetaDataAddrLo**| MetaData Buffer Lo (Bits 0-31). |
-| **0x4D60** | Word 24 | **Src2MetaDataAddrHi**| MetaData Buffer Hi (Bits 32-63). |
-| **0x4D64** | Word 25 | **Src2MetaDataSize** | MetaData Size / Config. |
-| **0x4D68** | Word 26 | **Src1Fmt** | Interleave Mode (Bits 12-13). |
-| **0x4D6C** | Word 27 | **Src2Fmt** | Interleave Mode (Bits 12-13). |
-| **0x4D98** | Word 38 | **Src1PixelOffset** | Cropping Offset (H: 0-13, W: 16-29, D: 32-45... 16 bytes). |
-| **0x4DA8** | Word 42 | **Src2PixelOffset** | Cropping Offset (H: 0-13, W: 16-29, D: 32-45... 16 bytes). |
+| **0x4D00** | `+0x25c` | **Src1DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **Format**: 24-27. |
+| **0x4D04** | `+0x260` | **Src2DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **DependencyMode**: 28-29. |
+| **0x4D08** | `+0x264` | **Src1BaseAddrLo** | Lower 32 bits of 64-bit base address. |
+| **0x4D0C** | `+0x268` | **Src1BaseAddrHi** | Upper 32 bits of 64-bit base address. |
+| **0x4D10** | `+0x26c` | **Src2BaseAddrLo** | Lower 32 bits of 64-bit base address. |
+| **0x4D14** | `+0x270` | **Src2BaseAddrHi** | Upper 32 bits of 64-bit base address. |
+| **0x4D18** | `+0x274` | **Src1RowStride** | Row stride (Bits 6-31). |
+| **0x4D1C** | `+0x278` | **Src1PlaneStride** | Channel (Plane) stride (Bits 6-31). |
+| **0x4D20** | `+0x27c` | **Src1DepthStride** | Depth stride (Bits 6-31). |
+| **0x4D24** | `+0x280` | **Src1GroupStride** | Group stride (Bits 6-31). |
+| **0x4D28** | `+0x284` | **Src2Config** | Reserved / Mode Flags. |
+| **0x4D2C** | `+0x288` | **Src2Padding** | Reserved / Padding Mode. |
+| **0x4D30** | `+0x28c` | **Src2RowStride** | Row stride (Bits 6-31). |
+| **0x4D34** | `+0x290` | **Src2PlaneStride** | Channel (Plane) stride (Bits 6-31). |
+| **0x4D38** | `+0x294` | **Src2DepthStride** | Depth stride (Bits 6-31). |
+| **0x4D3C** | `+0x298` | **Src2GroupStride** | Group stride (Bits 6-31). |
+| **0x4D40** | `+0x29c` | **Src1MetaDataConfig**| MetaData Enable/Flags. |
+| **0x4D50** | `+0x2ac` | **Src1MetaDataAddrLo**| MetaData Buffer Lo (Bits 0-31). |
+| **0x4D54** | `+0x2b0` | **Src1MetaDataAddrHi**| MetaData Buffer Hi (Bits 32-63). |
+| **0x4D58** | `+0x2b4` | **Src1MetaDataSize** | MetaData Size / Config. |
+| **0x4D5C** | `+0x2b8` | **Src2MetaDataAddrLo**| MetaData Buffer Lo (Bits 0-31). |
+| **0x4D60** | `+0x2bc` | **Src2MetaDataAddrHi**| MetaData Buffer Hi (Bits 32-63). |
+| **0x4D64** | `+0x2c0` | **Src2MetaDataSize** | MetaData Size / Config. |
+| **0x4D68** | `+0x2c4` | **Src1Fmt** | Interleave Mode (Bits 12-13). |
+| **0x4D6C** | `+0x2c8` | **Src2Fmt** | Interleave Mode (Bits 12-13). |
+| **0x4D98** | `+0x2f4` | **Src1PixelOffset** | Cropping Offset (H: 0-13, W: 16-29, D: 32-45... 16 bytes). |
+| **0x4DA8** | `+0x304` | **Src2PixelOffset** | Cropping Offset (H: 0-13, W: 16-29, D: 32-45... 16 bytes). |
 
 ### TileDMA Destination (0x5100 block, Object `+0x4d0`)
 Size: 21 registers (`0x15` words, `0x54` bytes).
 
-| HW Addr | Index | Name | Bit-Field Mapping |
+| HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x5100** | Word 0 | **DstDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x5104** | Word 1 | **DstPadding** | Reserved / Padding Mode. |
-| **0x5108** | Word 2 | **DstBaseAddrLo**| Lower 32 bits of 64-bit output base address. |
-| **0x510C** | Word 3 | **DstBaseAddrHi**| Upper 32 bits of 64-bit output base address. |
-| **0x5110** | Word 4 | **DstRowStride** | Row stride (Bits 6-31). |
-| **0x5114** | Word 5 | **DstPlaneStride**| Channel (Plane) stride (Bits 6-31). |
-| **0x5118** | Word 6 | **DstDepthStride**| Depth stride (Bits 6-31). |
-| **0x511C** | Word 7 | **DstGroupStride**| Group stride (Bits 6-31). |
-| **0x5120** | Word 8 | **DstInternalCfg**| **InternalBits**: 0-15, **Flag1**: 16, **Flag2**: 17, **Flag3**: 18. (Set by `SetDmaDstInternal`). |
-| **0x5124** | Word 9 | **DstReserved1** | Unknown. |
-| **0x5128** | Word 10| **DstMetaDataAddrLo**| MetaData Buffer Lo (Bits 0-31). |
-| **0x512C** | Word 11| **DstMetaDataAddrHi**| MetaData Buffer Hi (Bits 32-63). |
-| **0x5130** | Word 12| **DstFmtMode** | **FormatMode**: 0-1, **MetaDataSize**: 7-31. |
-| **0x5134** | Word 13| **DstReserved2** | Unknown. |
-| **0x5138** | Word 14| **DstCompStatus** | **IsCompressed**: 0. |
-| **0x513C** | Word 15| **DstReserved3** | Unknown. |
-| **0x5140** | Word 16| **DstCompressionCfg**| **PackingFmt**: 4-7, **MacroblockSize**: 12-13. (Set by `SetTileDmaDstCompressedInfo`). |
-| **0x5144** | Word 17| **DstReserved4** | Unknown. |
-| **0x5148** | Word 18| **DstCompSizeLo** | Output Compressed Size (Bits 0-31). |
-| **0x514C** | Word 19| **DstCompSizeHi** | Output Compressed Size (Bits 32-63). |
-| **0x5150** | Word 20| **DstPixelOffset** | Pixel/Crop offsets (See `GetCropOffsetDstY`). |
+| **0x5100** | `+0x4d0` | **DstDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5104** | `+0x4d4` | **DstPadding** | Reserved / Padding Mode. |
+| **0x5108** | `+0x4d8` | **DstBaseAddrLo**| Lower 32 bits of 64-bit output base address. |
+| **0x510C** | `+0x4dc` | **DstBaseAddrHi**| Upper 32 bits of 64-bit output base address. |
+| **0x5110** | `+0x4e0` | **DstRowStride** | Row stride (Bits 6-31). |
+| **0x5114** | `+0x4e4` | **DstPlaneStride**| Channel (Plane) stride (Bits 6-31). |
+| **0x5118** | `+0x4e8` | **DstDepthStride**| Depth stride (Bits 6-31). |
+| **0x511C** | `+0x4ec` | **DstGroupStride**| Group stride (Bits 6-31). |
+| **0x5120** | `+0x4f0` | **DstInternalCfg**| **InternalBits**: 0-15, **Flag1**: 16, **Flag2**: 17, **Flag3**: 18. (Set by `SetDmaDstInternal`). |
+| **0x5124** | `+0x4f4` | **DstReserved1** | Unknown. |
+| **0x5128** | `+0x4f8` | **DstMetaDataAddrLo**| MetaData Buffer Lo (Bits 0-31). |
+| **0x512C** | `+0x4fc` | **DstMetaDataAddrHi**| MetaData Buffer Hi (Bits 32-63). |
+| **0x5130** | `+0x500` | **DstFmtMode** | **FormatMode**: 0-1, **MetaDataSize**: 7-31. |
+| **0x5134** | `+0x504` | **DstReserved2** | Unknown. |
+| **0x5138** | `+0x508` | **DstCompStatus** | **IsCompressed**: 0. |
+| **0x513C** | `+0x50c` | **DstReserved3** | Unknown. |
+| **0x5140** | `+0x510` | **DstCompressionCfg**| **PackingFmt**: 4-7, **MacroblockSize**: 12-13. (Set by `SetTileDmaDstCompressedInfo`). |
+| **0x5144** | `+0x514` | **DstReserved4** | Unknown. |
+| **0x5148** | `+0x518` | **DstCompSizeLo** | Output Compressed Size (Bits 0-31). |
+| **0x514C** | `+0x51c` | **DstCompSizeHi** | Output Compressed Size (Bits 32-63). |
+| **0x5150** | `+0x520` | **DstPixelOffset** | Pixel/Crop offsets (See `GetCropOffsetDstY`). |
+
 ### CacheDMA / Telemetry (0x5900 block, Object `+0x52c`)
 This block handles telemetry, caching hints, and task synchronization.
 Size: 12 registers (`0x30` bytes, `0x0c` words).
@@ -206,23 +207,23 @@ Size: 12 registers (`0x30` bytes, `0x0c` words).
 This block controls the Planar Engine (PE) which handles element-wise operations, pooling, and scaling.
 Size: 15 registers (`0xf` words, `0x3c` bytes).
 
-| HW Addr | Index | Register Name | Bit-Field Mapping |
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4500** | Word 0 | **PE_Config** | **OpMode**: 0-5 (0=Add, 1=Sub, 2=Min, 3=Max, 4=Mul, 5=Div/Recip), **Condition**: 6-8 (0=True, 1=LT, 2=LE, 3=EQ, 4=NE, 5=GE, 6=GT), **FirstSource**: 16, **SecondSource**: 18-19. |
-| **0x4504** | Word 1 | **PE_Bias** | 19-bit Floating Point (F19) bias value. |
-| **0x4508** | Word 2 | **PE_Scale** | 19-bit Floating Point (F19) scale value. |
-| **0x450C** | Word 3 | **PE_Reserved1** | Unknown configuration flags. |
-| **0x4510** | Word 4 | **PE_PreScale** | 19-bit Floating Point (F19) pre-scale value. |
-| **0x4514** | Word 5 | **PE_FinalScale** | 19-bit Floating Point (F19) final scale value. |
-| **0x4518-0x4534** | Words 6-13 | **PE_Reserved[8]** | Reserved. |
-| **0x4538** | Word 14 | **PE_Quant** | **ZeroPoint**: Bits 16-23. (Note: ReLU flags moved to L2). |
+| **0x4500** | `+0x454` | **PE_Config** | **OpMode**: 0-5 (0=Add, 1=Sub, 2=Min, 3=Max, 4=Mul, 5=Div/Recip), **Condition**: 6-8 (0=True, 1=LT, 2=LE, 3=EQ, 4=NE, 5=GE, 6=GT), **FirstSource**: 16, **SecondSource**: 18-19. |
+| **0x4504** | `+0x458` | **PE_Bias** | 19-bit Floating Point (F19) bias value. |
+| **0x4508** | `+0x45c` | **PE_Scale** | 19-bit Floating Point (F19) scale value. |
+| **0x450C** | `+0x460` | **PE_Reserved1** | Unknown configuration flags. |
+| **0x4510** | `+0x464` | **PE_PreScale** | 19-bit Floating Point (F19) pre-scale value. |
+| **0x4514** | `+0x468` | **PE_FinalScale** | 19-bit Floating Point (F19) final scale value. |
+| **0x4518-0x4534** | `+0x46c`..`+0x488` | **PE_Reserved[8]** | Reserved. |
+| **0x4538** | `+0x48c` | **PE_Quant** | **ZeroPoint**: Bits 16-23. (Note: ReLU flags moved to L2). |
 
-#### PE Indexing Extension (0x44D0 block, Object `+0x434`)
+#### PE Indexing Extension (H16_PE_EXT_START block, Object `+0x434`)
 These registers coordinate with the PE for indexing operations.
 
 | HW Addr | Index | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x44D0** | Word 0 | **PE_IndexCfg** | **MaxIndex**: 0-15, **IndexingEn**: 16. |
+| **H16_PE_EXT_START** | Word 0 | **PE_IndexCfg** | **MaxIndex**: 0-15, **IndexingEn**: 16. |
 
 ##### L2 Cache / Buffer (0x4100 block, Object `+0x3a8`)
 The L2 block handles local buffering and tensor tiling.

@@ -369,10 +369,8 @@ const char *get_m4_reg_name(uint32_t addr) {
       "CacheDMAFlushArg", "EarlyTermArg34",    "TelemetryBackOff"};
 
   static const hwx_reg_range_t m4_ranges[] = {
-      {H16_COMMON_START, 23, common_names},
-      {H16_L2_START, 41, l2_names},
-      {H16_PE_START, 15, pe_names},
-      {H16_NE_START, 12, ne_names},
+      {H16_COMMON_START, 23, common_names}, {H16_L2_START, 41, l2_names},
+      {H16_PE_START, 15, pe_names},         {H16_NE_START, 12, ne_names},
       {H16_CACHEDMA_START, 12, cdma_names},
   };
 
@@ -506,6 +504,7 @@ typedef struct {
 void dump_hw_blocks(const uint32_t *reg_values, const bool *reg_valid,
                     const hwx_block_info_t *blocks, int count,
                     const char *(*name_lookup)(uint32_t)) {
+  printf("        --- HW Block Register State ---\n");
   for (int b = 0; b < count; b++) {
     bool printed_header = false;
     uint32_t word_start = blocks[b].startAddr / 4;
@@ -1642,7 +1641,8 @@ void print_common_h16(const uint32_t *reg_values, const bool *reg_valid) {
   if (reg_valid[(H16_COMMON_START + 0x4) / 4] ||
       reg_valid[(H16_COMMON_START + 0x8) / 4] ||
       reg_valid[(H16_COMMON_START + 0xC) / 4] ||
-      reg_valid[(H16_COMMON_START + 0x10) / 4] || reg_valid[H16_COMMON_START / 4]) {
+      reg_valid[(H16_COMMON_START + 0x10) / 4] ||
+      reg_valid[H16_COMMON_START / 4]) {
     const char *infmt_name = get_ch_fmt_name(common.ch_cfg.infmt);
     const char *outfmt_name = get_ch_fmt_name(common.ch_cfg.outfmt);
     printf("        InDim     : W=%u H=%u C=%u D=%u Type=%s\n", common.inwidth,
@@ -1952,7 +1952,8 @@ void print_kerneldma_h16(const uint32_t *reg_values, const bool *reg_valid) {
 }
 
 void print_cachedma_h16(const uint32_t *reg_values, const bool *reg_valid) {
-  ane_cachedma_h16_t cdma = *(ane_cachedma_h16_t *)&reg_values[H16_CACHEDMA_START / 4];
+  ane_cachedma_h16_t cdma =
+      *(ane_cachedma_h16_t *)&reg_values[H16_CACHEDMA_START / 4];
   printf("        --- CacheDMA & Telemetry (0x5900) ---\n");
   if (reg_valid[H16_CACHEDMA_START / 4]) {
     printf("        Control: Flush=%d En=%d TaskSync=0x%x ET=0x%x FL=%d "
@@ -1989,7 +1990,7 @@ void print_cachedma_h16(const uint32_t *reg_values, const bool *reg_valid) {
   }
 }
 
-void decode_ane_td(const uint8_t *ptr, size_t total_len) {
+void decode_ane_td(const uint8_t *ptr, size_t total_len, BOOL dump_reg_blocks) {
   uint32_t offset = 0;
   int task_idx = 0;
 
@@ -2057,7 +2058,7 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
     }
 
     if (offset + sizeof(ane_td_header_h13_t) <= total_len) {
-      printf("        --- HW Block Register State ---\n");
+
       print_common_h13(reg_values, reg_valid);
       print_l2_h13(reg_values, reg_valid);
       print_pe_h13(reg_values, reg_valid);
@@ -2066,7 +2067,7 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
       print_tiledma_dst_h13(reg_values, reg_valid);
       print_kerneldma_h13(reg_values, reg_valid);
 
-      if (1) {
+      if (dump_reg_blocks) {
         hwx_block_info_t blocks[] = {
             {"[0x00000] Common Module", H13_COMMON_START},
             {"[0x04800] L2 Cache Control", H13_L2_START},
@@ -2086,7 +2087,8 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
   }
 }
 
-void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
+void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
+                      BOOL dump_reg_blocks) {
   printf("\n[%s] Detected Dense HWX Format (CPU Subtype 0x%x)\n",
          get_arch_name(subtype), subtype);
 
@@ -2181,7 +2183,6 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
     printf("        Stream Parse: OK (End index %d/%d)\n", i, num_words);
 
     // Decode HW Blocks using specialized decoders
-    printf("        --- HW Block Register State ---\n");
     print_common_h16(reg_values, reg_valid);
     print_l2_h16(reg_values, reg_valid);
     print_pe_h16(reg_values, reg_valid);
@@ -2191,17 +2192,19 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype) {
     print_kerneldma_h16(reg_values, reg_valid);
     print_cachedma_h16(reg_values, reg_valid);
 
-    hwx_block_info_t blocks[] = {
-        {"[0x0000] Common Module", H16_COMMON_START},
-        {"[0x4100] L2 Cache Control", H16_L2_START},
-        {"[0x4500] Planar Engine (PE)", H16_PE_START},
-        {"[0x4900] Neural Engine Core (NE)", H16_NE_START},
-        {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START},
-        {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START},
-        {"[0x5500] KernelDMA Source", H16_KERNELDMA_START},
-        {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START},
-    };
-    dump_hw_blocks(reg_values, reg_valid, blocks, 8, get_m4_reg_name);
+    if (dump_reg_blocks) {
+      hwx_block_info_t blocks[] = {
+          {"[0x0000] Common Module", H16_COMMON_START},
+          {"[0x4100] L2 Cache Control", H16_L2_START},
+          {"[0x4500] Planar Engine (PE)", H16_PE_START},
+          {"[0x4900] Neural Engine Core (NE)", H16_NE_START},
+          {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START},
+          {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START},
+          {"[0x5500] KernelDMA Source", H16_KERNELDMA_START},
+          {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START},
+      };
+      dump_hw_blocks(reg_values, reg_valid, blocks, 8, get_m4_reg_name);
+    }
 
     if (offset + size_bytes > total_len)
       break;
@@ -2343,7 +2346,7 @@ const char *get_cmd_name(uint32_t cmd) {
 }
 
 void print_macho_headers(NSData *data, BOOL dump_all_symbols, BOOL dump_threads,
-                         BOOL dump_hexdump) {
+                         BOOL dump_hexdump, BOOL dump_reg_blocks) {
   if (data.length < sizeof(struct mach_header_64)) {
     printf("Error: File too small.\n");
     return;
@@ -2422,10 +2425,10 @@ void print_macho_headers(NSData *data, BOOL dump_all_symbols, BOOL dump_threads,
                 if (instr_ver >= 11) {
                   // v11+ Dense format (Burst/Scatter)
                   decode_ane_td_m4(section_ptr, section_size,
-                                   header->cpusubtype);
+                                   header->cpusubtype, dump_reg_blocks);
                 } else {
                   // v7- and similar (Stream format)
-                  decode_ane_td(section_ptr, section_size);
+                  decode_ane_td(section_ptr, section_size, dump_reg_blocks);
                 }
                 if (dump_hexdump) {
                   hex_dump(sect->sectname, section_ptr, section_size);
@@ -2566,8 +2569,9 @@ int main(int argc, char *const argv[]) {
     BOOL dump_all = NO;
     BOOL dump_threads = NO;
     BOOL dump_hexdump = NO;
+    BOOL dump_reg_blocks = NO;
 
-    while ((ch = getopt(argc, argv, "stx")) != -1) {
+    while ((ch = getopt(argc, argv, "strx")) != -1) {
       switch (ch) {
       case 's':
         dump_all = YES;
@@ -2575,12 +2579,15 @@ int main(int argc, char *const argv[]) {
       case 't':
         dump_threads = YES;
         break;
+      case 'r':
+        dump_reg_blocks = YES;
+        break;
       case 'x':
         dump_hexdump = YES;
         break;
       case '?':
       default:
-        printf("Usage: %s [-s] [-t] [-x] <path_to_hwx>\n", getprogname());
+        printf("Usage: %s [-s] [-t] [-r] [-x] <path_to_hwx>\n", getprogname());
         return 1;
       }
     }
@@ -2588,7 +2595,7 @@ int main(int argc, char *const argv[]) {
     argv += optind;
 
     if (argc < 1) {
-      printf("Usage: %s [-s] [-t] [-x] <path_to_hwx>\n", getprogname());
+      printf("Usage: %s [-s] [-t] [-r] [-x] <path_to_hwx>\n", getprogname());
       return 1;
     }
 
@@ -2600,7 +2607,8 @@ int main(int argc, char *const argv[]) {
       return 1;
     }
 
-    print_macho_headers(data, dump_all, dump_threads, dump_hexdump);
+    print_macho_headers(data, dump_all, dump_threads, dump_hexdump,
+                        dump_reg_blocks);
   }
   return 0;
 }

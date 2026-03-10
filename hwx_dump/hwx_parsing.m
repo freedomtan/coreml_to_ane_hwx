@@ -840,7 +840,8 @@ void report_hwx_state_json(const hwx_state_t *state) {
 }
 
 
-void decode_ane_td(const uint8_t *ptr, size_t total_len, BOOL dump_reg_blocks, BOOL dump_json) {
+void decode_ane_td(const uint8_t *ptr, size_t total_len, uint32_t subtype,
+                   BOOL dump_reg_blocks, BOOL dump_json) {
   uint32_t offset = 0;
   int task_idx = 0;
 
@@ -870,7 +871,7 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len, BOOL dump_reg_blocks, B
 
     hwx_state_t state = {0};
     state.instr_ver = 7;
-    state.subtype = 0;
+    state.subtype = subtype;
 
     // Modern Stream Parse
     if (offset + sizeof(ane_td_header_h13_t) <= total_len) {
@@ -1190,7 +1191,8 @@ static void handle_segment_64(const struct mach_header_64 *header,
             decode_ane_td_m4(section_ptr, section_size, header->cpusubtype,
                              dump_reg_blocks, dump_json);
           } else {
-            decode_ane_td(section_ptr, section_size, dump_reg_blocks, dump_json);
+            decode_ane_td(section_ptr, section_size, header->cpusubtype,
+                          dump_reg_blocks, dump_json);
           }
           if (dump_hexdump) {
             hex_dump(sect->sectname, section_ptr, section_size);

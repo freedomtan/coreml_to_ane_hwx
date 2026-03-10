@@ -202,48 +202,59 @@ typedef struct __attribute__((packed)) {
   uint32_t val_22;  // 0x058 (Word 22)
 } ane_common_h16_t;
 
+typedef struct {
+  uint32_t startAddr;
+  uint32_t count;
+  const char **names;
+} hwx_reg_range_t;
+
+static const char *lookup_reg_name(uint32_t addr, const hwx_reg_range_t *ranges, int range_count) {
+  for (int i = 0; i < range_count; i++) {
+    if (addr >= ranges[i].startAddr && addr < ranges[i].startAddr + (ranges[i].count * 4)) {
+      uint32_t index = (addr - ranges[i].startAddr) / 4;
+      if (index < ranges[i].count) {
+        return ranges[i].names[index];
+      }
+    }
+  }
+  return NULL;
+}
+
 const char *get_m1_reg_name(uint32_t addr) {
-  // Common (0x0000)
-  if (addr >= 0 && addr <= 0x40) {
-    static const char *names[] = {
-        "InDim", "pad0",         "ChCfg",   "Cin",  "Cout", "OutDim", "pad1",     "ConvCfg",
-        "pad2",  "GroupConvCfg", "TileCfg", "pad3", "pad4", "Cfg",    "TaskInfo", "DPE"};
-    if (addr / 4 < 16) return names[addr / 4];
-  }
-  // L2 (0x4800)
-  if (addr >= 0x4800 && addr <= 0x483C) {
-    uint32_t off = addr - 0x4800;
-    static const char *names[] = {"L2Cfg",
-                                  "SourceCfg",
-                                  "SourceBase",
-                                  "SourceChannelStride",
-                                  "SourceRowStride",
-                                  "pad0",
-                                  "pad1",
-                                  "pad2",
-                                  "pad3",
-                                  "pad4",
-                                  "pad5",
-                                  "pad6",
-                                  "ResultCfg",
-                                  "ResultBase",
-                                  "ConvResultChannelStride",
-                                  "ConvResultRowStride"};
-    if (off / 4 < 16) return names[off / 4];
-  }
-  // PE (0x8800)
-  if (addr >= 0x8800 && addr <= 0x880C) {
-    uint32_t off = addr - 0x8800;
-    static const char *names[] = {"Cfg", "BiasScale", "PreScale", "FinalScale"};
-    if (off / 4 < 4) return names[off / 4];
-  }
-  // NE (0xC800)
-  if (addr >= 0xC800 && addr <= 0xC810) {
-    uint32_t off = addr - 0xC800;
-    static const char *names[] = {"KernelCfg", "MACCfg", "MatrixVectorBias", "AccBias",
-                                  "PostScale"};
-    if (off / 4 < 5) return names[off / 4];
-  }
+  static const char *common_names[] = {
+      "InDim", "pad0",         "ChCfg",   "Cin",  "Cout", "OutDim", "pad1",     "ConvCfg",
+      "pad2",  "GroupConvCfg", "TileCfg", "pad3", "pad4", "Cfg",    "TaskInfo", "DPE"};
+  static const char *l2_names[] = {"L2Cfg",
+                                   "SourceCfg",
+                                   "SourceBase",
+                                   "SourceChannelStride",
+                                   "SourceRowStride",
+                                   "pad0",
+                                   "pad1",
+                                   "pad2",
+                                   "pad3",
+                                   "pad4",
+                                   "pad5",
+                                   "pad6",
+                                   "ResultCfg",
+                                   "ResultBase",
+                                   "ConvResultChannelStride",
+                                   "ConvResultRowStride"};
+  static const char *pe_names[] = {"Cfg", "BiasScale", "PreScale", "FinalScale"};
+  static const char *ne_names[] = {"KernelCfg", "MACCfg", "MatrixVectorBias", "AccBias",
+                                   "PostScale"};
+
+  static const hwx_reg_range_t m1_ranges[] = {
+      {0x0000, 16, common_names},
+      {0x4800, 16, l2_names},
+      {0x8800, 4, pe_names},
+      {0xC800, 5, ne_names},
+  };
+
+  const char *name = lookup_reg_name(addr, m1_ranges, 4);
+  if (name) return name;
+
+  // Manual logic for TileDMA and KernelDMA due to sparse mappings
   // TileDMA Src (0x13800)
   if (addr >= 0x13800 && addr <= 0x13890) {
     uint32_t off = addr - 0x13800;
@@ -268,8 +279,6 @@ const char *get_m1_reg_name(uint32_t addr) {
     if (off == 0x18) return "Fmt";
   }
   // KernelDMA (0x1F800)
-  // Base at 0x1F800. Offsets from tex: 0x02C (base), 0x034 (coeff)
-  // Let's assume start at 0x1F800
   if (addr >= 0x1F800 && addr <= 0x1F900) {
     uint32_t off = addr - 0x1F800;
     if ((off == 0x00) || (off == 0x04)) return "Unknown";
@@ -281,65 +290,50 @@ const char *get_m1_reg_name(uint32_t addr) {
 }
 
 const char *get_m4_reg_name(uint32_t addr) {
-  if (addr < 23 * 4) {
-    static const char *common_names[] = {
-        "ChannelCfg", "InWidth",     "InHeight",    "InChannels", "InDepth", "OutWidth",
-        "OutHeight",  "OutChannels", "OutDepth",    "NumGroups",  "ConvCfg", "ConvCfg3d",
-        "UnicastCfg", "TileHeight",  "TileOverlap", "MacCfg",     "LaneCfg", "PatchCfg",
-        "PERouting",  "NID",         "DPE",         "Val21",      "Val22"};
-    return common_names[addr / 4];
-  }
-  // L2 0x4100
-  if (addr >= 0x4100 && addr <= 0x41A0) {
-    uint32_t off = addr - 0x4100;
-    uint32_t word_off = off / 4;
-    static const char *l2_names[] = {
-        "L2_Control",        "L2_Src1Cfg",        "L2_Src2Cfg",
-        "L2_Pad3",           "L2_Src1Base",       "L2_Src1CStride",
-        "L2_Src1RStride",    "L2_Src1DStride",    "L2_Src1GStride",
-        "L2_Src2Base",       "L2_Src2CStride",    "L2_Src2RStride",
-        "L2_Src2DStride",    "L2_Src2GStride",    "L2_SrcIdxBase",
-        "L2_SrcIdxCStride",  "L2_SrcIdxDStride",  "L2_SrcIdxGStride",
-        "L2_ResultCfg",      "L2_ResultBase",     "L2_ResultCStride",
-        "L2_ResultRStride",  "L2_ResultDStride",  "L2_ResultGStride",
-        "L2_Res24",          "L2_ResultWrapCfg",  "L2_Res26",
-        "L2_Res27",          "L2_Res28",          "L2_ResultWrapIdxOff",
-        "L2_Res30",          "L2_Result2Base",    "L2_Result2CStride",
-        "L2_Result2RStride", "L2_Result2DStride", "L2_Result2GStride",
-        "L2_Res36",          "L2_Res37",          "L2_Res38",
-        "L2_ResultWrapAddr", "L2_Res40"};
-    if (word_off < 41) return l2_names[word_off];
-  }
-  // Auxiliary PE Indexing 0x44D0
+  static const char *common_names[] = {
+      "ChannelCfg", "InWidth",     "InHeight",    "InChannels", "InDepth", "OutWidth",
+      "OutHeight",  "OutChannels", "OutDepth",    "NumGroups",  "ConvCfg", "ConvCfg3d",
+      "UnicastCfg", "TileHeight",  "TileOverlap", "MacCfg",     "LaneCfg", "PatchCfg",
+      "PERouting",  "NID",         "DPE",         "Val21",      "Val22"};
+  static const char *l2_names[] = {"L2_Control",        "L2_Src1Cfg",        "L2_Src2Cfg",
+                                   "L2_Pad3",           "L2_Src1Base",       "L2_Src1CStride",
+                                   "L2_Src1RStride",    "L2_Src1DStride",    "L2_Src1GStride",
+                                   "L2_Src2Base",       "L2_Src2CStride",    "L2_Src2RStride",
+                                   "L2_Src2DStride",    "L2_Src2GStride",    "L2_SrcIdxBase",
+                                   "L2_SrcIdxCStride",  "L2_SrcIdxDStride",  "L2_SrcIdxGStride",
+                                   "L2_ResultCfg",      "L2_ResultBase",     "L2_ResultCStride",
+                                   "L2_ResultRStride",  "L2_ResultDStride",  "L2_ResultGStride",
+                                   "L2_Res24",          "L2_ResultWrapCfg",  "L2_Res26",
+                                   "L2_Res27",          "L2_Res28",          "L2_ResultWrapIdxOff",
+                                   "L2_Res30",          "L2_Result2Base",    "L2_Result2CStride",
+                                   "L2_Result2RStride", "L2_Result2DStride", "L2_Result2GStride",
+                                   "L2_Res36",          "L2_Res37",          "L2_Res38",
+                                   "L2_ResultWrapAddr", "L2_Res40"};
+  static const char *pe_names[] = {
+      "PE_Config",      "PE_Bias",      "PE_Scale",     "PE_FinalScale", "PE_PreScale",
+      "PE_FinalScale2", "PE_Reserved1", "PE_Reserved2", "PE_Reserved3",  "PE_Reserved4",
+      "PE_Reserved5",   "PE_Reserved6", "PE_Reserved7", "PE_Reserved8",  "PE_Quant"};
+  static const char *ne_names[] = {"KernelCfg", "MACCfg",     "MatrixVectorBias", "NEBias",
+                                   "PostScale", "RcasConfig", "RoundModeCfg",     "SRSeed0",
+                                   "SRSeed1",   "SRSeed2",    "SRSeed3",          "QuantZeroPoint"};
+  static const char *cdma_names[] = {"CacheDMAControl",  "CacheDMAPre0",      "CacheDMAPre1",
+                                     "CacheDMAPad3",     "CacheDMAPad4",      "CacheDMAPad5",
+                                     "CacheDMADsid",     "CacheDMAFootprint", "EarlyTermArg12",
+                                     "CacheDMAFlushArg", "EarlyTermArg34",    "TelemetryBackOff"};
+
+  static const hwx_reg_range_t m4_ranges[] = {
+      {0x0000, 23, common_names}, {0x4100, 41, l2_names},   {0x4500, 15, pe_names},
+      {0x4900, 12, ne_names},     {0x5900, 12, cdma_names},
+  };
+
+  const char *name = lookup_reg_name(addr, m4_ranges, 5);
+  if (name) return name;
+
+  // PE Auxiliary
   if (addr >= 0x44D0 && addr <= 0x44D4) {
     return (addr == 0x44D0) ? "PE_IndexMode" : "PE_IndexBroadcast";
   }
-  // PE 0x4500
-  if (addr >= 0x4500 && addr <= 0x4538) {
-    uint32_t off = (addr - 0x4500) / 4;
-    static const char *pe_names[] = {
-        "PE_Config",      "PE_Bias",      "PE_Scale",     "PE_FinalScale", "PE_PreScale",
-        "PE_FinalScale2", "PE_Reserved1", "PE_Reserved2", "PE_Reserved3",  "PE_Reserved4",
-        "PE_Reserved5",   "PE_Reserved6", "PE_Reserved7", "PE_Reserved8",  "PE_Quant"};
-    if (off < 15) return pe_names[off];
-  }
-  // NE 0x4900
-  if (addr >= 0x4900 && addr <= 0x492C) {
-    uint32_t off = (addr - 0x4900) / 4;
-    static const char *ne_names[] = {
-        "KernelCfg",    "MACCfg",  "MatrixVectorBias", "NEBias",  "PostScale", "RcasConfig",
-        "RoundModeCfg", "SRSeed0", "SRSeed1",          "SRSeed2", "SRSeed3",   "QuantZeroPoint"};
-    if (off < 12) return ne_names[off];
-  }
-  // CE/CacheDMA 0x5900
-  if (addr >= 0x5900 && addr <= 0x5930) {
-    uint32_t off = addr - 0x5900;
-    static const char *cdma_names[] = {"CacheDMAControl",  "CacheDMAPre0",      "CacheDMAPre1",
-                                       "CacheDMAPad3",     "CacheDMAPad4",      "CacheDMAPad5",
-                                       "CacheDMADsid",     "CacheDMAFootprint", "EarlyTermArg12",
-                                       "CacheDMAFlushArg", "EarlyTermArg34",    "TelemetryBackOff"};
-    if (off / 4 < 12) return cdma_names[off / 4];
-  }
+
   // TileDMA Src 0x4D00
   if (addr >= 0x4D00 && addr <= 0x4DB4) {
     uint32_t off = addr - 0x4D00;

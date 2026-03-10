@@ -202,6 +202,83 @@ typedef struct __attribute__((packed)) {
   uint32_t val_22; // 0x058 (Word 22)
 } ane_common_h16_t;
 
+const char *get_m1_reg_name(uint32_t addr) {
+  // Common (0x0000)
+  if (addr >= 0 && addr <= 0x40) {
+    static const char *names[] = {
+        "InDim", "pad0", "ChCfg",   "Cin",          "Cout",
+        "OutDim", "pad1", "ConvCfg", "pad2",         "GroupConvCfg",
+        "TileCfg", "pad3", "pad4",    "Cfg",          "TaskInfo",
+        "DPE"};
+    if (addr / 4 < 16)
+      return names[addr / 4];
+  }
+  // L2 (0x4800)
+  if (addr >= 0x4800 && addr <= 0x483C) {
+    uint32_t off = addr - 0x4800;
+    static const char *names[] = {
+        "L2Cfg",       "SourceCfg",
+        "SourceBase",  "SourceChannelStride",
+        "SourceRowStride", "pad0",
+        "pad1",        "pad2",
+        "pad3",        "pad4",
+        "pad5",        "pad6",
+        "ResultCfg",   "ResultBase",
+        "ConvResultChannelStride", "ConvResultRowStride"};
+    if (off / 4 < 16)
+      return names[off / 4];
+  }
+  // PE (0x8800)
+  if (addr >= 0x8800 && addr <= 0x880C) {
+    uint32_t off = addr - 0x8800;
+    static const char *names[] = {"Cfg", "BiasScale", "PreScale", "FinalScale"};
+    if (off / 4 < 4)
+      return names[off / 4];
+  }
+  // NE (0xC800)
+  if (addr >= 0xC800 && addr <= 0xC810) {
+    uint32_t off = addr - 0xC800;
+    static const char *names[] = {"KernelCfg", "MACCfg", "MatrixVectorBias",
+                                  "AccBias", "PostScale"};
+    if (off / 4 < 5)
+      return names[off / 4];
+  }
+  // TileDMA Src (0x13800)
+  if (addr >= 0x13800 && addr <= 0x13890) {
+    uint32_t off = addr - 0x13800;
+    if (off == 0x00) return "DMAConfig";
+    if (off == 0x08) return "BaseAddr";
+    if (off == 0x0C) return "RowStride";
+    if (off == 0x10) return "PlaneStride";
+    if (off == 0x14) return "DepthStride";
+    if (off == 0x18) return "GroupStride";
+    if (off == 0x38) return "Fmt";
+    if (off >= 0x50 && off <= 0x5C) return "PixelOffset";
+  }
+  // TileDMA Dst (0x17800)
+  if (addr >= 0x17800 && addr <= 0x17830) {
+    uint32_t off = addr - 0x17800;
+    if (off == 0x00) return "DMAConfig";
+    if (off == 0x04) return "BaseAddr";
+    if (off == 0x08) return "RowStride";
+    if (off == 0x0C) return "PlaneStride";
+    if (off == 0x10) return "DepthStride";
+    if (off == 0x14) return "GroupStride";
+    if (off == 0x18) return "Fmt";
+  }
+  // KernelDMA (0x1F800)
+  // Base at 0x1F800. Offsets from tex: 0x028 (base), 0x034 (coeff)
+  // Let's assume start at 0x1F800
+  if (addr >= 0x1F800 && addr <= 0x1F900) {
+      uint32_t off = addr - 0x1F800;
+      if (off == 0x00) return "KernelDMAMaster";
+      if (off >= 0x0C && off <= 0x48) return "CoeffDMAConfig";
+      if (off >= 0x4C && off <= 0x88) return "CoeffBaseAddr";
+      if (off >= 0x8C && off <= 0xC8) return "CoeffBfrSize";
+  }
+  return NULL;
+}
+
 const char *get_m4_reg_name(uint32_t addr) {
   if (addr < 23 * 4) {
     static const char *common_names[] = {
@@ -1502,7 +1579,7 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
       if (1) {
         struct {
           const char *name;
-          uint32_t startWord;
+          uint32_t startAddr;
         } blocks[] = {
             {"[0x00000] Common Module", 0x00000},
             {"[0x04800] L2 Cache Control", 0x04800},
@@ -1515,7 +1592,7 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
 
         for (int b = 0; b < 7; b++) {
           bool printed_header = false;
-          uint32_t word_start = blocks[b].startWord / 4;
+          uint32_t word_start = blocks[b].startAddr / 4;
           uint32_t word_end = word_start + 0x100; // Look ahead 0x400 bytes
 
           for (uint32_t r = word_start; r < word_end; r++) {
@@ -1525,7 +1602,13 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len) {
                 printed_header = true;
               }
               uint32_t addr = r * 4;
-              printf("          0x%05x: 0x%08x\n", addr, reg_values[r]);
+              const char *reg_name = get_m1_reg_name(addr);
+              if (reg_name) {
+                printf("          0x%05x: 0x%08x (%s)\n", addr, reg_values[r],
+                       reg_name);
+              } else {
+                printf("          0x%05x: 0x%08x\n", addr, reg_values[r]);
+              }
             }
           }
         }

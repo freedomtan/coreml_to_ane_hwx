@@ -47,70 +47,29 @@ const char *get_m1_reg_name(uint32_t addr) {
                                    "FinalScale"};
   static const char *ne_names[] = {"KernelCfg", "MACCfg", "MatrixVectorBias",
                                    "AccBias", "PostScale"};
+  static const char *tdma_src_names[] = {
+      "DMAConfig", "pad0",      "BaseAddr",   "RowStride",   "PlaneStride",
+      "DepthStride", "GroupStride", "pad1",       "pad2",        "pad3",
+      "pad4",      "pad5",      "pad6",       "pad7",        "Fmt",
+      "pad8",      "pad9",      "pad10",      "pad11",       "pad12",
+      "PixelOffset0", "PixelOffset1", "PixelOffset2", "PixelOffset3"};
+  static const char *tdma_dst_names[] = {
+      "DMAConfig", "BaseAddr", "RowStride", "PlaneStride", "DepthStride",
+      "GroupStride", "Fmt"};
+  static const char *kdma_names[] = {
+      "Unknown", "Unknown", "CoeffDMAConfig", "CoeffBaseAddr", "CoeffBfrSize"};
 
   static const hwx_reg_range_t m1_ranges[] = {
       {H13_COMMON_START, 16, common_names},
       {H13_L2_START, 16, l2_names},
       {H13_PE_START, 4, pe_names},
       {H13_NE_START, 5, ne_names},
+      {H13_TILEDMA_SRC_START, 24, tdma_src_names},
+      {H13_TILEDMA_DST_START, 7, tdma_dst_names},
+      {H13_KERNELDMA_START, 5, kdma_names},
   };
 
-  const char *name = lookup_reg_name(addr, m1_ranges, 4);
-  if (name)
-    return name;
-
-  // Manual logic for TileDMA and KernelDMA due to sparse mappings
-  // TileDMA Src (0x13800)
-  if (addr >= H13_TILEDMA_SRC_START && addr <= H13_TILEDMA_SRC_START + 0x90) {
-    uint32_t off = addr - H13_TILEDMA_SRC_START;
-    if (off == 0x00)
-      return "DMAConfig";
-    if (off == 0x08)
-      return "BaseAddr";
-    if (off == 0x0C)
-      return "RowStride";
-    if (off == 0x10)
-      return "PlaneStride";
-    if (off == 0x14)
-      return "DepthStride";
-    if (off == 0x18)
-      return "GroupStride";
-    if (off == 0x38)
-      return "Fmt";
-    if (off >= 0x50 && off <= 0x5C)
-      return "PixelOffset";
-  }
-  // TileDMA Dst (0x17800)
-  if (addr >= H13_TILEDMA_DST_START && addr <= H13_TILEDMA_DST_START + 0x30) {
-    uint32_t off = addr - H13_TILEDMA_DST_START;
-    if (off == 0x00)
-      return "DMAConfig";
-    if (off == 0x04)
-      return "BaseAddr";
-    if (off == 0x08)
-      return "RowStride";
-    if (off == 0x0C)
-      return "PlaneStride";
-    if (off == 0x10)
-      return "DepthStride";
-    if (off == 0x14)
-      return "GroupStride";
-    if (off == 0x18)
-      return "Fmt";
-  }
-  // KernelDMA (0x1F800)
-  if (addr >= H13_KERNELDMA_START && addr <= H13_KERNELDMA_START + 0x100) {
-    uint32_t off = addr - H13_KERNELDMA_START;
-    if ((off == 0x00) || (off == 0x04))
-      return "Unknown";
-    if (off >= 0x08 && off < 0x48)
-      return "CoeffDMAConfig";
-    if (off >= 0x48 && off < 0x88)
-      return "CoeffBaseAddr";
-    if (off >= 0x88 && off < 0xC8)
-      return "CoeffBfrSize";
-  }
-  return NULL;
+  return lookup_reg_name(addr, m1_ranges, 7);
 }
 
 const char *get_m4_reg_name(uint32_t addr) {
@@ -149,133 +108,46 @@ const char *get_m4_reg_name(uint32_t addr) {
       "CacheDMAPad3",     "CacheDMAPad4",      "CacheDMAPad5",
       "CacheDMADsid",     "CacheDMAFootprint", "EarlyTermArg12",
       "CacheDMAFlushArg", "EarlyTermArg34",    "TelemetryBackOff"};
+  static const char *pe_aux_names[] = {"PE_IndexMode", "pad", "PE_IndexBroadcast"};
+  static const char *tdma_src_names[] = {
+      "Src1DMAConfig", "Src2DMAConfig",     "Src1BaseAddrLo", "Src1BaseAddrHi",
+      "Src2BaseAddrLo", "Src2BaseAddrHi",    "Src1RowStride",  "Src1PlaneStride",
+      "Src1DepthStride", "Src1GroupStride",   "pad0",           "pad1",
+      "Src2RowStride",  "Src2PlaneStride",   "Src2DepthStride", "Src2GroupStride",
+      "pad2",           "pad3",              "pad4",           "pad5",
+      "Src1MetaDataAddrLo", "pad6",           "Src1MetaDataSize", "Src2MetaDataAddrLo",
+      "pad7",           "Src2MetaDataSize", "Src1Fmt",         "Src2Fmt",
+      "pad8",           "pad9",              "pad10",          "pad11",
+      "pad12",          "pad13",             "pad14",          "pad15",
+      "pad16",          "pad17",             "Src1PixelOffset", "pad18",
+      "pad19",          "pad20",             "Src2PixelOffset"};
+  static const char *tdma_dst_names[] = {
+      "DstDMAConfig", "pad0",             "DstBaseAddrLo",    "DstBaseAddrHi",
+      "DstRowStride", "DstPlaneStride",    "DstDepthStride",   "DstGroupStride",
+      "DstInternalCfg", "pad1",            "DstMetaDataAddrLo", "DstMetaDataAddrHi",
+      "DstFmtMode",   "pad2",             "DstCompStatus",    "pad3",
+      "DstCompressionCfg", "pad4",          "DstCompSizeLo",    "DstCompSizeHi",
+      "DstPixelOffset"};
+  static const char *kdma_names[] = {
+      "KDMA_MasterConfig", "pad0",             "KDMA_Prefetch",    "pad1",
+      "pad2",             "pad3",             "KDMA_StrideX",     "KDMA_StrideY",
+      "CoeffDMAConfig",   "CoeffBaseAddr",    "CoeffBfrSize",     "pad4",
+      "BiasDMAConfig",    "pad5",             "PostScaleDMAConfig", "pad6",
+      "PaletteDMAConfig", "pad7",             "NLutDMAConfig"};
 
   static const hwx_reg_range_t m4_ranges[] = {
-      {H16_COMMON_START, 23, common_names}, {H16_L2_START, 41, l2_names},
-      {H16_PE_START, 15, pe_names},         {H16_NE_START, 12, ne_names},
+      {H16_COMMON_START, 23, common_names},
+      {H16_L2_START, 41, l2_names},
+      {H16_PE_START, 15, pe_names},
+      {H16_NE_START, 12, ne_names},
       {H16_CACHEDMA_START, 12, cdma_names},
+      {H16_PE_START - 0x30, 3, pe_aux_names},
+      {H16_TILEDMA_SRC_START, 43, tdma_src_names},
+      {H16_TILEDMA_DST_START, 21, tdma_dst_names},
+      {H16_KERNELDMA_START, 19, kdma_names},
   };
 
-  const char *name = lookup_reg_name(addr, m4_ranges, 5);
-  if (name)
-    return name;
-
-  // PE Auxiliary
-  if (addr >= H16_PE_START - 0x30 && addr <= H16_PE_START - 0x2C) {
-    return (addr == H16_PE_START - 0x30) ? "PE_IndexMode" : "PE_IndexBroadcast";
-  }
-
-  // TileDMA Src 0x4D00
-  if (addr >= H16_TILEDMA_SRC_START && addr <= H16_TILEDMA_SRC_START + 0xB4) {
-    uint32_t off = addr - H16_TILEDMA_SRC_START;
-    if (off == 0x00)
-      return "Src1DMAConfig";
-    if (off == 0x04)
-      return "Src2DMAConfig";
-    if (off == 0x08)
-      return "Src1BaseAddrLo";
-    if (off == 0x0C)
-      return "Src1BaseAddrHi";
-    if (off == 0x10)
-      return "Src2BaseAddrLo";
-    if (off == 0x14)
-      return "Src2BaseAddrHi";
-    if (off == 0x18)
-      return "Src1RowStride";
-    if (off == 0x1C)
-      return "Src1PlaneStride";
-    if (off == 0x20)
-      return "Src1DepthStride";
-    if (off == 0x24)
-      return "Src1GroupStride";
-    if (off == 0x30)
-      return "Src2RowStride";
-    if (off == 0x34)
-      return "Src2PlaneStride";
-    if (off == 0x38)
-      return "Src2DepthStride";
-    if (off == 0x3C)
-      return "Src2GroupStride";
-    if (off == 0x50)
-      return "Src1MetaDataAddrLo";
-    if (off == 0x58)
-      return "Src1MetaDataSize";
-    if (off == 0x5C)
-      return "Src2MetaDataAddrLo";
-    if (off == 0x64)
-      return "Src2MetaDataSize";
-    if (off == 0x68)
-      return "Src1Fmt";
-    if (off == 0x6C)
-      return "Src2Fmt";
-    if (off == 0x98)
-      return "Src1PixelOffset";
-    if (off == 0xA8)
-      return "Src2PixelOffset";
-  }
-  // TileDMA Dst 0x5100
-  if (addr >= H16_TILEDMA_DST_START && addr <= H16_TILEDMA_DST_START + 0x50) {
-    uint32_t off = addr - H16_TILEDMA_DST_START;
-    if (off == 0x00)
-      return "DstDMAConfig";
-    if (off == 0x08)
-      return "DstBaseAddrLo";
-    if (off == 0x0C)
-      return "DstBaseAddrHi";
-    if (off == 0x10)
-      return "DstRowStride";
-    if (off == 0x14)
-      return "DstPlaneStride";
-    if (off == 0x18)
-      return "DstDepthStride";
-    if (off == 0x1C)
-      return "DstGroupStride";
-    if (off == 0x20)
-      return "DstInternalCfg";
-    if (off == 0x28)
-      return "DstMetaDataAddrLo";
-    if (off == 0x2C)
-      return "DstMetaDataAddrHi";
-    if (off == 0x30)
-      return "DstFmtMode";
-    if (off == 0x38)
-      return "DstCompStatus";
-    if (off == 0x40)
-      return "DstCompressionCfg";
-    if (off == 0x48)
-      return "DstCompSizeLo";
-    if (off == 0x4C)
-      return "DstCompSizeHi";
-    if (off == 0x50)
-      return "DstPixelOffset";
-  }
-  // KernelDMA Src 0x5500
-  if (addr >= H16_KERNELDMA_START && addr <= H16_KERNELDMA_START + 0x110) {
-    uint32_t off = addr - H16_KERNELDMA_START;
-    if (off == 0x00)
-      return "KDMA_MasterConfig";
-    if (off == 0x08)
-      return "KDMA_Prefetch";
-    if (off == 0x18)
-      return "KDMA_StrideX";
-    if (off == 0x1C)
-      return "KDMA_StrideY";
-    if (off >= 0x20 && off <= 0x5C)
-      return "CoeffDMAConfig";
-    if (off >= 0x60 && off <= 0x9C)
-      return "CoeffBaseAddr";
-    if (off >= 0xA0 && off <= 0xDC)
-      return "CoeffBfrSize";
-    if (off == 0xE0)
-      return "BiasDMAConfig";
-    if (off == 0xF0)
-      return "PostScaleDMAConfig";
-    if (off == 0x100)
-      return "PaletteDMAConfig";
-    if (off == 0x110)
-      return "NLutDMAConfig";
-  }
-  return NULL;
+  return lookup_reg_name(addr, m4_ranges, 9);
 }
 
 
@@ -883,7 +755,92 @@ void print_cachedma_h16(const hwx_state_t *state) {
   }
 }
 
-void decode_ane_td(const uint8_t *ptr, size_t total_len, BOOL dump_reg_blocks) {
+void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
+  if (state->instr_ver >= 11) {
+    print_common_h16(state);
+    print_ne_h16(state);
+    print_pe_h16(state);
+    print_l2_h16(state);
+    print_tiledma_src_h16(state);
+    print_tiledma_dst_h16(state);
+    print_kerneldma_h16(state);
+    print_cachedma_h16(state);
+
+    if (dump_reg_blocks) {
+      hwx_block_info_t blocks[] = {
+          {"[0x0000] Common Module", H16_COMMON_START},
+          {"[0x4100] L2 Cache Control", H16_L2_START},
+          {"[0x4500] Planar Engine (PE)", H16_PE_START},
+          {"[0x4900] Neural Engine Core (NE)", H16_NE_START},
+          {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START},
+          {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START},
+          {"[0x5500] KernelDMA Source", H16_KERNELDMA_START},
+          {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START},
+      };
+      dump_hw_blocks(state, blocks, 8, get_m4_reg_name);
+    }
+  } else {
+    print_common_h13(state);
+    print_l2_h13(state);
+    print_pe_h13(state);
+    print_ne_h13(state);
+    print_tiledma_src_h13(state);
+    print_tiledma_dst_h13(state);
+    print_kerneldma_h13(state);
+
+    if (dump_reg_blocks) {
+      hwx_block_info_t blocks[] = {
+          {"[0x00000] Common Module", H13_COMMON_START},
+          {"[0x04800] L2 Cache Control", H13_L2_START},
+          {"[0x08800] Planar Engine (PE)", H13_PE_START},
+          {"[0x0C800] Neural Engine Core (NE)", H13_NE_START},
+          {"[0x13800] TileDMA Source", H13_TILEDMA_SRC_START},
+          {"[0x17800] TileDMA Destination", H13_TILEDMA_DST_START},
+          {"[0x1F800] KernelDMA Source", H13_KERNELDMA_START},
+      };
+      dump_hw_blocks(state, blocks, 7, get_m1_reg_name);
+    }
+  }
+}
+
+void report_hwx_state_json(const hwx_state_t *state) {
+  NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+  [dict setObject:(state->instr_ver >= 11 ? @"M4" : @"M1") forKey:@"arch"];
+  [dict setObject:@(state->subtype) forKey:@"subtype"];
+
+  NSMutableArray *regs = [NSMutableArray array];
+  const char *(*name_lookup)(uint32_t) =
+      (state->instr_ver >= 11) ? get_m4_reg_name : get_m1_reg_name;
+
+  for (uint32_t r = 0; r < HW_MAX_REGS; r++) {
+    if (state->valid[r]) {
+      uint32_t addr = r * 4;
+      const char *name = name_lookup(addr);
+      NSMutableDictionary *reg = [NSMutableDictionary dictionary];
+      [reg setObject:[NSString stringWithFormat:@"0x%05x", addr] forKey:@"addr"];
+      [reg setObject:[NSString stringWithFormat:@"0x%08x", state->values[r]]
+              forKey:@"val"];
+      if (name)
+        [reg setObject:[NSString stringWithUTF8String:name] forKey:@"name"];
+      [regs addObject:reg];
+    }
+  }
+  [dict setObject:regs forKey:@"registers"];
+
+  NSError *error;
+  NSData *data = [NSJSONSerialization
+      dataWithJSONObject:dict
+                 options:NSJSONWritingPrettyPrinted
+                   error:&error];
+  if (data) {
+    NSString *jsonString = [[NSString alloc] initWithData:data
+                                                 encoding:NSUTF8StringEncoding];
+    printf("%s\n", [jsonString UTF8String]);
+  }
+}
+
+
+void decode_ane_td(const uint8_t *ptr, size_t total_len, BOOL dump_reg_blocks, BOOL dump_json) {
   uint32_t offset = 0;
   int task_idx = 0;
 
@@ -893,21 +850,27 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len, BOOL dump_reg_blocks) {
       break; // Hit zero padding
     }
 
-    printf("      [ANE Task %d @ 0x%x]\n", task_idx++, offset);
-    printf("        TID: 0x%04x NID: 0x%02x LNID: %d EON: %d\n", td->tid,
-           td->nid, td->lnid, td->eon);
-    printf("        ExeCycles: %u NextSize: %u\n", td->exe_cycles,
-           td->next_size);
-    printf("        NextPtr: 0x%08x TSR: %d TSE: %d ENE: %d\n",
-           td->next_pointer, td->flags.tsr, td->flags.tse, td->base_ene.ene);
-    printf("        RBase: %d/%d WBase: %d TBase: %d\n", td->base_ene.rbase0,
-           td->base_ene.rbase1, td->base_ene.wbase, td->base_ene.tbase);
-    if (td->kbase.kbe0 || td->kbase.kbe1 || td->kbase.kbe2 || td->kbase.kbe3) {
-      printf("        KBase: %d/%d/%d/%d\n", td->kbase.kbase0, td->kbase.kbase1,
-             td->kbase.kbase2, td->kbase.kbase3);
+    if (!dump_json) {
+      printf("      [ANE Task %d @ 0x%x]\n", task_idx++, offset);
+      printf("        TID: 0x%04x NID: 0x%02x LNID: %d EON: %d\n", td->tid,
+             td->nid, td->lnid, td->eon);
+      printf("        ExeCycles: %u NextSize: %u\n", td->exe_cycles,
+             td->next_size);
+      printf("        NextPtr: 0x%08x TSR: %d TSE: %d ENE: %d\n",
+             td->next_pointer, td->flags.tsr, td->flags.tse, td->base_ene.ene);
+      printf("        RBase: %d/%d WBase: %d TBase: %d\n", td->base_ene.rbase0,
+             td->base_ene.rbase1, td->base_ene.wbase, td->base_ene.tbase);
+      if (td->kbase.kbe0 || td->kbase.kbe1 || td->kbase.kbe2 || td->kbase.kbe3) {
+        printf("        KBase: %d/%d/%d/%d\n", td->kbase.kbase0, td->kbase.kbase1,
+               td->kbase.kbase2, td->kbase.kbase3);
+      }
+    } else {
+      task_idx++;
     }
 
     hwx_state_t state = {0};
+    state.instr_ver = 7;
+    state.subtype = 0;
 
     // Modern Stream Parse
     if (offset + sizeof(ane_td_header_h13_t) <= total_len) {
@@ -950,26 +913,10 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len, BOOL dump_reg_blocks) {
     }
 
     if (offset + sizeof(ane_td_header_h13_t) <= total_len) {
-
-      print_common_h13(&state);
-      print_l2_h13(&state);
-      print_pe_h13(&state);
-      print_ne_h13(&state);
-      print_tiledma_src_h13(&state);
-      print_tiledma_dst_h13(&state);
-      print_kerneldma_h13(&state);
-
-      if (dump_reg_blocks) {
-        hwx_block_info_t blocks[] = {
-            {"[0x00000] Common Module", H13_COMMON_START},
-            {"[0x04800] L2 Cache Control", H13_L2_START},
-            {"[0x08800] Planar Engine (PE)", H13_PE_START},
-            {"[0x0C800] Neural Engine Core (NE)", H13_NE_START},
-            {"[0x13800] TileDMA Source", H13_TILEDMA_SRC_START},
-            {"[0x17800] TileDMA Destination", H13_TILEDMA_DST_START},
-            {"[0x1F800] KernelDMA Source", H13_KERNELDMA_START},
-        };
-        dump_hw_blocks(&state, blocks, 7, get_m1_reg_name);
+      if (dump_json) {
+        report_hwx_state_json(&state);
+      } else {
+        report_hwx_state(&state, dump_reg_blocks);
       }
     }
 
@@ -980,7 +927,7 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len, BOOL dump_reg_blocks) {
 }
 
 void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
-                      BOOL dump_reg_blocks) {
+                      BOOL dump_reg_blocks, BOOL dump_json) {
   printf("\n[%s] Detected Dense HWX Format (CPU Subtype 0x%x)\n",
          get_arch_name(subtype), subtype);
 
@@ -1003,102 +950,72 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
       break;
     }
 
-    uint32_t size_bytes = m4h->task_size * 4;
-    printf("      [ANE Task %d @ 0x%x] (Size: 0x%x bytes)\n", task_idx++,
-           offset, size_bytes);
-
-    printf("        TID: 0x%04x ExeCycles: %u ENE: %u\n", m4h->tid,
-           m4h->exe_cycles, m4h->ene);
-    printf("        LogEvents: 0x%06x Exceptions: 0x%06x\n", m4h->log_events,
-           m4h->exceptions);
-    printf("        LiveOuts: 0x%08x TSR: %d TDE: %d\n", m4h->live_outs,
-           m4h->tsr, m4h->tde);
-    if (m4h->tde == 1) {
-      printf("        TDID: 0x%04x\n", m4h->tdid);
+    if (!dump_json) {
+      uint32_t size_bytes = m4h->task_size * 4;
+      printf("      [ANE Task %d @ 0x%x] (Size: 0x%x bytes)\n", task_idx++,
+             offset, size_bytes);
+      printf("        TID: 0x%04x ExeCycles: %u ENE: %u\n", m4h->tid,
+             m4h->exe_cycles, m4h->ene);
+      printf("        LogEvents: 0x%06x Exceptions: 0x%06x\n", m4h->log_events,
+             m4h->exceptions);
+      printf("        LiveOuts: 0x%08x TSR: %d TDE: %d\n", m4h->live_outs,
+             m4h->tsr, m4h->tde);
+      if (m4h->tde == 1) {
+        printf("        TDID: 0x%04x\n", m4h->tdid);
+      }
+    } else {
+      task_idx++;
     }
 
     hwx_state_t state = {0};
+    state.instr_ver = 11;
+    state.subtype = subtype;
 
-    // Phase 4: Verbose Register Logging
     const uint32_t *words = (const uint32_t *)(ptr + offset);
-    int num_words = size_bytes / 4;
+    int num_words = (m4h->task_size * 4) / 4;
     int i = sizeof(ane_header_h16_t) / 4;
-
-    if (i >= num_words)
-      break;
 
     while (i < num_words) {
       uint32_t header = words[i++];
       uint32_t word_addr = header & 0x7FFF;
-      uint16_t num_regs = 0;
 
       if ((header >> 31) == 0) {
-        // Sequential / Burst Mode
-        num_regs = (header >> 15) & 0x3F;
+        uint16_t num_regs = (header >> 15) & 0x3F;
         for (int j = 0; j <= num_regs && i < num_words; j++) {
-          uint32_t current_addr = word_addr + j;
-          if (current_addr < HW_MAX_REGS) {
-            state.values[current_addr] = words[i];
-            state.valid[current_addr] = true;
+          if (word_addr + j < HW_MAX_REGS) {
+            state.values[word_addr + j] = words[i];
+            state.valid[word_addr + j] = true;
           }
           i++;
         }
       } else {
-        // Masked / Scattered Mode
-        uint32_t mask = (header >> 15) & 0xFFFF; // 16-bit mask
-        num_regs = __builtin_popcount(mask);
-
-        // V11 Masked commands always include the base register value first
+        uint32_t mask = (header >> 15) & 0xFFFF;
         if (i < num_words) {
-          uint32_t current_addr = word_addr;
-          if (current_addr < HW_MAX_REGS) {
-            state.values[current_addr] = words[i];
-            state.valid[current_addr] = true;
+          if (word_addr < HW_MAX_REGS) {
+            state.values[word_addr] = words[i];
+            state.valid[word_addr] = true;
           }
           i++;
         }
-
-        // Then follow the registers indicated by the 16-bit mask
         for (int bit = 0; bit < 16 && i < num_words; bit++) {
           if ((mask >> bit) & 1) {
-            uint32_t current_addr = word_addr + bit + 1;
-            if (current_addr < HW_MAX_REGS) {
-              state.values[current_addr] = words[i];
-              state.valid[current_addr] = true;
+            if (word_addr + bit + 1 < HW_MAX_REGS) {
+              state.values[word_addr + bit + 1] = words[i];
+              state.valid[word_addr + bit + 1] = true;
             }
             i++;
           }
         }
       }
     }
-    printf("        Stream Parse: OK (End index %d/%d)\n", i, num_words);
 
-    // Decode HW Blocks using specialized decoders
-    print_common_h16(&state);
-    print_l2_h16(&state);
-    print_pe_h16(&state);
-    print_ne_h16(&state);
-    print_tiledma_src_h16(&state);
-    print_tiledma_dst_h16(&state);
-    print_kerneldma_h16(&state);
-    print_cachedma_h16(&state);
-
-    if (dump_reg_blocks) {
-      hwx_block_info_t blocks[] = {
-          {"[0x0000] Common Module", H16_COMMON_START},
-          {"[0x4100] L2 Cache Control", H16_L2_START},
-          {"[0x4500] Planar Engine (PE)", H16_PE_START},
-          {"[0x4900] Neural Engine Core (NE)", H16_NE_START},
-          {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START},
-          {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START},
-          {"[0x5500] KernelDMA Source", H16_KERNELDMA_START},
-          {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START},
-      };
-      dump_hw_blocks(&state, blocks, 8, get_m4_reg_name);
+    if (dump_json) {
+      report_hwx_state_json(&state);
+    } else {
+      report_hwx_state(&state, dump_reg_blocks);
     }
 
-    if (offset + size_bytes > total_len)
-      break;
+    uint32_t size_bytes = m4h->task_size * 4;
     offset += (size_bytes + 15) & ~15;
   }
 }
@@ -1238,7 +1155,7 @@ const char *get_cmd_name(uint32_t cmd) {
 
 static void handle_segment_64(const struct mach_header_64 *header,
                               const struct load_command *lc, NSData *data,
-                              BOOL dump_hexdump, BOOL dump_reg_blocks) {
+                              BOOL dump_hexdump, BOOL dump_reg_blocks, BOOL dump_json) {
   const struct segment_command_64 *seg = (const struct segment_command_64 *)lc;
   printf("  Segment Name: %s\n", seg->segname);
   printf("  VM Addr: 0x%llx\n", seg->vmaddr);
@@ -1271,9 +1188,9 @@ static void handle_segment_64(const struct mach_header_64 *header,
           uint32_t instr_ver = get_instruction_set_version(header->cpusubtype);
           if (instr_ver >= 11) {
             decode_ane_td_m4(section_ptr, section_size, header->cpusubtype,
-                             dump_reg_blocks);
+                             dump_reg_blocks, dump_json);
           } else {
-            decode_ane_td(section_ptr, section_size, dump_reg_blocks);
+            decode_ane_td(section_ptr, section_size, dump_reg_blocks, dump_json);
           }
           if (dump_hexdump) {
             hex_dump(sect->sectname, section_ptr, section_size);
@@ -1411,7 +1328,7 @@ static void handle_ident(const struct load_command *lc) {
 }
 
 void print_macho_headers(NSData *data, BOOL dump_all_symbols, BOOL dump_threads,
-                         BOOL dump_hexdump, BOOL dump_reg_blocks) {
+                         BOOL dump_hexdump, BOOL dump_reg_blocks, BOOL dump_json) {
   if (data.length < sizeof(struct mach_header_64)) {
     printf("Error: File too small.\n");
     return;
@@ -1454,7 +1371,7 @@ void print_macho_headers(NSData *data, BOOL dump_all_symbols, BOOL dump_threads,
 
     if (lc->cmd == LC_SEGMENT_64) {
       if (offset + sizeof(struct segment_command_64) <= data.length) {
-        handle_segment_64(header, lc, data, dump_hexdump, dump_reg_blocks);
+        handle_segment_64(header, lc, data, dump_hexdump, dump_reg_blocks, dump_json);
       }
     } else if (lc->cmd == LC_SYMTAB) {
       if (offset + sizeof(struct symtab_command) <= data.length) {
@@ -1481,8 +1398,9 @@ int main(int argc, char *const argv[]) {
     BOOL dump_threads = NO;
     BOOL dump_hexdump = NO;
     BOOL dump_reg_blocks = NO;
+    BOOL dump_json = NO;
 
-    while ((ch = getopt(argc, argv, "strx")) != -1) {
+    while ((ch = getopt(argc, argv, "strxj")) != -1) {
       switch (ch) {
       case 's':
         dump_all = YES;
@@ -1496,9 +1414,12 @@ int main(int argc, char *const argv[]) {
       case 'x':
         dump_hexdump = YES;
         break;
+      case 'j':
+        dump_json = YES;
+        break;
       case '?':
       default:
-        printf("Usage: %s [-s] [-t] [-r] [-x] <path_to_hwx>\n", getprogname());
+        printf("Usage: %s [-s] [-t] [-r] [-x] [-j] <path_to_hwx>\n", getprogname());
         return 1;
       }
     }
@@ -1519,7 +1440,7 @@ int main(int argc, char *const argv[]) {
     }
 
     print_macho_headers(data, dump_all, dump_threads, dump_hexdump,
-                        dump_reg_blocks);
+                        dump_reg_blocks, dump_json);
   }
   return 0;
 }

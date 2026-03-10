@@ -54,7 +54,7 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 
 ## Detailed Bitfield Mappings
 
-##### Common (0x0000 block, Object `+0x1f8`)
+#### Common (0x0000 block, Object `+0x1f8`)
 Size: 21 registers (`0x15` words, `0x54` bytes). Dictates fundamental geometries, primary convolutions, and routing.
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
@@ -225,7 +225,7 @@ These registers coordinate with the PE for indexing operations.
 | :--- | :--- | :--- | :--- |
 | **H16_PE_EXT_START** | Word 0 | **PE_IndexCfg** | **MaxIndex**: 0-15, **IndexingEn**: 16. |
 
-##### L2 Cache / Buffer (0x4100 block, Object `+0x3a8`)
+#### L2 Cache / Buffer (0x4100 block, Object `+0x3a8`)
 The L2 block handles local buffering and tensor tiling.
 Size: 41 registers (`0xA4` bytes, `0x29` words).
 

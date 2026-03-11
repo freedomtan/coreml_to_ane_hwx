@@ -13,6 +13,20 @@ The `ZinAneTd<17u>` object maps internal offsets to hardware register blocks as 
 | `+0x030` | `0x48` | `0x5500` | `0x5547` | KernelDmaSrc (Stride, Coeffs) |
 | `+0x52c` | `0x0c` | `0x5900` | `0x5930` | CacheDMA & Telemetry |
 
+Before registers, there are some header words.
+
+| Source Offset (`this`) | Name | Description | Note |
+| :--- | :--- | :--- | :--- |
+| `+0x008` | `TID / TaskSize` | TID (bits 0-15), TaskSize (bits 16-26). | Headers[0] |
+| `+0x00c` | `ExeCycles` | Estimated execution cycle count. | Headers[1] |
+| `+0x010` | `LogEvents` | Log events | Headers[2] |
+| `+0x014` | `Exceptions` | Hardware exceptions mask. | Headers[3] |
+| `+0x018` | `DebugLogEvents`| Debug logging. | Headers[4] |
+| `+0x01c` | `DebugExceptions`| Debug exception flags. | Headers[5] |
+| `+0x020` | `LiveOuts` | Reference count for output buffers. | Headers[6] |
+| `+0x024` | `Flags` | TSR (0), TDE (1), ENE (16-18). | Headers[7] |
+| `+0x028` | `DTID` | DTID (0-15) | Headers[8] |
+
 ## Register Offsets and Meanings
 
 | Word Index | Byte Offset | Name | Description |
@@ -88,32 +102,41 @@ Size: 21 registers (`0x15` words, `0x54` bytes). Dictates fundamental geometries
 ### Neural Engine (NE) (0x4900 block, Object `+0x498`)
 Size: 12 registers (`0x30` bytes).
 
-| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
-| :--- | :--- | :--- | :--- |
-| **0x4900** | `+0x498` | **KernelCfg** | **KernelFmt**: 0-1, **PalettizedEn**: 2, **PalettizedBits**: 4-7, **SparseFmt**: 8, **GroupKernelReuse**: 10, **SparseBinary**: 15, **AlignmentFormat**: 16, **SparseBlockSize**: 21-23, **AsymQuantEn**: 24. |
-| **0x4904** | `+0x49c` | **MACCfg** | **OpMode**: 0-2, **KernelMode**: 3, **NEBiasEnable**: 4, **NEMatrixVectorBiasEnable**: 6, **BinaryPoint**: 8-13, **NEPostScaleEnable**: 14, **NENonLinearMode**: 16-17, **PaddingMode**: 18, **MaxPoolMode**: 19. |
-| **0x4908** | `+0x4a0` | **MatrixVectorBias**| 16-bit Bias value (`strh`). |
+| **0x4900** | `+0x498` | **KernelCfg** | **KernelFmt**: 0-1, **PalettizedEn**: 2, **PalettizedBits**: 4-7... |
+| **0x4904** | `+0x49c` | **MACCfg** | **OpMode**: 0-2, **KernelMode**: 3, **NEBiasEnable**: 4... |
+| **0x4908** | `+0x4a0` | **MatrixVectorBias**| 16-bit Bias value. |
 | **0x490C** | `+0x4a4` | **NEBias** | 21-bit Bias value (Bits 0-20). |
 | **0x4910** | `+0x4a8` | **NEPostScale** | 21-bit Post-Scale value (Bits 0-20). |
-| **0x4914** | `+0x4ac` | **RcasConfig** | **KeyMask**: 0-7, **CmpBit**: 8-10, **SenseAxis**: 12-13, **SenseBit**: 16-19, **Mode**: 20. |
-| **0x4918** | `+0x4b0` | **RoundModeCfg** | **StochasticRoundMode**: 0-1, **StochasticRoundIntegerBits**: 4-8. |
-| **0x491C** | `+0x4b4` | **SRSeed[0]** | 32-bit Stochastic Rounding Seed 0. |
-| **0x4920** | `+0x4b8` | **SRSeed[1]** | 32-bit Stochastic Rounding Seed 1. |
-| **0x4924** | `+0x4bc` | **SRSeed[2]** | 32-bit Stochastic Rounding Seed 2. |
-| **0x4928** | `+0x4c0` | **SRSeed[3]** | 32-bit Stochastic Rounding Seed 3. |
-| **0x492C** | `+0x4c4` | **QuantZeroPoint** | 8-bit Quantization Zero Point (`strb`). |
+| **0x4914** | `+0x4ac` | **RcasConfig** | **KeyMask**: 0-7, **CmpBit**: 8-10... |
+| **0x4918** | `+0x4b0` | **RoundModeCfg** | **StochasticRoundMode**: 0-1... |
+| **0x491C** | `+0x4b4` | **SRSeed[0]**| ... |
+| **0x4920** | `+0x4b8` | **SRSeed[1]**| ... |
+| **0x4924** | `+0x4bc` | **SRSeed[2]**| ... |
+| **0x4928** | `+0x4c0` | **SRSeed[3]**| ... |
+| **0x492C** | `+0x4c4` | **QuantZeroPoint** | 8-bit Quantization Zero Point. |
 
 ##### KernelDmaSrc (0x5500 block, Object `+0x030`)
 Size: 72 registers (`0x48` words, `0x120` bytes).
 
 | HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
+| **0x5500** | `+0x348` | **KDMA_MasterConfig** | **MasterEnable**: 6. |
+| **0x5504** | `+0x34c` | **KDMA_Reserved1** | Unknown. |
+| **0x5508** | `+0x350` | **KDMA_Prefetch** | **EarlyTermEn**: 0, **StopOnError**: 1, **PrefetchRate**: 16-31. |
+| **0x550C-0x5514**| `+0x354`..`+0x35c` | **KDMA_Reserved[3]** | Unknown. |
+| **0x5518** | `+0x360` | **KDMA_StrideX** | Stride X (Bits 6-31). |
+| **0x551C** | `+0x364` | **KDMA_StrideY** | Stride Y (Bits 6-31). |
+| **0x5520-0x555C**| `+0x368`..`+0x3a4` | **CoeffDMAConfig[16]**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5560-0x559C**| `+0x3a8`..`+0x3e4` | **CoeffBaseAddr[16]** | Base Offset (Bits 6-31, 64-byte aligned). |
+| **0x55A0-0x55DC**| `+0x3e8`..`+0x424` | **CoeffBfrSize[16]** | Buffer Size (Bits 0-31). |
+| **0x55E0** | `+0x428` | **BiasDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
+| **0x55F0** | `+0x438` | **PostScaleDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
+| **0x5600** | `+0x448` | **PaletteDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
+| **0x5610** | `+0x458` | **NLutDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
 | **0x5500** | `+0x030` | **KDMA_MasterConfig** | **MasterEnable**: 6. |
 | **0x5504** | `+0x034` | **KDMA_Reserved1** | Unknown. |
 | **0x5508** | `+0x038` | **KDMA_Prefetch** | **EarlyTermEn**: 0, **StopOnError**: 1, **PrefetchRate**: 16-31. |
-| **0x550C** | `+0x03c` | **KDMA_Reserved2** | Unknown. |
-| **0x5510** | `+0x040` | **KDMA_Reserved3** | Unknown. |
-| **0x5514** | `+0x044` | **KDMA_Reserved4** | Unknown. |
+| **0x550C-0x5514**| `+0x03c`..`+0x044` | **KDMA_Reserved[3]** | Unknown. |
 | **0x5518** | `+0x048` | **KDMA_StrideX** | Stride X (Bits 6-31). |
 | **0x551C** | `+0x04c` | **KDMA_StrideY** | Stride Y (Bits 6-31). |
 | **0x5520-0x555C**| `+0x050`..`+0x08c` | **CoeffDMAConfig[16]**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
@@ -154,35 +177,30 @@ Size: 81 registers (`0x51` words, `0x144` bytes).
 | **0x4D64** | `+0x2c0` | **Src2MetaDataSize** | MetaData Size / Config. |
 | **0x4D68** | `+0x2c4` | **Src1Fmt** | Interleave Mode (Bits 12-13). |
 | **0x4D6C** | `+0x2c8` | **Src2Fmt** | Interleave Mode (Bits 12-13). |
-| **0x4D98** | `+0x2f4` | **Src1PixelOffset** | Cropping Offset (H: 0-13, W: 16-29, D: 32-45... 16 bytes). |
-| **0x4DA8** | `+0x304` | **Src2PixelOffset** | Cropping Offset (H: 0-13, W: 16-29, D: 32-45... 16 bytes). |
+| **0x4D98** | `+0x2f4` | **Src1PixelOffset** | Cropping Offset. |
+| **0x4DA8** | `+0x304` | **Src2PixelOffset** | Cropping Offset. |
 
 ### TileDMA Destination (0x5100 block, Object `+0x4d0`)
 Size: 21 registers (`0x15` words, `0x54` bytes).
 
 | HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x5100** | `+0x4d0` | **DstDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5100** | `+0x4d0` | **DstDMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23. |
 | **0x5104** | `+0x4d4` | **DstPadding** | Reserved / Padding Mode. |
-| **0x5108** | `+0x4d8` | **DstBaseAddrLo**| Lower 32 bits of 64-bit output base address. |
-| **0x510C** | `+0x4dc` | **DstBaseAddrHi**| Upper 32 bits of 64-bit output base address. |
+| **0x5108** | `+0x4d8` | **DstBaseAddrLo** | Lower 32 bits of 64-bit output base address. |
+| **0x510C** | `+0x4dc` | **DstBaseAddrHi** | Upper 32 bits of 64-bit output base address. |
 | **0x5110** | `+0x4e0` | **DstRowStride** | Row stride (Bits 6-31). |
-| **0x5114** | `+0x4e4` | **DstPlaneStride**| Channel (Plane) stride (Bits 6-31). |
-| **0x5118** | `+0x4e8` | **DstDepthStride**| Depth stride (Bits 6-31). |
-| **0x511C** | `+0x4ec` | **DstGroupStride**| Group stride (Bits 6-31). |
-| **0x5120** | `+0x4f0` | **DstInternalCfg**| **InternalBits**: 0-15, **Flag1**: 16, **Flag2**: 17, **Flag3**: 18. (Set by `SetDmaDstInternal`). |
+| **0x5114** | `+0x4e4` | **DstPlaneStride** | Channel (Plane) stride (Bits 6-31). |
+| **0x5118** | `+0x4e8` | **DstDepthStride** | Depth stride (Bits 6-31). |
+| **0x511C** | `+0x4ec` | **DstGroupStride** | Group stride (Bits 6-31). |
+| **0x5120** | `+0x4f0` | **DstInternalCfg**| **InternalBits**: 0-15, **Flag1**: 16, **Flag2**: 17, **Flag3**: 18. |
 | **0x5124** | `+0x4f4` | **DstReserved1** | Unknown. |
 | **0x5128** | `+0x4f8` | **DstMetaDataAddrLo**| MetaData Buffer Lo (Bits 0-31). |
 | **0x512C** | `+0x4fc` | **DstMetaDataAddrHi**| MetaData Buffer Hi (Bits 32-63). |
-| **0x5130** | `+0x500` | **DstFmtMode** | **FormatMode**: 0-1, **MetaDataSize**: 7-31. |
-| **0x5134** | `+0x504` | **DstReserved2** | Unknown. |
-| **0x5138** | `+0x508` | **DstCompStatus** | **IsCompressed**: 0. |
-| **0x513C** | `+0x50c` | **DstReserved3** | Unknown. |
-| **0x5140** | `+0x510` | **DstCompressionCfg**| **PackingFmt**: 4-7, **MacroblockSize**: 12-13. (Set by `SetTileDmaDstCompressedInfo`). |
-| **0x5144** | `+0x514` | **DstReserved4** | Unknown. |
+| **0x5130** | `+0x500` | **DstFormatMode** | **FormatMode**: 0-1, **MetaDataSize**: 7-31. |
 | **0x5148** | `+0x518` | **DstCompSizeLo** | Output Compressed Size (Bits 0-31). |
 | **0x514C** | `+0x51c` | **DstCompSizeHi** | Output Compressed Size (Bits 32-63). |
-| **0x5150** | `+0x520` | **DstPixelOffset** | Pixel/Crop offsets (See `GetCropOffsetDstY`). |
+| **0x5150** | `+0x520` | **DstPixelOffset** | Pixel/Crop offsets. |
 
 ### CacheDMA / Telemetry (0x5900 block, Object `+0x52c`)
 This block handles telemetry, caching hints, and task synchronization.
@@ -190,18 +208,15 @@ Size: 12 registers (`0x30` bytes, `0x0c` words).
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x5900** | `+0x52c` | **CacheDMAControl** | **Flush**: Bit 0, **Enable**: Bit 1, **TaskSync**: WaitPrev:3, PostDone:2, **EarlyTerm**: 4-6, **FootprintLimiter**: Bit 9, **FootprintThreshold**: 16-31. |
-| **0x5904** | `+0x530` | **CacheDMAPre0** | **BandwidthLimit**: 0-9, **Sieve2**: 16-19, **TelemetryAgeOut**: 20-23. |
-| **0x5908** | `+0x534` | **CacheDMAPre1** | **Sieve1**: 0-13. |
-| **0x590C** | `+0x538` | **CacheDMAPad3** | Reserved / Unknown. |
-| **0x5910** | `+0x53c` | **CacheDMAPad4** | Reserved / Unknown. |
-| **0x5914** | `+0x540` | **CacheDMAPad5** | Reserved / Unknown (Maybe DstCrop in Some contexts). |
-| **0x5918** | `+0x544` | **CacheDMADsid** | **DSIDAndSize**: Bits 7-29. |
-| **0x591C** | `+0x548` | **CacheDMAFootprint**| **FootprintArg2**: Bits 17-27. |
-| **0x5920** | `+0x54c` | **EarlyTermArg12** | **Arg1**: Bits 0-15 (`strh`), **Arg2**: Bits 16-31 (`strh`). |
-| **0x5924** | `+0x550` | **CacheDMAFlushArg**| **FlushArg**: Bits 0-15 (`strh`). |
-| **0x5928** | `+0x554` | **EarlyTermArg34** | **Arg3**: Bits 0-7 (`strb`), **Arg4**: Bits 16-23 (`strb`). |
-| **0x592C** | `+0x558` | **TelemetryBackOff**| **Enable**: Bit 0, **Delay**: 4-7, **Min**: 8-15, **Max**: 16-23, **Scale**: 24-31. |
+| **0x5900** | `+0x52c` | **TelemetryControl** | **Flush**: 0, **Enable**: 1, **TaskSync**: 2-3, **EarlyTerm**: 4-8. |
+| **0x5904** | `+0x530` | **TelemetryPre0** | **BandwidthLimit**: 0-9... |
+| **0x5908** | `+0x534` | **TelemetryPre1** | **Sieve1**: 0-13. |
+| **0x5918** | `+0x544` | **TelemetryDSID** | **DataSetIdAndSize**: Bits 7-29. |
+| **0x591C** | `+0x548` | **FootprintArg** | **FootprintArg2**: Bits 17-27. |
+| **0x5920** | `+0x54c` | **EarlyTermArg12** | **Arg1**: Bits 0-15, **Arg2**: Bits 16-31. |
+| **0x5924** | `+0x550` | **FlushRegister** | **FlushArg**: Bits 0-15. |
+| **0x5928** | `+0x554` | **EarlyTermArg34** | **Arg3**: Bits 0-7, **Arg4**: Bits 16-23. |
+| **0x592C** | `+0x558` | **BackoffControl** | **Enable**: 0, **Delay**: 4-7, **Min**: 8-15... |
 
 ### Planar Engine (PE) (0x4500 block, Object `+0x454`)
 This block controls the Planar Engine (PE) which handles element-wise operations, pooling, and scaling.
@@ -209,14 +224,12 @@ Size: 15 registers (`0xf` words, `0x3c` bytes).
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4500** | `+0x454` | **PE_Config** | **OpMode**: 0-5 (0=Add, 1=Sub, 2=Min, 3=Max, 4=Mul, 5=Div/Recip), **Condition**: 6-8 (0=True, 1=LT, 2=LE, 3=EQ, 4=NE, 5=GE, 6=GT), **FirstSource**: 16, **SecondSource**: 18-19. |
+| **0x4500** | `+0x454` | **PE_Config** | **Op**: 0-5, **Cond**: 6-8, **Src1**: 16, **Src2**: 18-19. |
 | **0x4504** | `+0x458` | **PE_Bias** | 19-bit Floating Point (F19) bias value. |
 | **0x4508** | `+0x45c` | **PE_Scale** | 19-bit Floating Point (F19) scale value. |
-| **0x450C** | `+0x460` | **PE_Reserved1** | Unknown configuration flags. |
 | **0x4510** | `+0x464` | **PE_PreScale** | 19-bit Floating Point (F19) pre-scale value. |
 | **0x4514** | `+0x468` | **PE_FinalScale** | 19-bit Floating Point (F19) final scale value. |
-| **0x4518-0x4534** | `+0x46c`..`+0x488` | **PE_Reserved[8]** | Reserved. |
-| **0x4538** | `+0x48c` | **PE_Quant** | **ZeroPoint**: Bits 16-23. (Note: ReLU flags moved to L2). |
+| **0x4538** | `+0x48c` | **PE_Quant** | **ZeroPoint**: Bits 16-23. |
 
 #### PE Indexing Extension (H16_PE_EXT_START block, Object `+0x434`)
 These registers coordinate with the PE for indexing operations.
@@ -229,49 +242,17 @@ These registers coordinate with the PE for indexing operations.
 The L2 block handles local buffering and tensor tiling.
 Size: 41 registers (`0xA4` bytes, `0x29` words).
 
-| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
-| :--- | :--- | :--- | :--- |
-| **0x4100** | `+0x3a8` | **L2_Control** | **Src1ReLU**: Bit 0, **PaddingMode**: 2-3, **Src2ReLU**: Bit 4, **Src1DoubleRate**: 6, **Barrier**: 16. |
-| **0x4104** | `+0x3ac` | **L2_Src1Cfg** | **SourceType**: 2-3, **DmaFormat**: 6-7, **Interleave**: 8-11, **OffsetYlsbs**: 12-15, **Compression**: 25. |
+| **0x4100** | `+0x3a8` | **L2_Control** | **Src1ReLU**: Bit 0, **PaddingMode**: 2-3, **Src2ReLU**: Bit 4, **Barrier**: 16. |
+| **0x4104** | `+0x3ac` | **L2_Src1Cfg** | **SourceType**: 2-3, **DmaFormat**: 6-7, **Interleave**: 8-11, **Compression**: 25. |
 | **0x4108** | `+0x3b0` | **L2_Src2Cfg** | **SourceType**: 2-3, **Interleave**: 8-11, **Compression**: 25. |
 | **0x410C** | `+0x3b4` | **L2_Pad3** | Reserved / Unknown. |
-| **0x4110** | `+0x3b8` | **L2_Src1Base** | Bits 4-20: Base Address (17 bits), Bits 4-7: OffsetXlsbs. |
-| **0x4114** | `+0x3bc` | **L2_Src1CStride** | Channel Stride for Source 1. |
-| **0x4118** | `+0x3c0` | **L2_Src1RStride** | Row Stride for Source 1. |
-| **0x411C** | `+0x3c4` | **L2_Src1DStride** | Depth Stride for Source 1. |
-| **0x4120** | `+0x3c8` | **L2_Src1GStride** | Group Stride for Source 1. |
-| **0x4124** | `+0x3cc` | **L2_Src2Base** | Bits 4-20: Base Address (17 bits), Bits 4-7: OffsetXlsbs. |
-| **0x4128** | `+0x3d0` | **L2_Src2CStride** | Channel Stride for Source 2. |
-| **0x412C** | `+0x3d4` | **L2_Src2RStride** | Row Stride for Source 2. |
-| **0x4130** | `+0x3d8` | **L2_Src2DStride** | Depth Stride for Source 2. |
-| **0x4134** | `+0x3dc` | **L2_Src2GStride** | Group Stride for Source 2. |
-| **0x4138** | `+0x3e0` | **L2_SrcIdxBase** | Base Address for Index Source (Bits 4-20). |
-| **0x413C** | `+0x3e4` | **L2_SrcIdxCStride** | Channel Stride for Index Source. |
-| **0x4140** | `+0x3e8` | **L2_SrcIdxDStride** | Depth Stride for Index Source. |
-| **0x4144** | `+0x3ec` | **L2_SrcIdxGStride** | Group Stride for Index Source. |
-| **0x4148** | `+0x3f0` | **L2_ResultCfg** | **BfrMode**: 3, **CropOffsetXLSBs**: 4-6, **Interleave**: 8-11, **ResultType**: 12-13, **Compression**: 24-25. |
-| **0x414C** | `+0x3f4` | **L2_ResultBase** | Bits 4-20: Base Address, Bits 4-7: SrcOffsetXlsbs? |
-| **0x4150** | `+0x3f8` | **L2_ResultCStride**| Channel Stride for Result. |
-| **0x4154** | `+0x3fc` | **L2_ResultRStride**| Row Stride for Result. |
-| **0x4158** | `+0x400` | **L2_ResultDStride**| Depth Stride for Result. |
-| **0x415C** | `+0x404` | **L2_ResultGStride**| Group Stride for Result. |
-| **0x4160** | `+0x408` | **L2_Res24** | Unknown (Written by SetL2Src2FIFOModeRetention). |
-| **0x4164** | `+0x40c` | **L2_ResultWrapCfg** | Result Wrapping Configuration. |
-| **0x4168** | `+0x410` | **L2_Res26** | Unknown. |
-| **0x416C** | `+0x414` | **L2_Res27** | Unknown. |
-| **0x4170** | `+0x418` | **L2_Res28** | Unknown. |
-| **0x4174** | `+0x41c` | **L2_ResultWrapIdxOff** | Bits 0-15: WrapIndex, Bits 16-31: WrapStartOffset. |
-| **0x4178** | `+0x420` | **L2_Res30** | Unknown. |
-| **0x417C** | `+0x424` | **L2_Result2Base**| Second Result / L2 Write Base (Bits 4-20). |
-| **0x4180** | `+0x428` | **L2_Result2CStride**| Second Result Channel Stride. |
-| **0x4184** | `+0x42c` | **L2_Result2RStride**| Second Result Row Stride. |
-| **0x4188** | `+0x430` | **L2_Result2DStride**| Second Result Depth Stride. |
-| **0x418C** | `+0x434` | **L2_Result2GStride**| Second Result Group Stride. |
-| **0x4190** | `+0x438` | **L2_Res36** | Unknown. |
-| **0x4194** | `+0x43c` | **L2_Res37** | Unknown. |
-| **0x4198** | `+0x440` | **L2_Res38** | Unknown. |
-| **0x419C** | `+0x444` | **L2_ResultWrapAddr** | Bits 0-11: WrapAddr, Bits 16-26: WrapAddrOffset. |
-| **0x41A0** | `+0x448` | **L2_Res40** | Unknown. |
+| **0x4110-0x4120**| `+0x3b8`..`+0x3c8` | **L2_Src1** | **Base**: 17, **Stride**: 17... |
+| **0x4124-0x4134**| `+0x3cc`..`+0x3dc` | **L2_Src2** | **Base**: 17, **Stride**: 17... |
+| **0x4138-0x4144**| `+0x3e0`..`+0x3ec` | **L2_SrcIdx** | **Base**: 17... |
+| **0x4148** | `+0x3f0` | **L2_ResultCfg** | **BfrMode**: 3, **CropOffsetXLSBs**: 4-6, **Interleave**: 8-11, **Compression**: 25. |
+| **0x414C-0x415C**| `+0x3f4`..`+0x404` | **L2_Result** | **Base**: 17, **Stride**: 17... |
+| **0x4174** | `+0x41c` | **L2_ResultWrapIdxOff**| **WrapIndex**: 16, **WrapOffs**: 16. |
+| **0x419C** | `+0x444` | **L2_ResultWrapAddr** | **WrapAddr**: 0-11, **WrapAddrOffset**: 16-26. |
 
 #### L2 Wrap Constraints:
 - **0x4164**: **L2ResultWrapCfg**
@@ -282,13 +263,13 @@ Size: 41 registers (`0xA4` bytes, `0x29` words).
 Certain high-level configurations, like Quantization, touch multiple disparate hardware blocks simultaneously to coordinate data scaling and types across the pipeline. As decompiled from `ZinAneTd<17u>::SetQuantization*` methods:
 
 **SetQuantizationSrc1InputOffset / Src2InputOffset**
-- **Common (`+0x240`)**: Likely format overrides.
-- **L2 Cache (`+0x3A8` / `0x4100`)**: Applies `L2Cfg` padding scale formats.
-- **Planar Engine (`+0x458`, `+0x45c`, `+0x464`, `+0x468`, `+0x48e`)**: Configures `PEBias`, `PEScale`, `PEPreScale`, `PEFinalScale`, and `PEOutputQuantization` simultaneously.
+- **Common (`+0x030`)**: Format overrides (`ch_cfg`).
+- **L2 Cache (`+0x1cc` / `0x4100`)**: Padding/Relu scale (`l2_control`).
+- **Planar Engine (`+0x274`, `+0x278`, `+0x280`, `+0x284`, `+0x2a8`)**: Configures `bias`, `scale`, `pre_scale`, `final_scale`, and `quant` zero points.
 
 **SetQuantizationOutputZeroOffset**
-- **Neural Engine (`+0x49C` / `0x4904`)**: Flips bit flags in `MACCfg` regarding non-linear mode or binary points.
-- **Neural Engine (`+0x4C4`)**: Likely writes to `AccBias` / `PostScale` extensions.
+- **Neural Engine (`+0x2c8` / `0x4904`)**: Flips bit flags in `mac_cfg`.
+- **Neural Engine (`+0x2f0`)**: Writes to `quant`.
 
 **SetTexture***
 The texture sampling feature (such as GatherMode) maps heavily into the extended spaces of the **TileDmaSrc** block (`0x4D00`).

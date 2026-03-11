@@ -116,7 +116,7 @@ typedef struct __attribute__((packed)) {
   uint32_t pad6 : 14; // 0x01c bits 2-15
   uint32_t ene : 3;   // 0x01c bits 16-18
   uint32_t pad7 : 13; // 0x01c bits 19-31
-  uint16_t tdid;
+  uint16_t dtid;
   uint16_t pad8;
 } ane_header_h16_t;
 
@@ -247,9 +247,9 @@ typedef struct {
     uint32_t master_enable : 1; // Bit 6
     uint32_t pad1 : 25;
   } master_cfg;      // Word 0 (0x5500)
-  uint32_t pad1;     // Word 1
+  uint32_t reserved1; // Word 1
   uint32_t prefetch; // Word 2 (0x5508)
-  uint32_t pad2[3];  // Word 3-5
+  uint32_t reserved[3]; // Word 3-5
   uint32_t stridex;  // Word 6 (0x5518)
   uint32_t stridey;  // Word 7 (0x551C)
 

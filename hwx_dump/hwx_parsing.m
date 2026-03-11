@@ -149,8 +149,8 @@ const char *get_m4_reg_name(uint32_t addr) {
       "DstCompSizeLo",     "DstCompSizeHi",
       "DstPixelOffset"};
   static const char *kdma_names[72] = {
-      "KDMA_MasterConfig",  "pad_1",              "KDMA_Prefetch",
-      "pad_3",              "pad_4",              "pad_5",
+      "KDMA_MasterConfig",  "KDMA_Reserved1",     "KDMA_Prefetch",
+      "KDMA_Reserved[0]",   "KDMA_Reserved[1]",   "KDMA_Reserved[2]",
       "KDMA_StrideX",       "KDMA_StrideY",       "CoeffDMAConfig[0]",
       "CoeffDMAConfig[1]",  "CoeffDMAConfig[2]",  "CoeffDMAConfig[3]",
       "CoeffDMAConfig[4]",  "CoeffDMAConfig[5]",  "CoeffDMAConfig[6]",
@@ -1029,7 +1029,7 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
       printf("        LiveOuts: 0x%08x TSR: %d TDE: %d\n", m4h->live_outs,
              m4h->tsr, m4h->tde);
       if (m4h->tde == 1) {
-        printf("        TDID: 0x%04x\n", m4h->tdid);
+        printf("        DTID: 0x%04x\n", m4h->dtid);
       }
     } else {
       task_idx++;

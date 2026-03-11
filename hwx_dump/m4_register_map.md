@@ -245,7 +245,7 @@ Size: 41 registers (`0xA4` bytes, `0x29` words).
 | **0x4100** | `+0x3a8` | **L2_Control** | **Src1ReLU**: Bit 0, **PaddingMode**: 2-3, **Src2ReLU**: Bit 4, **Barrier**: 16. |
 | **0x4104** | `+0x3ac` | **L2_Src1Cfg** | **SourceType**: 2-3, **DmaFormat**: 6-7, **Interleave**: 8-11, **Compression**: 25. |
 | **0x4108** | `+0x3b0` | **L2_Src2Cfg** | **SourceType**: 2-3, **Interleave**: 8-11, **Compression**: 25. |
-| **0x410C** | `+0x3b4` | **L2_Pad3** | Reserved / Unknown. |
+| **0x410C** | `+0x3b4` | **L2_SrcIdxCfg** | Reserved / Unknown. |
 | **0x4110-0x4120**| `+0x3b8`..`+0x3c8` | **L2_Src1** | **Base**: 17, **Stride**: 17... |
 | **0x4124-0x4134**| `+0x3cc`..`+0x3dc` | **L2_Src2** | **Base**: 17, **Stride**: 17... |
 | **0x4138-0x4144**| `+0x3e0`..`+0x3ec` | **L2_SrcIdx** | **Base**: 17... |

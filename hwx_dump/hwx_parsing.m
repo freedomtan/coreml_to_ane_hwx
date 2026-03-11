@@ -80,7 +80,7 @@ const char *get_m4_reg_name(uint32_t addr) {
       "DPE",        "Val21",     "Val22"};
   static const char *l2_names[] = {
       "L2_Control",        "L2_Src1Cfg",        "L2_Src2Cfg",
-      "L2_Pad3",           "L2_Src1Base",       "L2_Src1CStride",
+      "L2_SrcIdxCfg",      "L2_Src1Base",       "L2_Src1CStride",
       "L2_Src1RStride",    "L2_Src1DStride",    "L2_Src1GStride",
       "L2_Src2Base",       "L2_Src2CStride",    "L2_Src2RStride",
       "L2_Src2DStride",    "L2_Src2GStride",    "L2_SrcIdxBase",

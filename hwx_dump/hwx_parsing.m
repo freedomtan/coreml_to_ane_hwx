@@ -518,10 +518,13 @@ void print_ne_h16(const hwx_state_t *state) {
 
   if (state->valid[H16_NE_START / 4]) {
     printf("        KernelCfg: Fmt=%s Palettized=%d (%dbit) SparseFmt=%d "
+           "GroupKernelReuse=%d AlignmentFmt=%d SparseBlockSize=%d "
            "AsymQuant=%d\n",
            get_ch_fmt_name(ne.kernel_cfg.kernel_fmt),
            ne.kernel_cfg.palettized_en, ne.kernel_cfg.palettized_bits,
-           ne.kernel_cfg.sparse_fmt, ne.kernel_cfg.asym_quant_en);
+           ne.kernel_cfg.sparse_fmt, ne.kernel_cfg.group_kernel_reuse,
+           ne.kernel_cfg.alignment_fmt, ne.kernel_cfg.sparse_block_size,
+           ne.kernel_cfg.asym_quant_en);
   }
 
   if (state->valid[(H16_NE_START + 0x4) / 4]) {
@@ -689,6 +692,12 @@ void print_tiledma_src_h16(const hwx_state_t *state) {
            src->src2cfg.en, src->src2cfg.dataset_id, src->src2cfg.user_tag,
            src->src2cfg.dep_mode);
   }
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x28) / 4]) {
+    printf("        Src2Config: 0x%08x\n", src->src2config);
+  }
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x2c) / 4]) {
+    printf("        Src2Padding: 0x%08x\n", src->src2padding);
+  }
   if (state->valid[(H16_TILEDMA_SRC_START + 0x18) / 4]) {
     printf("        Src1Strides: RowStride=0x%08x PlaneStride=0x%08x "
            "DepthStride=0x%08x GroupStride=0x%08x\n",
@@ -700,6 +709,9 @@ void print_tiledma_src_h16(const hwx_state_t *state) {
            "DepthStride=0x%08x GroupStride=0x%08x\n",
            src->src2row_stride, src->src2plane_stride, src->src2depth_stride,
            src->src2group_stride);
+  }
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x40) / 4]) {
+    printf("        Src1MetaDataConfig: 0x%08x\n", src->src1metadataconfig);
   }
   if (state->valid[(H16_TILEDMA_SRC_START + 0x50) / 4]) {
     printf("        Src1MetaData: Addr=0x%08x%08x Size=0x%08x\n",
@@ -723,6 +735,9 @@ void print_tiledma_dst_h16(const hwx_state_t *state) {
     printf("        DstDMAConfig: En=%d CacheHint=%u DSID=%u Tag=%u\n",
            dst->dstcfg.en, dst->dstcfg.cache_hint, dst->dstcfg.dataset_id,
            dst->dstcfg.user_tag);
+  }
+  if (state->valid[(H16_TILEDMA_DST_START + 0x04) / 4]) {
+    printf("        DstPadding: 0x%08x\n", dst->dstpadding);
   }
   if (state->valid[(H16_TILEDMA_DST_START + 0x10) / 4]) {
     printf("        DstStrides: RowStride=0x%08x PlaneStride=0x%08x "

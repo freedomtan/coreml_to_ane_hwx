@@ -102,6 +102,8 @@ Size: 21 registers (`0x15` words, `0x54` bytes). Dictates fundamental geometries
 ### Neural Engine (NE) (0x4900 block, Object `+0x498`)
 Size: 12 registers (`0x30` bytes).
 
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
+| :--- | :--- | :--- | :--- |
 | **0x4900** | `+0x498` | **KernelCfg** | **KernelFmt**: 0-1, **PalettizedEn**: 2, **PalettizedBits**: 4-7... |
 | **0x4904** | `+0x49c` | **MACCfg** | **OpMode**: 0-2, **KernelMode**: 3, **NEBiasEnable**: 4... |
 | **0x4908** | `+0x4a0` | **MatrixVectorBias**| 16-bit Bias value. |
@@ -120,19 +122,6 @@ Size: 72 registers (`0x48` words, `0x120` bytes).
 
 | HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x5500** | `+0x348` | **KDMA_MasterConfig** | **MasterEnable**: 6. |
-| **0x5504** | `+0x34c` | **KDMA_Reserved1** | Unknown. |
-| **0x5508** | `+0x350` | **KDMA_Prefetch** | **EarlyTermEn**: 0, **StopOnError**: 1, **PrefetchRate**: 16-31. |
-| **0x550C-0x5514**| `+0x354`..`+0x35c` | **KDMA_Reserved[3]** | Unknown. |
-| **0x5518** | `+0x360` | **KDMA_StrideX** | Stride X (Bits 6-31). |
-| **0x551C** | `+0x364` | **KDMA_StrideY** | Stride Y (Bits 6-31). |
-| **0x5520-0x555C**| `+0x368`..`+0x3a4` | **CoeffDMAConfig[16]**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x5560-0x559C**| `+0x3a8`..`+0x3e4` | **CoeffBaseAddr[16]** | Base Offset (Bits 6-31, 64-byte aligned). |
-| **0x55A0-0x55DC**| `+0x3e8`..`+0x424` | **CoeffBfrSize[16]** | Buffer Size (Bits 0-31). |
-| **0x55E0** | `+0x428` | **BiasDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
-| **0x55F0** | `+0x438` | **PostScaleDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
-| **0x5600** | `+0x448` | **PaletteDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
-| **0x5610** | `+0x458` | **NLutDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
 | **0x5500** | `+0x030` | **KDMA_MasterConfig** | **MasterEnable**: 6. |
 | **0x5504** | `+0x034` | **KDMA_Reserved1** | Unknown. |
 | **0x5508** | `+0x038` | **KDMA_Prefetch** | **EarlyTermEn**: 0, **StopOnError**: 1, **PrefetchRate**: 16-31. |
@@ -242,6 +231,8 @@ These registers coordinate with the PE for indexing operations.
 The L2 block handles local buffering and tensor tiling.
 Size: 41 registers (`0xA4` bytes, `0x29` words).
 
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
+| :--- | :--- | :--- | :--- |
 | **0x4100** | `+0x3a8` | **L2_Control** | **Src1ReLU**: Bit 0, **PaddingMode**: 2-3, **Src2ReLU**: Bit 4, **Barrier**: 16. |
 | **0x4104** | `+0x3ac` | **L2_Src1Cfg** | **SourceType**: 2-3, **DmaFormat**: 6-7, **Interleave**: 8-11, **Compression**: 25. |
 | **0x4108** | `+0x3b0` | **L2_Src2Cfg** | **SourceType**: 2-3, **Interleave**: 8-11, **Compression**: 25. |

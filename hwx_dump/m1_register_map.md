@@ -15,7 +15,7 @@ This document maps the `ZinAneTd<7u>` object offsets to hardware registers for t
 | Block | TD Start (Metadata) | Word 1 (First Reg) | ZinAneTd<7u> Source |
 | :--- | :--- | :--- | :--- |
 | **Header** | `0x000` | `0x000` | `this + 0x008` |
-| **KernelDMA** | `0x028` | `0x02C` | `this + 0x038` |
+| **KernelDMA** | `0x028` | `0x02C` | `this + 0x034` |
 | **Common** | `0x124` | `0x128` | `this + 0x1D8` |
 | **TileDMA Src**| `0x168` | `0x16C` | `this + 0x220` |
 | **L2** | `0x1DC` | `0x1E0` | `this + 0x298` |
@@ -42,7 +42,6 @@ Source: `this + 0x008`
 | **0x01C** | **Header[7]** | `this + 0x024` | **NextPointer**: 0-31. |
 | **0x020** | **Header[8]** | `this + 0x028` | **RBase0**/**RBE0**, **RBase1**/**RBE1**, **WBase**/**WBE**, **TBase**/**TBE**, **ENE**: 21-23. |
 | **0x024** | **Header[9]** | `this + 0x02C` | **KBase0**/**KBE0** ... **KBase3**/**KBE3**. |
-| **0x028** | **Meta**      | `this + 0x030` | **KernelDMASrc**: length: 0-5, KernelDMASrc address base: 6-31. |
 
 ### KernelDMASrc Block (TD 0x02C)
 Source: `this + 0x034`

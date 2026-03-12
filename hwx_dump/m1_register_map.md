@@ -38,10 +38,11 @@ Source: `this + 0x008`
 | **0x00C** | **Header[3]** | `this + 0x014` | **Exceptions**: 0-23. |
 | **0x010** | **Header[4]** | `this + 0x018` | **DebugLogEvents**: 0-23. |
 | **0x014** | **Header[5]** | `this + 0x01C` | **DebugExceptions**: 0-23. |
-| **0x018** | **Header[6]** | `this + 0x020` | **TQDis**: 0, **DstLoc**: 2, **SrcLoc**: 3, **TDE**: 7, **NextPriority**: 10-15, **TSE**: 16, **DPC**: 17, **SPC**: 18, **TSR**: 19, **SPL**: 20, **KPC**: 21, **TDSkip**: 22, **DisallowAbort**: 23. |
+| **0x018** | **Header[6]** | `this + 0x020` | **TQDis**: 31, **DstLoc**: 29, **SrcLoc**: 28, **TDE**: 24, **NextPriority**: 16-21, **TSE**: 15, **DPC**: 14, **SPC**: 13, **TSR**: 12, **SPL**: 11, **KPC**: 10, **TDSkip**: 9, **DisallowAbort**: 8. |
 | **0x01C** | **Header[7]** | `this + 0x024` | **NextPointer**: 0-31. |
-| **0x020** | **Header[8]** | `this + 0x028` | **RBase0**/**RBE0**, **RBase1**/**RBE1**, **WBase**/**WBE**, **TBase**/**TBE**, **ENE**: 21-23. |
-| **0x024** | **Header[9]** | `this + 0x02C` | **KBase0**/**KBE0** ... **KBase3**/**KBE3**. |
+| **0x020** | **Header[8]** | `this + 0x028` | **RBase0: 0-4 **/**RBE0: 5**, **RBase1: 6-10 **/**RBE1: 11**, **WBase: 12-16 **/**WBE: 17**, **TBase: 18-22 **/**TBE: 23**, **ENE: 24-27**. |
+| **0x024** | **Header[9]** | `this + 0x02C` | **KBase0: 0-4 **/**KBE0: 5**, **KBase1: 6-10 **/**KBE1: 11**, **KBase2: 12-16 **/**KBE2: 17**, **KBase3: 18-2 **/**KBE3: 23**. |
+| **0x028** | **Header[10]** | `this + 0x030` | **DTID: 0-15**.|   
 
 ### KernelDMASrc Block (TD 0x02C)
 Source: `this + 0x034`
@@ -97,21 +98,21 @@ Base HW Addr: `0x13800`
 | **0x138CC..** | **0x1CC..0x1F4** | *pad5[11]* | `this + 0x284..0x2D0` | - |
 
 ### L2 Block (TD 0x1E0)
-Source: `this + 0x298`
+Source: `this + 0x294`
 Base HW Addr: `0x4800`
 
 | HW Addr | TD Offset | Register Name | Object Offset | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- | :--- |
-| **0x4800** | **0x1E0** | **L2Cfg** | `this + 0x298` | **InputReLU**: 0, **PaddingMode**: 1-2. |
-| **0x4804** | **0x1E4** | **SourceCfg** | `this + 0x29C` | **SourceType**: 0-1, **Dependent**: 2-3, **AliasConvSrc**: 4, **AliasConvRslt**: 5, **DMAFmt**: 6-7, **DMAInterleave**: 8-11, **DMACmpVec**: 12-15, **DMAOffsetCh**: 16-18, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22. |
-| **0x4808** | **0x1E8** | **SourceBase**| `this + 0x2A0` | **Addr**: 4-20. |
-| **0x480C** | **0x1EC** | **SourceChannelStride**| `this + 0x2A4` | **Stride**: 4-20. |
-| **0x4810** | **0x1F0** | **SourceRowStride** | `this + 0x2A8` | **Stride**: 4-20. |
-| **0x4814-0x482C**| **0x1F4-0x20C**| *pad3[7]* | `this + 0x2AC..0x2C4` | - |
-| **0x4830** | **0x210** | **ResultCfg** | `this + 0x2C8` | **ResultType**: 0-1, **L2BfrMode**: 2-3, **AliasConvSrc**: 4, **AliasConvRslt**: 5, **DMAFmt**: 6-7, **DMAInterleave**: 8-11, **DMACmpVec**: 12-15, **DMAOffsetCh**: 16-18, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22. |
-| **0x4834** | **0x214** | **ResultBase**| `this + 0x2CC` | **Addr**: 4-20. |
-| **0x4838** | **0x218** | **ConvResultChannelStride** | `this + 0x2D0` | **Stride**: 4-20. |
-| **0x483C** | **0x21C** | **ConvResultRowStride** | `this + 0x2D4` | **Stride**: 4-20. |
+| **0x4800** | **0x1E0** | **L2Cfg** | `this + 0x294` | **InputReLU**: 0, **PaddingMode**: 1-2. |
+| **0x4804** | **0x1E4** | **SourceCfg** | `this + 0x298` | **SourceType**: 0-1, **Dependent**: 2-3, **AliasConvSrc**: 4, **AliasConvRslt**: 5, **DMAFmt**: 6-7, **DMAInterleave**: 8-11, **DMACmpVec**: 12-15, **DMAOffsetCh**: 16-18, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22. |
+| **0x4808** | **0x1E8** | **SourceBase**| `this + 0x29C` | **Addr**: 4-20. |
+| **0x480C** | **0x1EC** | **SourceChannelStride**| `this + 0x2A0` | **Stride**: 4-20. |
+| **0x4810** | **0x1F0** | **SourceRowStride** | `this + 0x2A4` | **Stride**: 4-20. |
+| **0x4814-0x482C**| **0x1F4-0x20C**| *pad3[7]* | `this + 0x2A8..0x2C0` | - |
+| **0x4830** | **0x210** | **ResultCfg** | `this + 0x2C4` | **ResultType**: 0-1, **L2BfrMode**: 2-3, **AliasConvSrc**: 4, **AliasConvRslt**: 5, **DMAFmt**: 6-7, **DMAInterleave**: 8-11, **DMACmpVec**: 12-15, **DMAOffsetCh**: 16-18, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22. |
+| **0x4834** | **0x214** | **ResultBase**| `this + 0x2C8` | **Addr**: 4-20. |
+| **0x4838** | **0x218** | **ConvResultChannelStride** | `this + 0x2CC` | **Stride**: 4-20. |
+| **0x483C** | **0x21C** | **ConvResultRowStride** | `this + 0x2D0` | **Stride**: 4-20. |
 
 ### PE Block (TD 0x22C)
 Source: `this + 0x2E8`

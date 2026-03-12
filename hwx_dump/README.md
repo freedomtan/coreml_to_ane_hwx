@@ -86,7 +86,7 @@ Getters confirm how the hardware block views the data.
 
 M1 uses a **Linked-List** task structure with a **Stream Payload** for register configuration.
 
-### Header: `ane_td_header_h13_t` (0x28 bytes)
+### Header: `ane_header_h13_t` (0x28 bytes)
 ```c
 typedef struct {
   uint16_t tid;             // 0x000
@@ -101,7 +101,7 @@ typedef struct {
   uint32_t flags;           // 0x018
   uint32_t next_pointer;    // 0x01c
   uint32_t pad[2];          // 0x20-0x28
-} ane_td_header_h13_t;
+} ane_header_h13_t;
 ```
 
 ### Payload: Stream Parse
@@ -117,7 +117,7 @@ Immediately following the header (at offset `0x28`) is the register stream. Each
 
 M4 uses an **Aligned Array** task structure with a **Dense Instruction** format (Burst/Scatter).
 
-### Header: `ane_td_header_h16_t` (0x24 bytes)
+### Header: `ane_header_h16_t` (0x24 bytes)
 ```c
 typedef struct {
   uint16_t tid;             // 0x000
@@ -131,7 +131,7 @@ typedef struct {
   uint32_t tsr_tde_ene;     // 0x01c
   uint16_t tdid;            // 0x020
   uint16_t pad;             // 0x022
-} ane_td_header_h16_t;
+} ane_header_h16_t;
 ```
 Tasks are 16-byte aligned. If `task_size` is 0, the parser skips to the next alignment boundary.
 
@@ -161,9 +161,9 @@ Registers are grouped into functional blocks. Note the base address shift betwee
 | **L2** | `0x04800` | `0x4100` | L2 Cache and buffer management. |
 | **PE** | `0x08800` | `0x4500` | Planar Engine (Pooling, Activation). |
 | **NE** | `0x0C800` | `0x4900` | Neural Engine (Convolutions, MACC). |
-| **TileDMA Src** | `0x13800` | `0x4D00` | Tiled memory input DMA. |
-| **TileDMA Dst** | `0x17800` | `0x5100` | Tiled memory output DMA. |
-| **KernelDMA** | `0x1F800` | `0x5500` | Weight and bias loading. |
+| **TileDMASrc** | `0x13800` | `0x4D00` | Tiled memory input DMA. |
+| **TileDMADst** | `0x17800` | `0x5100` | Tiled memory output DMA. |
+| **KernelDMASrc** | `0x1F800` | `0x5500` | Weight and bias loading. |
 | **CacheDMA** | N/A | `0x5900` | Telemetry and cache management (M4+). |
 
 ## 6. Parsing Workflow

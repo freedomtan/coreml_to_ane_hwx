@@ -94,7 +94,7 @@ typedef struct __attribute__((packed)) {
     uint32_t kbe3 : 1;
     uint32_t pad : 8;
   } kbase; // 0x024
-} ane_td_header_h13_t;
+} ane_header_h13_t;
 
 typedef struct __attribute__((packed)) {
   uint16_t tid;             // 0x000
@@ -308,7 +308,7 @@ typedef struct {
   } non_linear_cfg; // Word 68 (0x5610)
 
   uint32_t pad6[3]; // Word 69-71
-} __attribute__((packed)) ane_kerneldma_src_h16_t;
+} __attribute__((packed)) ane_kerneldmasrc_h16_t;
 
 typedef struct {
   struct {
@@ -432,7 +432,7 @@ typedef struct {
   uint32_t src2pixeloff[4]; // Word 42-45
 
   uint32_t pad3[35]; // Word 46-80 (Size 81)
-} __attribute__((packed)) ane_tiledma_src_h16_t;
+} __attribute__((packed)) ane_tiledmasrc_h16_t;
 
 // [0x5100] TileDma Destination Block
 typedef struct {
@@ -473,7 +473,7 @@ typedef struct {
   uint32_t dstcompsize_hi; // Word 19
 
   uint32_t dstpixeloffset; // Word 20
-} __attribute__((packed)) ane_tiledma_dst_h16_t;
+} __attribute__((packed)) ane_tiledmadst_h16_t;
 
 // [0x4900] Neural Engine (NE) Block (M4 specific mapping)
 typedef struct {
@@ -721,7 +721,7 @@ typedef struct {
     uint32_t pad : 15;
   } pe_index_cfg;
   uint32_t res[11];
-} ane_pe_index_t;
+} ane_pe_index_h16_t;
 
 // [0x4500] Planar Engine (PE) Block (M4 specific mapping)
 typedef struct {
@@ -1035,7 +1035,7 @@ typedef struct {
 
   uint32_t pad5[(0x1f8 - 0x1cc) / 4];
 
-} __attribute__((packed)) ane_tiledma_src_h13_t;
+} __attribute__((packed)) ane_tiledmasrc_h13_t;
 
 // [0x8800] Planar Engine (PE) Block
 // Corresponds to range 0x22c-0x238 in ane_hwx.tex
@@ -1087,7 +1087,7 @@ typedef struct {
   } coeff_base_addr[16]; // 0x100 - 0x13c
 
   uint32_t coeff_bfr_size[16]; // 0x140 - 0x17c
-} __attribute__((packed)) ane_kerneldma_h13_t;
+} __attribute__((packed)) ane_kerneldmasrc_h13_t;
 
 // [0x258] TileDMA Destination Block
 typedef struct {
@@ -1146,6 +1146,6 @@ typedef struct {
     uint32_t cmp_vec : 4;
   } fmt; // 0x270
 
-} __attribute__((packed)) ane_tiledma_dst_h13_t;
+} __attribute__((packed)) ane_tiledmadst_h13_t;
 
 #endif

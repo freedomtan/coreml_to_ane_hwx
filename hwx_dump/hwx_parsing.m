@@ -326,7 +326,7 @@ void print_l2_h13(const hwx_state_t *state) {
   printf("        --- L2 (0x4800) ---\n");
   const ane_l2_h13_t *l2 =
       (const ane_l2_h13_t *)&state->values[H13_L2_START / 4];
-  printf("        L2Cfg: InputRelu=%d PaddingMode=%u\n", l2->l2cfg.input_relu,
+  printf("        L2Cfg: InputReLU=%d PaddingMode=%u\n", l2->l2cfg.input_relu,
          l2->l2cfg.padding_mode);
   printf("        L2 SourceCfg: Type=%u Dep=%u Fmt=%u Intrlv=%u CmpV=%u "
          "OffCh=%u\n",
@@ -380,10 +380,10 @@ void print_pe_h13(const hwx_state_t *state) {
   }
 }
 
-void print_tiledma_src_h13(const hwx_state_t *state) {
-  const ane_tiledma_src_h13_t *tsrc =
-      (const ane_tiledma_src_h13_t *)&state->values[H13_TILEDMA_SRC_START / 4];
-  printf("        --- TileDMA Source (0x13800) ---\n");
+void print_tiledmasrc_h13(const hwx_state_t *state) {
+  const ane_tiledmasrc_h13_t *tsrc =
+      (const ane_tiledmasrc_h13_t *)&state->values[H13_TILEDMA_SRC_START / 4];
+  printf("        --- TileDMASrc (0x13800) ---\n");
   printf("        Src1DMAConfig: En=%d CacheHint=%u DepMode=%u\n",
          tsrc->src_dma_config.en, tsrc->src_dma_config.cache_hint,
          tsrc->src_dma_config.dep_mode);
@@ -400,10 +400,10 @@ void print_tiledma_src_h13(const hwx_state_t *state) {
          tsrc->fmt.cmp_vec);
 }
 
-void print_tiledma_dst_h13(const hwx_state_t *state) {
-  const ane_tiledma_dst_h13_t *tdst =
-      (const ane_tiledma_dst_h13_t *)&state->values[H13_TILEDMA_DST_START / 4];
-  printf("        --- TileDMA Destination (0x17800) ---\n");
+void print_tiledmadst_h13(const hwx_state_t *state) {
+  const ane_tiledmadst_h13_t *tdst =
+      (const ane_tiledmadst_h13_t *)&state->values[H13_TILEDMA_DST_START / 4];
+  printf("        --- TileDMADst (0x17800) ---\n");
   printf("        DstDMAConfig: En=%d CacheHint=%u L2BfrMode=%d "
          "BypassEOW=%d\n",
          tdst->dst_dma_config.en, tdst->dst_dma_config.cache_hint,
@@ -422,10 +422,10 @@ void print_tiledma_dst_h13(const hwx_state_t *state) {
          tdst->fmt.cmp_vec);
 }
 
-void print_kerneldma_h13(const hwx_state_t *state) {
-  const ane_kerneldma_h13_t *k =
-      (const ane_kerneldma_h13_t *)&state->values[H13_KERNELDMA_START / 4];
-  printf("        --- KernelDMA (0x1F800) ---\n");
+void print_kerneldmasrc_h13(const hwx_state_t *state) {
+  const ane_kerneldmasrc_h13_t *k =
+      (const ane_kerneldmasrc_h13_t *)&state->values[H13_KERNELDMA_START / 4];
+  printf("        --- KernelDMASrc (0x1F800) ---\n");
   for (int i = 0; i < 16; i++) {
     if (k->coeff_dma_config[i].en) {
       printf("        Coeff[%d]: En=%d CacheHint=%u Base=0x%08x Size=0x%08x\n",
@@ -436,7 +436,7 @@ void print_kerneldma_h13(const hwx_state_t *state) {
 }
 
 void print_common_h16(const hwx_state_t *state) {
-  printf("        --- Common Config ---\n");
+  printf("        --- Common (0x0000) ---\n");
   ane_common_h16_t common =
       *(ane_common_h16_t *)&state->values[H16_COMMON_START / 4];
 
@@ -514,7 +514,7 @@ void print_common_h16(const hwx_state_t *state) {
 
 void print_ne_h16(const hwx_state_t *state) {
   ane_ne_h16_t ne = *(ane_ne_h16_t *)&state->values[H16_NE_START / 4];
-  printf("        --- Neural Engine Config ---\n");
+  printf("        --- Neural Engine (0x4900) ---\n");
 
   if (state->valid[H16_NE_START / 4]) {
     printf("        KernelCfg: Fmt=%s Palettized=%d (%dbit) SparseFmt=%d "
@@ -572,7 +572,7 @@ void print_ne_h16(const hwx_state_t *state) {
 
 void print_pe_h16(const hwx_state_t *state) {
   ane_pe_h16_t pe = *(ane_pe_h16_t *)&state->values[H16_PE_START / 4];
-  printf("        --- Planar Engine Config ---\n");
+  printf("        --- Planar Engine (0x4500) ---\n");
 
   if (state->valid[H16_PE_START / 4]) {
     printf("        PE Config: Op=%d Cond=%d Src1=%d Src2=%d\n", pe.pe_cfg.op,
@@ -602,7 +602,7 @@ void print_pe_index_h16(const hwx_state_t *state) {
   uint32_t addr = H16_PE_EXT_START;
   if (!state->valid[addr / 4])
     return;
-  ane_pe_index_t idx = *(ane_pe_index_t *)&state->values[addr / 4];
+  ane_pe_index_h16_t idx = *(ane_pe_index_h16_t *)&state->values[addr / 4];
   printf("        --- PE Indexing ---\n");
   printf("        PE IndexCfg: MaxIndex=%d Enable=%d\n",
          idx.pe_index_cfg.max_index, idx.pe_index_cfg.indexing_en);
@@ -610,7 +610,7 @@ void print_pe_index_h16(const hwx_state_t *state) {
 
 void print_l2_h16(const hwx_state_t *state) {
   ane_l2_h16_t l2 = *(ane_l2_h16_t *)&state->values[H16_L2_START / 4];
-  printf("        --- L2 Cache Control ---\n");
+  printf("        --- L2 (0x4100) ---\n");
 
   if (state->valid[H16_L2_START / 4]) {
     printf("        L2Control: Src1ReLU=%d Src2ReLU=%d Padding=%d "
@@ -678,10 +678,10 @@ void print_l2_h16(const hwx_state_t *state) {
   }
 }
 
-void print_tiledma_src_h16(const hwx_state_t *state) {
-  const ane_tiledma_src_h16_t *src =
-      (const ane_tiledma_src_h16_t *)&state->values[H16_TILEDMA_SRC_START / 4];
-  printf("        --- TileDMA Source (0x4D00) ---\n");
+void print_tiledmasrc_h16(const hwx_state_t *state) {
+  const ane_tiledmasrc_h16_t *src =
+      (const ane_tiledmasrc_h16_t *)&state->values[H16_TILEDMA_SRC_START / 4];
+  printf("        --- TileDMASrc (0x4D00) ---\n");
   if (state->valid[H16_TILEDMA_SRC_START / 4]) {
     printf("        Src1DMAConfig: En=%d DSID=%u Tag=%u Format=%u\n",
            src->src1cfg.en, src->src1cfg.dataset_id, src->src1cfg.user_tag,
@@ -727,10 +727,10 @@ void print_tiledma_src_h16(const hwx_state_t *state) {
   }
 }
 
-void print_tiledma_dst_h16(const hwx_state_t *state) {
-  ane_tiledma_dst_h16_t *dst =
-      (ane_tiledma_dst_h16_t *)&state->values[H16_TILEDMA_DST_START / 4];
-  printf("        --- TileDMA Destination (0x5100) ---\n");
+void print_tiledmadst_h16(const hwx_state_t *state) {
+  const ane_tiledmadst_h16_t *dst =
+      (const ane_tiledmadst_h16_t *)&state->values[H16_TILEDMA_DST_START / 4];
+  printf("        --- TileDMADst (0x5100) ---\n");
   if (state->valid[H16_TILEDMA_DST_START / 4]) {
     printf("        DstDMAConfig: En=%d CacheHint=%u DSID=%u Tag=%u\n",
            dst->dstcfg.en, dst->dstcfg.cache_hint, dst->dstcfg.dataset_id,
@@ -747,10 +747,10 @@ void print_tiledma_dst_h16(const hwx_state_t *state) {
   }
 }
 
-void print_kerneldma_h16(const hwx_state_t *state) {
-  ane_kerneldma_src_h16_t *k =
-      (ane_kerneldma_src_h16_t *)&state->values[H16_KERNELDMA_START / 4];
-  printf("        --- KernelDMA Source (0x5500) ---\n");
+void print_kerneldmasrc_h16(const hwx_state_t *state) {
+  const ane_kerneldmasrc_h16_t *k =
+      (const ane_kerneldmasrc_h16_t *)&state->values[H16_KERNELDMA_START / 4];
+  printf("        --- KernelDMASrc (0x5500) ---\n");
   if (state->valid[H16_KERNELDMA_START / 4])
     printf("        MasterConfig: MasterEnable=%d\n",
            k->master_cfg.master_enable);
@@ -784,7 +784,7 @@ void print_kerneldma_h16(const hwx_state_t *state) {
 void print_cachedma_h16(const hwx_state_t *state) {
   ane_cachedma_h16_t cdma =
       *(ane_cachedma_h16_t *)&state->values[H16_CACHEDMA_START / 4];
-  printf("        --- CacheDMA & Telemetry (0x5900) ---\n");
+  printf("        --- CacheDMASrc (0x5900) ---\n");
   if (state->valid[H16_CACHEDMA_START / 4]) {
     printf("        Control: Flush=%d En=%d TaskSync=0x%x ET=0x%x FL=%d "
            "Thresh=0x%04x\n",
@@ -827,9 +827,9 @@ void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
     print_pe_index_h16(state);
     print_pe_h16(state);
     print_l2_h16(state);
-    print_tiledma_src_h16(state);
-    print_tiledma_dst_h16(state);
-    print_kerneldma_h16(state);
+    print_tiledmasrc_h16(state);
+    print_tiledmadst_h16(state);
+    print_kerneldmasrc_h16(state);
     print_cachedma_h16(state);
 
     if (dump_reg_blocks) {
@@ -850,9 +850,9 @@ void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
     print_l2_h13(state);
     print_pe_h13(state);
     print_ne_h13(state);
-    print_tiledma_src_h13(state);
-    print_tiledma_dst_h13(state);
-    print_kerneldma_h13(state);
+    print_tiledmasrc_h13(state);
+    print_tiledmadst_h13(state);
+    print_kerneldmasrc_h13(state);
 
     if (dump_reg_blocks) {
       hwx_block_info_t blocks[] = {
@@ -911,8 +911,8 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len, uint32_t subtype,
   uint32_t offset = 0;
   int task_idx = 0;
 
-  while (offset + sizeof(ane_td_header_h13_t) <= total_len) {
-    const ane_td_header_h13_t *td = (const ane_td_header_h13_t *)(ptr + offset);
+  while (offset + sizeof(ane_header_h13_t) <= total_len) {
+    const ane_header_h13_t *td = (const ane_header_h13_t *)(ptr + offset);
     if (td->next_pointer == 0 && td->exe_cycles == 0 && td->log_events == 0) {
       break; // Hit zero padding
     }
@@ -941,17 +941,17 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len, uint32_t subtype,
     state.subtype = subtype;
 
     // Modern Stream Parse
-    if (offset + sizeof(ane_td_header_h13_t) <= total_len) {
+    if (offset + sizeof(ane_header_h13_t) <= total_len) {
       const uint32_t *words = (const uint32_t *)(td + 1);
       uint32_t max_payload_bytes =
-          (total_len > offset + sizeof(ane_td_header_h13_t))
-              ? (uint32_t)(total_len - offset - sizeof(ane_td_header_h13_t))
+          (total_len > offset + sizeof(ane_header_h13_t))
+              ? (uint32_t)(total_len - offset - sizeof(ane_header_h13_t))
               : 0;
       uint32_t num_words = max_payload_bytes / 4;
 
-      if (td->next_pointer > offset + sizeof(ane_td_header_h13_t)) {
+      if (td->next_pointer > offset + sizeof(ane_header_h13_t)) {
         uint32_t td_words =
-            (td->next_pointer - offset - sizeof(ane_td_header_h13_t)) / 4;
+            (td->next_pointer - offset - sizeof(ane_header_h13_t)) / 4;
         if (td_words < num_words) {
           num_words = td_words;
         }
@@ -980,7 +980,7 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len, uint32_t subtype,
       }
     }
 
-    if (offset + sizeof(ane_td_header_h13_t) <= total_len) {
+    if (offset + sizeof(ane_header_h13_t) <= total_len) {
       if (dump_json) {
         report_hwx_state_json(&state);
       } else {

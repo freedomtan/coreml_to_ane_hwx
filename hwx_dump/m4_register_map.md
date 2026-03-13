@@ -235,13 +235,13 @@ Size: 41 registers (`0xA4` bytes, `0x29` words).
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
 | **0x4100** | `+0x3a8` | **L2_Control** | **Src1ReLU**: 0, **PaddingMode**: 2-3, **Src2ReLU**: 4, **Barrier**: 16. |
-| **0x4104** | `+0x3ac` | **L2_Src1Cfg** | **SourceType**: 2-3, **DmaFormat**: 6-7, **Interleave**: 8-11, **Compression**: 25. |
-| **0x4108** | `+0x3b0` | **L2_Src2Cfg** | **SourceType**: 2-3, **Interleave**: 8-11, **Compression**: 25. |
+| **0x4104** | `+0x3ac` | **L2_Src1Cfg** | **SourceType**: 0-1, **DmaFormat**: 6-7, **Interleave**: 8-11, **Compression**: 25. |
+| **0x4108** | `+0x3b0` | **L2_Src2Cfg** | **SourceType**: 0-1, **Interleave**: 8-11, **Compression**: 25. |
 | **0x410C** | `+0x3b4` | **L2_SrcIdxCfg** | Reserved / Unknown. |
 | **0x4110-0x4120**| `+0x3b8`..`+0x3c8` | **L2_Src1** | **Base**: 0-16, **Stride**: 0-16. |
 | **0x4124-0x4134**| `+0x3cc`..`+0x3dc` | **L2_Src2** | **Base**: 0-16, **Stride**: 0-16. |
 | **0x4138-0x4144**| `+0x3e0`..`+0x3ec` | **L2_SrcIdx** | **Base**: 0-16. |
-| **0x4148** | `+0x3f0` | **L2_ResultCfg** | **BfrMode**: 3, **CropOffsetXLSBs**: 4-6, **Interleave**: 8-11, **Compression**: 25. |
+| **0x4148** | `+0x3f0` | **L2_ResultCfg** | **SourceType**: 0-1, **BfrMode**: 3, **CropOffsetXLSBs**: 4-6, **Interleave**: 8-11, **Compression**: 25. |
 | **0x414C-0x415C**| `+0x3f4`..`+0x404` | **L2_Result** | **Base**: 0-16, **Stride**: 0-16. |
 | **0x4174** | `+0x41c` | **L2_ResultWrapIdxOff**| **WrapIndex**: 0-15, **WrapOffs**: 16-31. |
 | **0x419C** | `+0x444` | **L2_ResultWrapAddr** | **WrapAddr**: 0-11, **WrapAddrOffset**: 16-26. |

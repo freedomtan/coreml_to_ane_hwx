@@ -238,11 +238,31 @@ Size: 41 registers (`0xA4` bytes, `0x29` words).
 | **0x4104** | `+0x3ac` | **Src1Cfg** | **SourceType**: 0-1, **DmaFormat**: 6-7, **Interleave**: 8-11, **Compression**: 25. |
 | **0x4108** | `+0x3b0` | **Src2Cfg** | **SourceType**: 0-1, **Interleave**: 8-11, **Compression**: 25. |
 | **0x410C** | `+0x3b4` | **SrcIdxCfg** | Reserved / Unknown. |
-| **0x4110-0x4120**| `+0x3b8`..`+0x3c8` | **Src1** | **Base**: 0-16, **Stride**: 0-16. |
-| **0x4124-0x4134**| `+0x3cc`..`+0x3dc` | **Src2** | **Base**: 0-16, **Stride**: 0-16. |
-| **0x4138-0x4144**| `+0x3e0`..`+0x3ec` | **SrcIdx** | **Base**: 0-16. |
+| **0x4110**| `+0x3b8` | **Src1Base** | **Addr**: 0-16. |
+| **0x4114**| `+0x3bc` | **Src1ChannelStride** | **Stride**: 0-16. |
+| **0x4118**| `+0x3c0` | **Src1RowStride** | **Stride**: 0-16. |
+| **0x411C**| `+0x3c4` | **Src1DepthStride** | **Stride**: 0-16. |
+| **0x4120**| `+0x3c8` | **Src1GroupStride** | **Stride**: 0-16. |
+| **0x4124**| `+0x3cc` | **Src2Base** | **Addr**: 0-16. |
+| **0x4128**| `+0x3d0` | **Src2ChannelStride** | **Stride**: 0-16. |
+| **0x412C**| `+0x3d4` | **Src2RowStride** | **Stride**: 0-16. |
+| **0x4130**| `+0x3d8` | **Src2DepthStride** | **Stride**: 0-16. |
+| **0x4134**| `+0x3dc` | **Src2GroupStride** | **Stride**: 0-16. |
+| **0x4138**| `+0x3e0` | **SrcIdxBase** | **Addr**: 0-16. |
+| **0x413C**| `+0x3e4` | **SrcIdxChannelStride** | **Stride**: 0-16. |
+| **0x4140**| `+0x3e8` | **SrcIdxRowStride** | **Stride**: 0-16. |
+| **0x4144**| `+0x3ec` | **SrcIdxDepthStride** | **Stride**: 0-16. |
 | **0x4148** | `+0x3f0` | **ResultCfg** | **SourceType**: 0-1, **BfrMode**: 3, **CropOffsetXLSBs**: 4-6, **Interleave**: 8-11, **Compression**: 25. |
-| **0x414C-0x415C**| `+0x3f4`..`+0x404` | **Result** | **Base**: 0-16, **Stride**: 0-16. |
+| **0x414C**| `+0x3f4` | **ResultBase** | **Addr**: 0-16. |
+| **0x4150**| `+0x3f8` | **ResultChannelStride** | **Stride**: 0-16. |
+| **0x4154**| `+0x3fc` | **ResultRowStride** | **Stride**: 0-16. |
+| **0x4158**| `+0x400` | **ResultDepthStride** | **Stride**: 0-16. |
+| **0x415C**| `+0x404` | **ResultGroupStride** | **Stride**: 0-16. |    
+| **0x4160**| `+0x408` | **ResultWrapBase** | **Addr**: 0-16. |
+| **0x4164**| `+0x40c` | **ResultWrapCfg** | **SourceType**: 0-1, **Interleave**: 8-11. |
+| **0x4168**| `+0x410` | **ResultWrapRowStride** | **Stride**: 0-16. |
+| **0x416C**| `+0x414` | **ResultWrapDepthStride** | **Stride**: 0-16. |
+| **0x4170**| `+0x418` | **ResultWrapGroupStride** | **Stride**: 0-16. |
 | **0x4174** | `+0x41c` | **ResultWrapIdxOff**| **WrapIndex**: 0-15, **WrapOffs**: 16-31. |
 | **0x419C** | `+0x444` | **ResultWrapAddr** | **WrapAddr**: 0-11, **WrapAddrOffset**: 16-26. |
 

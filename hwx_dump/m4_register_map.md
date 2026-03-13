@@ -17,15 +17,16 @@ Before registers, there are some header words.
 
 | Source Offset (`this`) | Name | Description | Note |
 | :--- | :--- | :--- | :--- |
-| `+0x008` | `TID / TaskSize` | TID (bits 0-15), TaskSize (bits 16-26). | Headers[0] |
-| `+0x00c` | `ExeCycles` | Estimated execution cycle count. | Headers[1] |
-| `+0x010` | `LogEvents` | Log events | Headers[2] |
-| `+0x014` | `Exceptions` | Hardware exceptions mask. | Headers[3] |
-| `+0x018` | `DebugLogEvents`| Debug logging. | Headers[4] |
-| `+0x01c` | `DebugExceptions`| Debug exception flags. | Headers[5] |
-| `+0x020` | `LiveOuts` | Reference count for output buffers. | Headers[6] |
-| `+0x024` | `Flags` | TSR (0), TDE (1), ENE (16-18). | Headers[7] |
-| `+0x028` | `DTID` | DTID (0-15) | Headers[8] |
+| `+0x008` | `TID / TaskSize` | TID (0-15), TaskSize (bits 16-26). | Headers[0] |
+| `+0x00c` | `ExeCycles` | ExeCycles (0-16) / estimated execution cycle count. | Headers[1] |
+| `+0x010` | `LogEvents` | LogEvents (0-23) | Headers[2] |
+| `+0x014` | `Exceptions` | Exceptions (0-23) | Headers[3] |
+| `+0x018` | `DebugLogEvents`| DebugLogEvents (0-23) | Headers[4] |
+| `+0x01c` | `DebugExceptions`| DebugExceptions (0-23) | Headers[5] |
+| `+0x020` | `LiveOuts` | LiveOuts (0-23) | Headers[6] |
+| `+0x024` | `UnknownFlags` | Full 32-bit flags overwrite. | Headers[7] |
+| `+0x028` | `Control Flags`| TSR (0), TDE (1), Unknown (3), ENE (16-18). | Headers[8] |
+| `+0x02c` | `DTID` | DTID (0-15). | Headers[9] |
 
 ## Register Offsets and Meanings
 
@@ -44,9 +45,9 @@ Before registers, there are some header words.
 | **10** | `0x28` | **ConvCfg** | 2D Kernel (KW:0-5, KH:6-11), Stride (SX:13-14, SY:15-16), Padding (PX:17-21, PY:22-26), Offset (OX:28-29, OY:30-31). (Object `+0x220` / `0x44` words into M4 block). |
 | **11** | `0x2C` | **ConvCfg3d** | 3D Kernel (KD, SZ, PZ, OZ). (Object `+0x224` / `0x45` words). |
 | **13** | `0x34` | **TileHeight** | Height of the processing tile. |
-| **15** | `0x3C` | **MacCfg** | TaskType (4:7), ActiveNE (19:21), OutTrans (28). |
-| **16** | `0x40` | **LaneCfg** | OCGSize (0:2). |
-| **17** | `0x44` | **Patch** | PW (0:3), PH (4:8). |
+| **15** | `0x3C` | **MacCfg** | TaskType (4-7), ActiveNE (19-21), OutTrans (28). |
+| **16** | `0x40` | **LaneCfg** | OCGSize (0-2). |
+| **17** | `0x44` | **Patch** | PW (0-3), PH (4-8). |
 | **18** | `0x48` | **PERouting** | Broadcast/Transpose bits (OutTrans Bit 10). |
 | ... | ... | ... | ... |
 | **0x1240** | `0x4900` | **KernelCfg** | Primary kernel configuration (Fmt, Sparse, Palettization, Align). |
@@ -91,7 +92,7 @@ Size: 21 registers (`0x15` words, `0x54` bytes). Dictates fundamental geometries
 | **0x003C** | `+0x234` | **MacCfg** | **SmallSrcMode**: 2-3, **TaskType**: 4-7, **ActiveNE**: 19-21, **L2Barrier**: 23, **OutTranspose**: 28. |
 | **0x0040** | `+0x238` | **LaneCfg** | **OCGSize**: Bits 0-2 (1=16, 2=32, 4=64). |
 | **0x0044** | `+0x23c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
-| **0x0048** | `+0x240` | **PERouting** | **Broadcasts**: Src1[W:0, H:1, D:2, C:3], Src2[W:4, H:5, D:6, C:7]. **Transposes**: Src1:8, Src2:9, Output:10. |
+| **0x0048** | `+0x240` | **PERouting** | **Broadcasts**: Src1[W(0), H(1), D(2), C(3)], Src2[W(4), H(5), D(6), C(7)]. **Transposes**: Src1(8), Src2(9), Output(10). |
 | **0x004C** | `+0x244` | **NID** | Network ID / Layer Trace ID. |
 | **0x0050** | `+0x248` | **DPE** | Distributed Processing Element config. |
 

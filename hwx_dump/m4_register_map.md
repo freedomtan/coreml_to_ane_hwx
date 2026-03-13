@@ -235,8 +235,8 @@ Size: 41 registers (`0xA4` bytes, `0x29` words).
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
 | **0x4100** | `+0x3a8` | **Control** | **Src1ReLU**: 0, **PaddingMode**: 2-3, **Src2ReLU**: 4, **Barrier**: 16. |
-| **0x4104** | `+0x3ac` | **Src1Cfg** | **SourceType**: 0-1, **DmaFormat**: 6-7, **Interleave**: 8-11, **Compression**: 25. |
-| **0x4108** | `+0x3b0` | **Src2Cfg** | **SourceType**: 0-1, **Interleave**: 8-11, **Compression**: 25. |
+| **0x4104** | `+0x3ac` | **Src1Cfg** | **SourceType**: 0-1, **AliasConvSrc**: 4, **AliasConvRslt**: 5, **DmaFormat**: 6-7, **Interleave**: 8-11, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22, **Compression**: 25-26. |
+| **0x4108** | `+0x3b0` | **Src2Cfg** | **SourceType**: 0-1, **AliasConvSrc**: 4, **AliasConvRslt**: 5, **DmaFormat**: 6-7, **Interleave**: 8-11, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22, **Compression**: 25-26. |
 | **0x410C** | `+0x3b4` | **SrcIdxCfg** | Reserved / Unknown. |
 | **0x4110**| `+0x3b8` | **Src1Base** | **Addr**: 0-16. |
 | **0x4114**| `+0x3bc` | **Src1ChannelStride** | **Stride**: 0-16. |
@@ -252,7 +252,7 @@ Size: 41 registers (`0xA4` bytes, `0x29` words).
 | **0x413C**| `+0x3e4` | **SrcIdxChannelStride** | **Stride**: 0-16. |
 | **0x4140**| `+0x3e8` | **SrcIdxRowStride** | **Stride**: 0-16. |
 | **0x4144**| `+0x3ec` | **SrcIdxDepthStride** | **Stride**: 0-16. |
-| **0x4148** | `+0x3f0` | **ResultCfg** | **SourceType**: 0-1, **BfrMode**: 3, **CropOffsetXLSBs**: 4-6, **Interleave**: 8-11, **Compression**: 25. |
+| **0x4148** | `+0x3f0` | **ResultCfg** | **SourceType**: 0-1, **BfrMode**: 3, **CropOffsetXLSBs**: 4-6, **DmaFormat**: 6-7, **Interleave**: 8-11, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22, **Compression**: 25-26. |
 | **0x414C**| `+0x3f4` | **ResultBase** | **Addr**: 0-16. |
 | **0x4150**| `+0x3f8` | **ResultChannelStride** | **Stride**: 0-16. |
 | **0x4154**| `+0x3fc` | **ResultRowStride** | **Stride**: 0-16. |
@@ -265,6 +265,7 @@ Size: 41 registers (`0xA4` bytes, `0x29` words).
 | **0x4170**| `+0x418` | **ResultWrapGroupStride** | **Stride**: 0-16. |
 | **0x4174** | `+0x41c` | **ResultWrapIdxOff**| **WrapIndex**: 0-15, **WrapOffs**: 16-31. |
 | **0x419C** | `+0x444` | **ResultWrapAddr** | **WrapAddr**: 0-11, **WrapAddrOffset**: 16-26. |
+| **0x41A0** | `+0x448` | **SourceOffset** | **Src1OffsetX**: 0-5, **Src1OffsetY**: 8-12, **Src2OffsetX**: 16-21, **Src2OffsetY**: 24-28. |
 
 #### L2 Wrap Constraints:
 - **0x4164**: **ResultWrapCfg**

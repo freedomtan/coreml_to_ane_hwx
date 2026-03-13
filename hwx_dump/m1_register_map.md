@@ -40,7 +40,7 @@ Source: `this + 0x008`
 | **0x014** | **Header[5]** | `this + 0x01C` | **DebugExceptions**: 0-23. |
 | **0x018** | **Header[6]** | `this + 0x020` | **TQDis**: 31, **DstLoc**: 29, **SrcLoc**: 28, **TDE**: 24, **NextPriority**: 16-21, **TSE**: 15, **DPC**: 14, **SPC**: 13, **TSR**: 12, **SPL**: 11, **KPC**: 10, **TDSkip**: 9, **DisallowAbort**: 8. |
 | **0x01C** | **Header[7]** | `this + 0x024` | **NextPointer**: 0-31. |
-| **0x020** | **Header[8]** | `this + 0x028` | **RBase0**: 0-4, **RBE0**: 5, **RBase1**: 6-10, **RBE1**: 11, **WBase**: 12-16**WBE**: 17, **TBase**: 18-22, **TBE**: 23, **ENE**: 24-27. |
+| **0x020** | **Header[8]** | `this + 0x028` | **RBase0**: 0-4, **RBE0**: 5, **RBase1**: 6-10, **RBE1**: 11, **WBase**: 12-16, **WBE**: 17, **TBase**: 18-22, **TBE**: 23, **ENE**: 24-27. |
 | **0x024** | **Header[9]** | `this + 0x02C` | **KBase0**: 0-4, **KBE0**: 5, **KBase1**: 6-10, **KBE1**: 11, **KBase2**: 12-16, **KBE2**: 17, **KBase3**: 18-2, **KBE3**: 23. |
 | **0x028** | **Header[10]** | `this + 0x030` | **DTID**: 0-15. |
 

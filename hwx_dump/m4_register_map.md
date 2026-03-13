@@ -145,9 +145,9 @@ Size: 81 registers (`0x51` words, `0x144` bytes).
 | **0x4D00** | `+0x25c` | **Src1DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **Format**: 24-27. |
 | **0x4D04** | `+0x260` | **Src2DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **DependencyMode**: 28-29. |
 | **0x4D08** | `+0x264` | **Src1BaseAddrLo** | **AddrLo**: 0-31. |
-| **0x4D0C** | `+0x268` | **Src1BaseAddrHi** | **AddrHi**: 32-63. |
+| **0x4D0C** | `+0x268` | **Src1BaseAddrHi** | **AddrHi**: 0-31. |
 | **0x4D10** | `+0x26c` | **Src2BaseAddrLo** | **AddrLo**: 0-31. |
-| **0x4D14** | `+0x270` | **Src2BaseAddrHi** | **AddrHi**: 32-63. |
+| **0x4D14** | `+0x270` | **Src2BaseAddrHi** | **AddrHi**: 0-31. |
 | **0x4D18** | `+0x274` | **Src1RowStride** | **Stride**: 6-31. |
 | **0x4D1C** | `+0x278` | **Src1PlaneStride** | **Stride**: 6-31. |
 | **0x4D20** | `+0x27c` | **Src1DepthStride** | **Stride**: 6-31. |
@@ -160,10 +160,10 @@ Size: 81 registers (`0x51` words, `0x144` bytes).
 | **0x4D3C** | `+0x298` | **Src2GroupStride** | **Stride**: 6-31. |
 | **0x4D40** | `+0x29c` | **Src1MetaDataConfig**| MetaData Enable/Flags. |
 | **0x4D50** | `+0x2ac` | **Src1MetaDataAddrLo**| **AddrLo**: 0-31. |
-| **0x4D54** | `+0x2b0` | **Src1MetaDataAddrHi**| **AddrHi**: 32-63. |
+| **0x4D54** | `+0x2b0` | **Src1MetaDataAddrHi**| **AddrHi**: 0-31. |
 | **0x4D58** | `+0x2b4` | **Src1MetaDataSize** | MetaData Size / Config. |
 | **0x4D5C** | `+0x2b8` | **Src2MetaDataAddrLo**| **AddrLo**: 0-31. |
-| **0x4D60** | `+0x2bc` | **Src2MetaDataAddrHi**| **AddrHi**: 32-63. |
+| **0x4D60** | `+0x2bc` | **Src2MetaDataAddrHi**| **AddrHi**: 0-31. |
 | **0x4D64** | `+0x2c0` | **Src2MetaDataSize** | MetaData Size / Config. |
 | **0x4D68** | `+0x2c4` | **Src1Fmt** | **Interleave**: 12-13. |
 | **0x4D6C** | `+0x2c8` | **Src2Fmt** | **Interleave**: 12-13. |
@@ -178,7 +178,7 @@ Size: 21 registers (`0x15` words, `0x54` bytes).
 | **0x5100** | `+0x4d0` | **DstDMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23. |
 | **0x5104** | `+0x4d4` | **DstPadding** | Reserved / Padding Mode. |
 | **0x5108** | `+0x4d8` | **DstBaseAddrLo** | **AddrLo**: 0-31. |
-| **0x510C** | `+0x4dc` | **DstBaseAddrHi** | **AddrHi**: 32-63. |
+| **0x510C** | `+0x4dc` | **DstBaseAddrHi** | **AddrHi**: 0-31. |
 | **0x5110** | `+0x4e0` | **DstRowStride** | **Stride**: 6-31. |
 | **0x5114** | `+0x4e4` | **DstPlaneStride** | **Stride**: 6-31. |
 | **0x5118** | `+0x4e8` | **DstDepthStride** | **Stride**: 6-31. |
@@ -186,10 +186,10 @@ Size: 21 registers (`0x15` words, `0x54` bytes).
 | **0x5120** | `+0x4f0` | **DstInternalCfg**| **InternalBits**: 0-15, **Flag1**: 16, **Flag2**: 17, **Flag3**: 18. |
 | **0x5124** | `+0x4f4` | **DstReserved1** | Unknown. |
 | **0x5128** | `+0x4f8` | **DstMetaDataAddrLo**| **AddrLo**: 0-31. |
-| **0x512C** | `+0x4fc` | **DstMetaDataAddrHi**| **AddrHi**: 32-63. |
+| **0x512C** | `+0x4fc` | **DstMetaDataAddrHi**| **AddrHi**: 0-31. |
 | **0x5130** | `+0x500` | **DstFormatMode** | **FormatMode**: 0-1, **MetaDataSize**: 7-31. |
 | **0x5148** | `+0x518` | **DstCompSizeLo** | **SizeLo**: 0-31. |
-| **0x514C** | `+0x51c` | **DstCompSizeHi** | **SizeHi**: 32-63. |
+| **0x514C** | `+0x51c` | **DstCompSizeHi** | **SizeHi**: 0-31. |
 | **0x5150** | `+0x520` | **DstPixelOffset** | Cropping Offset. |
 
 ### CacheDMA / Telemetry (0x5900 block, Object `+0x52c`)

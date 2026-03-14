@@ -89,8 +89,8 @@ Size: 21 registers (`0x15` words, `0x54` bytes). Dictates fundamental geometries
 | **0x0030** | `+0x228` | **UnicastCfg** | **UnicastEn**: 0, **UnicastCin**: 4-17. |
 | **0x0034** | `+0x22c` | **TileHeight** | **TileHeight**: 0-15. |
 | **0x0038** | `+0x230` | **TileOverlap** | **PadBottom**: 0-5, **PadTop**: 6-11, **Overlap**: 12-25. |
-| **0x003C** | `+0x234` | **MacCfg** | **SmallSrcMode**: 2-3, **TaskType**: 4-7, **ActiveNE**: 19-21, **L2Barrier**: 23, **OutTranspose**: 28. |
-| **0x0040** | `+0x238` | **LaneCfg** | **OCGSize**: 0-2 (1=16, 2=32, 4=64). |
+| **0x003C** | `+0x234` | **MacCfg** | **SmallSrcMode**: 2-3, **TaskType**: 4-7, **ActiveNE**: 19-21, **OutTranspose**: 28, **FillLowerNEFirst**: 29. |
+| **0x0040** | `+0x238` | **LaneCfg** | **OCGSize**: 0-2 (1=16, 2=32, 4=64), **FatTileEnable**: 3, **WUStackLog2**: 4-5. |
 | **0x0044** | `+0x23c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
 | **0x0048** | `+0x240` | **PERouting** | **Broadcasts**: Src1[W(0), H(1), D(2), C(3)], Src2[W(4), H(5), D(6), C(7)]. **Transposes**: Src1(8), Src2(9), Output(10). |
 | **0x004C** | `+0x244` | **NID** | Network ID / Layer Trace ID. |
@@ -105,17 +105,17 @@ Size: 12 registers (`0x30` bytes).
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4900** | `+0x498` | **KernelCfg** | **KernelFmt**: 0-1, **PalettizedEn**: 2, **PalettizedBits**: 4-7. |
-| **0x4904** | `+0x49c` | **MACCfg** | **OpMode**: 0-2, **KernelMode**: 3, **NEBiasEnable**: 4. |
+| **0x4900** | `+0x498` | **KernelCfg** | **KernelFmt**: 0-1, **PalEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **GroupKernelReuse**: 10, **SparseBinary**: 15, **AsymQuantEn**: 24. |
+| **0x4904** | `+0x49c` | **MACCfg** | **OpMode**: 0-2, **KernelMode**: 3, **BiasEnable**: 4, **PassthroughEnable**: 5, **MatrixVectorBiasEnable**: 6, **BinaryPoint**: 8-13, **PostScaleEnable**: 14, **NonlinearMode**: 16-17, **DoubleInt8Enable**: 26. |
 | **0x4908** | `+0x4a0` | **MatrixVectorBias**| **Bias**: 0-15. |
-| **0x490C** | `+0x4a4` | **NEBias** | **Bias**: 0-20. |
-| **0x4910** | `+0x4a8` | **NEPostScale** | **PostScale**: 0-20. |
-| **0x4914** | `+0x4ac` | **RcasConfig** | **KeyMask**: 0-7, **CmpBit**: 8-10. |
-| **0x4918** | `+0x4b0` | **RoundModeCfg** | **StochasticRoundMode**: 0-1. |
-| **0x491C** | `+0x4b4` | **SRSeed[0]**| Seed word 0. |
-| **0x4920** | `+0x4b8` | **SRSeed[1]**| Seed word 1. |
-| **0x4924** | `+0x4bc` | **SRSeed[2]**| Seed word 2. |
-| **0x4928** | `+0x4c0` | **SRSeed[3]**| Seed word 3. |
+| **0x490C** | `+0x4a4` | **NEBias** | **Bias**: 0-20 (F19/F21). |
+| **0x4910** | `+0x4a8` | **NEPostScale** | **PostScale**: 0-20 (F19/F21). |
+| **0x4914** | `+0x4ac` | **RcasConfig** | **KeyMask**: 0-7, **CmpBit**: 8-10, **SenseAxis**: 12-13, **SenseBit**: 16-19, **RcasMode**: 20. |
+| **0x4918** | `+0x4b0` | **RoundModeCfg** | **StochasticRoundMode**: 0-1, **StochasticRoundIntegerBits**: 4-8. |
+| **0x491C** | `+0x4b4` | **SRSeed[0]**| **Seed**: 0-31 (Relocations suggest 16-bit granularity). |
+| **0x4920** | `+0x4b8` | **SRSeed[1]**| **Seed**: 0-31. |
+| **0x4924** | `+0x4bc` | **SRSeed[2]**| **Seed**: 0-31. |
+| **0x4928** | `+0x4c0` | **SRSeed[3]**| **Seed**: 0-31. |
 | **0x492C** | `+0x4c4` | **QuantZeroPoint** | **ZeroPoint**: 0-7. |
 
 ##### KernelDmaSrc (0x5500 block, Object `+0x030`)
@@ -303,16 +303,16 @@ The compiler maintains a set of statically defined traits for the M4 architectur
 
 | Trait Symbol | Hex Value | Decimal | Block Affiliation |
 | --- | --- | --- | --- |
+| `ANE_L2_SOURCE2_CHANNEL_STRIDE_OFFSET` | `0x4128` | `16680` | Src2 Base Channel Stride |
+| `ANE_L2_RESULT_CHANNEL_STRIDE_OFFSET` | `0x4150` | `16720` | Result Group Stride |
 | `ANE_TILE_DMA_SRC_PLANE_STRIDE_OFFSET` | `0x4D1C` | `19740` | TileDmaSrc1 Channel Stride |
 | `ANE_TILE_DMA_SRC_DEPTH_STRIDE_OFFSET` | `0x4D20` | `19744` | TileDmaSrc1 Depth Stride |
 | `ANE_TILE_DMA_SRC_GROUP_STRIDE_OFFSET` | `0x4D24` | `19748` | TileDmaSrc1 Group Stride |
 | `ANE_TILE_DMA_SRC_PLANE_STRIDE2_OFFSET` | `0x4D34` | `19764` | TileDmaSrc2 Channel Stride |
 | `ANE_TILE_DMA_SRC_DEPTH_STRIDE2_OFFSET` | `0x4D38` | `19768` | TileDmaSrc2 Depth Stride |
 | `ANE_TILE_DMA_SRC_GROUP_STRIDE2_OFFSET` | `0x4D3C` | `19772` | TileDmaSrc2 Group Stride |
-| `ANE_L2_SOURCE2_CHANNEL_STRIDE_OFFSET` | `0x4128` | `16680` | Src2 Base Channel Stride |
 | `ANE_TILE_DMA_DST_PLANE_STRIDE_OFFSET` | `0x5114` | `20756` | TileDmaDst Channel Stride |
 | `ANE_TILE_DMA_DST_DEPTH_STRIDE_OFFSET` | `0x5118` | `20760` | TileDmaDst Depth Stride |
 | `ANE_TILE_DMA_DST_GROUP_STRIDE_OFFSET` | `0x511C` | `20764` | TileDmaDst Group Stride |
-| `ANE_L2_RESULT_CHANNEL_STRIDE_OFFSET` | `0x4150` | `16720` | Result Group Stride |
 
 *(Note: In the ANE nomenclature, "Plane" defines the Channel spacing offset.)*

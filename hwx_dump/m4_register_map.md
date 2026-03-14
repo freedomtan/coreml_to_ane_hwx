@@ -214,25 +214,25 @@ Size: 15 registers (`0xf` words, `0x3c` bytes).
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4500** | `+0x454` | **PE_Config** | **Op**: 2-4 (1:Add, 2:Mul, 3:Min, 4:Max), **LUTEnable**: 5, **Cond**: 6-8, **Src1Selection**: 16, **Src2Selection**: 18-19. |
-| **0x4504** | `+0x458` | **PE_Bias** | 19-bit Floating Point (F19) bias value. |
-| **0x4508** | `+0x45c` | **PE_Scale** | 19-bit Floating Point (F19) scale value. |
-| **0x4510** | `+0x464` | **PE_PreScale** | 19-bit Floating Point (F19) pre-scale value. |
-| **0x4514** | `+0x468` | **PE_FinalScale** | 19-bit Floating Point (F19) final scale value. |
-| **0x4518** | `+0x46c` | **PE_LUT1** | Piecewise Linear LUT Parameter. |
-| **0x4520** | `+0x474` | **PE_LUT2** | Piecewise Linear LUT Parameter. |
-| **0x4524** | `+0x478` | **PE_LUT3** | Piecewise Linear LUT Parameter. |
-| **0x4528** | `+0x47c` | **PE_LUT4** | Piecewise Linear LUT Parameter. |
-| **0x4530** | `+0x484` | **PE_LUT5** | Piecewise Linear LUT Parameter. |
-| **0x4534** | `+0x488` | **PE_LUT6** | Piecewise Linear LUT Parameter. |
-| **0x4538** | `+0x48c` | **PE_Quant** | **Src1InputOffset**: 0-7, **Src2InputOffset**: 8-15, **OutputZeroPoint**: 16-23. |
+| **0x4500** | `+0x454` | **Config** | **Op**: 2-4 (1:Add, 2:Mul, 3:Min, 4:Max), **LUTEnable**: 5, **Cond**: 6-8, **Src1Selection**: 16, **Src2Selection**: 18-19. |
+| **0x4504** | `+0x458` | **Bias** | 19-bit Floating Point (F19) bias value. |
+| **0x4508** | `+0x45c` | **Scale** | 19-bit Floating Point (F19) scale value. |
+| **0x4510** | `+0x464` | **PreScale** | 19-bit Floating Point (F19) pre-scale value. |
+| **0x4514** | `+0x468` | **FinalScale** | 19-bit Floating Point (F19) final scale value. |
+| **0x4518** | `+0x46c` | **LUT1** | Piecewise Linear LUT Parameter. |
+| **0x4520** | `+0x474` | **LUT2** | Piecewise Linear LUT Parameter. |
+| **0x4524** | `+0x478` | **LUT3** | Piecewise Linear LUT Parameter. |
+| **0x4528** | `+0x47c` | **LUT4** | Piecewise Linear LUT Parameter. |
+| **0x4530** | `+0x484` | **LUT5** | Piecewise Linear LUT Parameter. |
+| **0x4534** | `+0x488` | **LUT6** | Piecewise Linear LUT Parameter. |
+| **0x4538** | `+0x48c` | **Quant** | **Src1InputOffset**: 0-7, **Src2InputOffset**: 8-15, **OutputZeroPoint**: 16-23. |
 
 #### PE Indexing Extension (H16_PE_EXT_START block, Object `+0x434`)
 These registers coordinate with the PE for indexing operations.
 
 | HW Addr | Index | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **H16_PE_EXT_START** | Word 0 | **PE_IndexCfg** | **MaxIndex**: 0-15, **IndexMode**: 16-18, **IndexBroadcast**: 24-25, **IndexTranspose**: 26. |
+| **H16_PE_EXT_START** | Word 0 | **IndexCfg** | **MaxIndex**: 0-15, **IndexMode**: 16-18, **IndexBroadcast**: 24-25, **IndexTranspose**: 26. |
 
 #### L2 Cache / Buffer (0x4100 block, Object `+0x3a8`)
 The L2 block handles local buffering and tensor tiling.

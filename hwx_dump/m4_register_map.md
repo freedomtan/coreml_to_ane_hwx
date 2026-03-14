@@ -92,7 +92,7 @@ Size: 21 registers (`0x15` words, `0x54` bytes). Dictates fundamental geometries
 | **0x003C** | `+0x234` | **MacCfg** | **SmallSrcMode**: 2-3, **TaskType**: 4-7, **ActiveNE**: 19-21, **OutTranspose**: 28, **FillLowerNEFirst**: 29. |
 | **0x0040** | `+0x238` | **LaneCfg** | **OCGSize**: 0-2 (1=16, 2=32, 4=64), **FatTileEnable**: 3, **WUStackLog2**: 4-5. |
 | **0x0044** | `+0x23c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
-| **0x0048** | `+0x240` | **PERouting** | **Src1Broadcast**: 0-3, **Src2Broadcast**: 4-7, **Src1Transpose**: 8, **Src2Transpose**: 9, **OutputCtoW**: 10. |
+| **0x0048** | `+0x240` | **PERouting** | **Src1Broadcast**: 0-3 (W:0, H:1, D:2, C:3), **Src2Broadcast**: 4-7 (W:4, H:5, D:6, C:7), **Src1Transpose**: 8, **Src2Transpose**: 9, **OutputCtoW**: 10. |
 | **0x004C** | `+0x244` | **NID** | Network ID / Layer Trace ID. |
 | **0x0050** | `+0x248` | **DPE** | Distributed Processing Element config. |
 
@@ -215,10 +215,10 @@ Size: 15 registers (`0xf` words, `0x3c` bytes).
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
 | **0x4500** | `+0x454` | **Config** | **Op**: 2-4 (1:Add, 2:Mul, 3:Min, 4:Max), **LUTEnable**: 5, **Cond**: 6-8, **Src1Selection**: 16, **Src2Selection**: 18-19. |
-| **0x4504** | `+0x458` | **Bias** | 19-bit Floating Point (F19) bias value. |
-| **0x4508** | `+0x45c` | **Scale** | 19-bit Floating Point (F19) scale value. |
-| **0x4510** | `+0x464` | **PreScale** | 19-bit Floating Point (F19) pre-scale value. |
-| **0x4514** | `+0x468` | **FinalScale** | 19-bit Floating Point (F19) final scale value. |
+| **0x4504** | `+0x458` | **Bias** | 19-bit Floating Point (F19) bias value (Bits 0-18). |
+| **0x4508** | `+0x45c` | **Scale** | 19-bit Floating Point (F19) scale value (Bits 0-18). |
+| **0x4510** | `+0x464` | **PreScale** | 19-bit Floating Point (F19) pre-scale value (Bits 0-18). |
+| **0x4514** | `+0x468` | **FinalScale** | 19-bit Floating Point (F19) final scale value (Bits 0-18). |
 | **0x4518** | `+0x46c` | **LUT1** | Piecewise Linear LUT Parameter. |
 | **0x4520** | `+0x474` | **LUT2** | Piecewise Linear LUT Parameter. |
 | **0x4524** | `+0x478` | **LUT3** | Piecewise Linear LUT Parameter. |

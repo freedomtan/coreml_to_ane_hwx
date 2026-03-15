@@ -241,9 +241,9 @@ Size: 41 registers (`0xA4` bytes, `0x29` words).
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
 | **0x4100** | `+0x3a8` | **Control** | **Src1ReLU**: 0, **PaddingMode**: 2-3, **Src2ReLU**: 4, **Barrier**: 16. |
-| **0x4104** | `+0x3ac` | **Src1Cfg** | **Type**: 0-1, **Format**: 6-7, **Interleave**: 8-11, **Compression**: 25-26. |
-| **0x4108** | `+0x3b0` | **Src2Cfg** | **Type**: 0-1, **Format**: 6-7, **Interleave**: 8-11, **Compression**: 25-26. |
-| **0x410C** | `+0x3b4` | **SrcIdxCfg** | **Type**: 0-1, **Format**: 6-7, **Interleave**: 8-11. |
+| **0x4104** | `+0x3ac` | **Src1Cfg** | **Type**: 0-1, **Dependent**: 2-3, **AliasConvSrc**: 4, **AliasConvRslt**: 5, **Format**: 6-7, **Interleave**: 8-11, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22, **Compression**: 25-26. |
+| **0x4108** | `+0x3b0` | **Src2Cfg** | **Type**: 0-1, **Dependent**: 2-3, **AliasConvSrc**: 4, **AliasConvRslt**: 5, **Format**: 6-7, **Interleave**: 8-11, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22, **Compression**: 25-26. |
+| **0x410C** | `+0x3b4` | **SrcIdxCfg** | **Type**: 0-1, **Dependent**: 2-3, **AliasConvSrc**: 4, **AliasConvRslt**: 5, **Format**: 6-7, **Interleave**: 8-11, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22, **Bit27**: 27. |
 | **0x4110** | `+0x3b8` | **Src1Base** | **Addr**: 4-20 (16B units). |
 | **0x4114** | `+0x3bc` | **Src1ChannelStride**| **Stride**: 4-20 (16B units). |
 | **0x4118** | `+0x3c0` | **Src1RowStride** | **Stride**: 4-20 (16B units). |
@@ -256,9 +256,9 @@ Size: 41 registers (`0xA4` bytes, `0x29` words).
 | **0x4134** | `+0x3dc` | **Src2GroupStride** | **Stride**: 4-20 (16B units). |
 | **0x4138** | `+0x3e0` | **SrcIdxBase** | **Addr**: 4-20 (16B units). |
 | **0x413C** | `+0x3e4` | **SrcIdxChStride** | **Stride**: 4-20 (16B units). |
-| **0x4140** | `+0x3e8` | **SrcIdxGrpStride** | **Stride**: 4-20 (16B units). |
-| **0x4144** | `+0x3ec` | **SrcIdxDepStride** | **Stride**: 4-20 (16B units). |
-| **0x4148** | `+0x3f0` | **ResultCfg** | **Type**: 0-1, **BfrMode**: 3, **CropOffsetXLSBs**: 4-6, **Format**: 6-7, **Interleave**: 8-11, **Compression**: 25-26. |
+| **0x4140** | `+0x3e8` | **SrcIdxDepStride** | **Stride**: 4-20 (16B units). |
+| **0x4144** | `+0x3ec` | **SrcIdxGrpStride** | **Stride**: 4-20 (16B units). |
+| **0x4148** | `+0x3f0` | **ResultCfg** | **Type**: 0-1, **BfrMode**: 3, **SrcAlias**: 4, **ResultAlias**: 5, **Format**: 6-7, **Interleave**: 8-11, **Compression**: 25-26. |
 | **0x414C** | `+0x3f4` | **ResultBase** | **Addr**: 4-20 (16B units). |
 | **0x4150** | `+0x3f8` | **ResultChStride** | **Stride**: 4-20 (16B units). |
 | **0x4154** | `+0x3fc` | **ResultRowStride** | **Stride**: 4-20 (16B units). |
@@ -270,55 +270,74 @@ Size: 41 registers (`0xA4` bytes, `0x29` words).
 | **0x416C** | `+0x414` | **Src2WrapStride** | **Stride**: 16-31. |
 | **0x4170** | `+0x418` | **ResultWrapStride**| **Stride**: 16-31. |
 | **0x4174** | `+0x41c` | **ResultWrapIdxOff** | **WrapIndex**: 0-15, **WrapStartOffs**: 16-31. |
-| **0x4178** | `+0x420` | **Result2Cfg** | **SourceType**: 0-1, **Format**: 6-7, **Interleave**: 8-11. |
-| **0x417C** | `+0x424` | **Result2Base** | **Addr**: 0-16. |
-| **0x4180** | `+0x428` | **Result2ChStride** | **Stride**: 0-17. |
-| **0x4184** | `+0x42c` | **Result2RowStride** | **Stride**: 0-16. |
-| **0x4188** | `+0x430` | **Result2DepStride** | **Stride**: 0-17. |
-| **0x418C** | `+0x434` | **Result2GrpStride** | **Stride**: 0-17. |
+| **0x4178** | `+0x420` | **PEIndexCfg** | **0To17**: 0-17. |
+| **0x417C** | `+0x424` | **PEIndexUknownCfg0** | **0To16**: 0-16, **17**: 17, **18To31**: 18-31. |
+| **0x4180** | `+0x428` | **PEIndexUknownCfg1** | **0To17**: 0-17. |
+| **0x4184** | `+0x42c` | **PEIndexUknownCfg2** | **0To16**: 0-16, **17**: 17, **18To31**: 18-31. |
+| **0x4188** | `+0x430` | **PEIndexUknownCfg3** | **0To17**: 0-17. |
+| **0x418C** | `+0x434` | **PEIndexSetting** | **MaxIndex**: 0-15, **IndexMode**: 16-18, **IndexBroadcast**: 24-25, **IndexTranspose**: 26. |
 | **0x4190** | `+0x438` | **Src1AddrWrap** | **WrapAddr**: 0-11. |
 | **0x4194** | `+0x43c` | **Src2AddrWrap** | **WrapAddr**: 0-11. |
 | **0x419C** | `+0x444` | **ResultWrapAddr** | **WrapAddr**: 0-11. |
 | **0x41A0** | `+0x448` | **ConsolidatedOff** | **Src1X**: 0-5, **Src1Y**: 8-12, **Src2X**: 16-21, **Src2Y**: 24-28. |
 
 #### L2 Wrap Constraints:
-- **0x4164**: **ResultWrapCfg**
-- **0x4174**: **ResultWrapIdxOff**
-- **0x419C**: **ResultWrapAddr**
+- `0x4164`: **ResultWrapCfg**
+- `0x4174`: **ResultWrapIdxOff**
+- `0x419C`: **ResultWrapAddr**
 
 ### Cross-Cutting Subsystems: Quantization
 Certain high-level configurations, like Quantization, touch multiple disparate hardware blocks simultaneously to coordinate data scaling and types across the pipeline. As decompiled from `ZinAneTd<17u>::SetQuantization*` methods:
 
 **SetQuantizationSrc1InputOffset / Src2InputOffset**
-- **Common (`+0x030`)**: Format overrides (`ch_cfg`).
-- **L2 Cache (`+0x1cc` / `0x4100`)**: Padding/Relu scale (`control`).
-- **Planar Engine (`+0x274`, `+0x278`, `+0x280`, `+0x284`, `+0x2a8`)**: Configures `bias`, `scale`, `pre_scale`, `final_scale`, and `quant` zero points.
+- **Common** (`+0x030`): Format overrides (`ch_cfg`).
+- **L2 Cache** (`+0x1cc` / `0x4100`): Padding/Relu scale (`control`).
+- **Planar Engine** (`+0x274`, `+0x278`, `+0x280`, `+0x284`, `+0x2a8`): Configures `bias`, `scale`, `pre_scale`, `final_scale`, and `quant` zero points.
 
 **SetQuantizationOutputZeroOffset**
-- **Neural Engine (`+0x2c8` / `0x4904`)**: Flips bit flags in `mac_cfg`.
-- **Neural Engine (`+0x2f0`)**: Writes to `quant`.
+- **Neural Engine** (`+0x2c8` / `0x4904`): Flips bit flags in `mac_cfg`.
+- **Neural Engine** (`+0x2f0`): Writes to `quant`.
 
 **SetTexture***
 The texture sampling feature (such as GatherMode) maps heavily into the extended spaces of the **TileDmaSrc** block (`0x4D00`).
-- **TileDmaSrc (`+0x2C8`)**: Used for `TextureFilter`, `TextureWrap`, and `TextureIndexTensorInterleave`.
-- **TileDmaSrc Extended (`+0x324` to `+0x33C`)**: Memory region explicitly dedicated to texture logic. Configures `ExtMax`, `Permute` (Idx, Ind, Src), `PreserveFraction`, `BackgroundEn`, and `CropBatchSplit`.
+- **TileDmaSrc** (`+0x2C8`): Used for `TextureFilter`, `TextureWrap`, and `TextureIndexTensorInterleave`.
+- **TileDmaSrc Extended** (`+0x324` to `+0x33C`): Memory region explicitly dedicated to texture logic. Configures `ExtMax`, `Permute` (Idx, Ind, Src), `PreserveFraction`, `BackgroundEn`, and `CropBatchSplit`.
 - *Note: `TextureBypassFilter` is checked via `SetTextureBypassFilter` but explicitly triggers an assertion since it is no longer supported on M4.*
 
 ## Hardware Traits (`ZinHWTraits<17u>`)
 The compiler maintains a set of statically defined traits for the M4 architecture (`17u`) that explicitly dictate the raw memory offsets of hardware components. Memory dumping `__DATA_CONST` reveals strict validation of our L2 and TileDMA address deductions:
 
+### L2 Buffer Stride Offsets
 | Trait Symbol | Hex Value | Decimal | Block Affiliation |
-| --- | --- | --- | --- |
-| `ANE_L2_SOURCE2_CHANNEL_STRIDE_OFFSET` | `0x4128` | `16680` | Src2 Base Channel Stride |
-| `ANE_L2_RESULT_CHANNEL_STRIDE_OFFSET` | `0x4150` | `16720` | Result Group Stride |
+| :--- | :--- | :--- | :--- |
+| `ANE_L2_SOURCE_CHANNEL_STRIDE_OFFSET` | `0x4114` | `16660` | Src1 Channel Stride |
+| `ANE_L2_SOURCE_ROW_STRIDE_OFFSET` | `0x4118` | `16664` | Src1 Row Stride |
+| `ANE_L2_SOURCE_DEPTH_STRIDE_OFFSET` | `0x411C` | `16668` | Src1 Depth Stride |
+| `ANE_L2_SOURCE_GROUP_STRIDE_OFFSET` | `0x4120` | `16672` | Src1 Group Stride |
+| `ANE_L2_SOURCE2_CHANNEL_STRIDE_OFFSET` | `0x4128` | `16680` | Src2 Channel Stride |
+| `ANE_L2_SOURCE2_ROW_STRIDE_OFFSET` | `0x412C` | `16684` | Src2 Row Stride |
+| `ANE_L2_SOURCE2_DEPTH_STRIDE_OFFSET` | `0x4130` | `16688` | Src2 Depth Stride |
+| `ANE_L2_SOURCE2_GROUP_STRIDE_OFFSET` | `0x4134` | `16692` | Src2 Group Stride |
+| `ANE_L2_RESULT_CHANNEL_STRIDE_OFFSET` | `0x4150` | `16720` | Result Channel Stride |
+| `ANE_L2_RESULT_ROW_STRIDE_OFFSET` | `0x4154` | `16724` | Result Row Stride |
+| `ANE_L2_RESULT_DEPTH_STRIDE_OFFSET` | `0x4158` | `16728` | Result Depth Stride |
+| `ANE_L2_RESULT_GROUP_STRIDE_OFFSET` | `0x415C` | `16732` | Result Group Stride |
+
+### Tile DMA Stride Offsets
+| Trait Symbol | Hex Value | Decimal | Block Affiliation |
+| :--- | :--- | :--- | :--- |
+| `ANE_TILE_DMA_SRC_ROW_STRIDE_OFFSET` | `0x4D18` | `19736` | TileDmaSrc1 Row Stride |
 | `ANE_TILE_DMA_SRC_PLANE_STRIDE_OFFSET` | `0x4D1C` | `19740` | TileDmaSrc1 Channel Stride |
 | `ANE_TILE_DMA_SRC_DEPTH_STRIDE_OFFSET` | `0x4D20` | `19744` | TileDmaSrc1 Depth Stride |
 | `ANE_TILE_DMA_SRC_GROUP_STRIDE_OFFSET` | `0x4D24` | `19748` | TileDmaSrc1 Group Stride |
+| `ANE_TILE_DMA_SRC_ROW_STRIDE2_OFFSET` | `0x4D30` | `19760` | TileDmaSrc2 Row Stride |
 | `ANE_TILE_DMA_SRC_PLANE_STRIDE2_OFFSET` | `0x4D34` | `19764` | TileDmaSrc2 Channel Stride |
 | `ANE_TILE_DMA_SRC_DEPTH_STRIDE2_OFFSET` | `0x4D38` | `19768` | TileDmaSrc2 Depth Stride |
 | `ANE_TILE_DMA_SRC_GROUP_STRIDE2_OFFSET` | `0x4D3C` | `19772` | TileDmaSrc2 Group Stride |
+| `ANE_TILE_DMA_DST_ROW_STRIDE_OFFSET` | `0x5110` | `20752` | TileDmaDst Row Stride |
 | `ANE_TILE_DMA_DST_PLANE_STRIDE_OFFSET` | `0x5114` | `20756` | TileDmaDst Channel Stride |
 | `ANE_TILE_DMA_DST_DEPTH_STRIDE_OFFSET` | `0x5118` | `20760` | TileDmaDst Depth Stride |
 | `ANE_TILE_DMA_DST_GROUP_STRIDE_OFFSET` | `0x511C` | `20764` | TileDmaDst Group Stride |
 
-*(Note: In the ANE nomenclature, "Plane" defines the Channel spacing offset.)*
+---
+*Verified via binary analysis of ANECompiler on macOS (A17/A18 compatible).*

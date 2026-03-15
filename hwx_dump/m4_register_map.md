@@ -74,25 +74,25 @@ Size: 21 registers (`0x15` words, `0x54` bytes). Dictates fundamental geometries
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x0000** | `+0x1f8` | **ChannelCfg** | **InFmt**: 0-1, **OutFmt**: 4-5, **Src2InFmt**: 8-9. |
-| **0x0004** | `+0x1fc` | **InWidth** | **Win**: 0-13. |
-| **0x0008** | `+0x200` | **InHeight** | **Hin**: 0-13. |
-| **0x000C** | `+0x204` | **InChannels** | **Cin**: 0-13. |
-| **0x0010** | `+0x208` | **InDepth** | **Din**: 0-13. |
-| **0x0014** | `+0x20c` | **OutWidth** | **Wout**: 0-13. |
-| **0x0018** | `+0x210` | **OutHeight** | **Hout**: 0-13. |
-| **0x001C** | `+0x214` | **OutChannels** | **Cout**: 0-13. |
-| **0x0020** | `+0x218` | **OutDepth** | **Dout**: 0-13. |
+| **0x0000** | `+0x1f8` | **ChannelCfg** | **InFmt**: 0-1, **Src2InFmt**: 2-3, **OutFmt**: 4-5. |
+| **0x0004** | `+0x1fc` | **InWidth** | **Win**: 0-16. |
+| **0x0008** | `+0x200` | **InHeight** | **Hin**: 0-16. |
+| **0x000C** | `+0x204` | **InChannels** | **Cin**: 0-16. |
+| **0x0010** | `+0x208` | **InDepth** | **Din**: 0-16. |
+| **0x0014** | `+0x20c` | **OutWidth** | **Wout**: 0-16. |
+| **0x0018** | `+0x210` | **OutHeight** | **Hout**: 0-16. |
+| **0x001C** | `+0x214` | **OutChannels** | **Cout**: 0-16. |
+| **0x0020** | `+0x218` | **OutDepth** | **Dout**: 0-16. |
 | **0x0024** | `+0x21c` | **NumGroups** | Batch size / Number of groups. |
 | **0x0028** | `+0x220` | **ConvCfg** | **KW**: 0-5, **KH**: 6-11, **SX**: 13-14, **SY**: 15-16, **PadLeft**: 17-21, **PadTop**: 22-26, **OX**: 28-29, **OY**: 30-31. |
-| **0x002C** | `+0x224` | **ConvCfg3d** | Extended paddings / 3D kernel dims. |
-| **0x0030** | `+0x228` | **UnicastCfg** | **UnicastEn**: 0, **UnicastCin**: 4-17. |
-| **0x0034** | `+0x22c` | **TileHeight** | **TileHeight**: 0-15. |
-| **0x0038** | `+0x230` | **TileOverlap** | **PadBottom**: 0-5, **PadTop**: 6-11, **Overlap**: 12-25. |
+| **0x002C** | `+0x224` | **ConvCfg3d** | **3dKd**: 0-4, **3dSz**: 6-7, **3dPz**: 8-11, **3dOz**: 13-14. |
+| **0x0030** | `+0x228` | **UnicastCfg** | **UnicastEn**: 14, **UnicastCin**: 16-31. |
+| **0x0034** | `+0x22c` | **TileHeight** | **TileHeight**: 0-16. |
+| **0x0038** | `+0x230` | **TileOverlap** | **Overlap**: 16-20, **PadTop**: 21-25, **PadBottom**: 26-30. |
 | **0x003C** | `+0x234` | **MacCfg** | **SmallSrcMode**: 2-3, **TaskType**: 4-7, **ActiveNE**: 19-21, **OutTranspose**: 28, **FillLowerNEFirst**: 29. |
-| **0x0040** | `+0x238` | **LaneCfg** | **OCGSize**: 0-2 (1=16, 2=32, 4=64), **FatTileEnable**: 3, **WUStackLog2**: 4-5. |
+| **0x0040** | `+0x238` | **NECfg** | **OCGSize**: 0-2 (1=16, 2=32, 4=64), **FatTileEnable**: 3, **WUStackLog2**: 4-5. |
 | **0x0044** | `+0x23c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
-| **0x0048** | `+0x240` | **PERouting** | **Src1Broadcast**: 0-3 (W:0, H:1, D:2, C:3), **Src2Broadcast**: 4-7 (W:4, H:5, D:6, C:7), **Src1Transpose**: 8, **Src2Transpose**: 9, **OutputCtoW**: 10. |
+| **0x0048** | `+0x240` | **PECfg** | **Src1Broadcast**: 0-3 (W:0, H:1, D:2, C:3), **Src2Broadcast**: 4-7 (W:4, H:5, D:6, C:7), **Src1Transpose**: 8, **Src2Transpose**: 9, **OutputCtoW**: 10. |
 | **0x004C** | `+0x244` | **NID** | Network ID / Layer Trace ID. |
 | **0x0050** | `+0x248` | **DPE** | Distributed Processing Element config. |
 
@@ -123,12 +123,12 @@ Size: 72 registers (`0x48` words, `0x120` bytes).
 
 | HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x5500** | `+0x030` | **KDMA_MasterConfig** | **MasterEnable**: 6. |
-| **0x5504** | `+0x034` | **KDMA_Reserved1** | Unknown. |
-| **0x5508** | `+0x038` | **KDMA_Prefetch** | **EarlyTermEn**: 0, **StopOnError**: 1, **PrefetchRate**: 16-31. |
-| **0x550C-0x5514**| `+0x03c`..`+0x044` | **KDMA_Reserved[3]** | Unknown. |
-| **0x5518** | `+0x048` | **KDMA_StrideX** | **Stride**: 6-31. |
-| **0x551C** | `+0x04c` | **KDMA_StrideY** | **Stride**: 6-31. |
+| **0x5500** | `+0x030` | **MasterConfig** | **MasterEnable**: 6. |
+| **0x5504** | `+0x034` | **Reserved1** | Unknown. |
+| **0x5508** | `+0x038` | **Prefetch** | **EarlyTermEn**: 0, **StopOnError**: 1, **PrefetchRate**: 16-31. |
+| **0x550C-0x5514**| `+0x03c`..`+0x044` | **Reserved[3]** | Unknown. |
+| **0x5518** | `+0x048` | **StrideX** | **Stride**: 6-31. |
+| **0x551C** | `+0x04c` | **StrideY** | **Stride**: 6-31. |
 | **0x5520-0x555C**| `+0x050`..`+0x08c` | **CoeffDMAConfig[16]**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
 | **0x5560-0x559C**| `+0x090`..`+0x0cc` | **CoeffBaseAddr[16]** | **Addr**: 6-31. |
 | **0x55A0-0x55DC**| `+0x0d0`..`+0x10c` | **CoeffBfrSize[16]** | **Size**: 0-31. |

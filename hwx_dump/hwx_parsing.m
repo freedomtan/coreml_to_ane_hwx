@@ -76,7 +76,7 @@ const char *get_m4_reg_name(uint32_t addr) {
       "ChannelCfg", "InWidth",   "InHeight",    "InChannels", "InDepth",
       "OutWidth",   "OutHeight", "OutChannels", "OutDepth",   "NumGroups",
       "ConvCfg",    "ConvCfg3d", "UnicastCfg",  "TileHeight", "TileOverlap",
-      "MacCfg",     "LaneCfg",   "PatchCfg",    "PERouting",  "NID",
+      "MacCfg",     "NECfg",     "PatchCfg",    "PECfg",      "NID",
       "DPE",        "Val21",     "Val22"};
   static const char *l2_names[] = {
       "L2_Control",        "L2_Src1Cfg",        "L2_Src2Cfg",
@@ -149,9 +149,9 @@ const char *get_m4_reg_name(uint32_t addr) {
       "DstCompSizeLo",     "DstCompSizeHi",
       "DstPixelOffset"};
   static const char *kdma_names[72] = {
-      "KDMA_MasterConfig",  "KDMA_Reserved1",     "KDMA_Prefetch",
-      "KDMA_Reserved[0]",   "KDMA_Reserved[1]",   "KDMA_Reserved[2]",
-      "KDMA_StrideX",       "KDMA_StrideY",       "CoeffDMAConfig[0]",
+      "MasterConfig",  "Reserved1",     "Prefetch",
+      "Reserved[0]",   "Reserved[1]",   "Reserved[2]",
+      "StrideX",       "StrideY",       "CoeffDMAConfig[0]",
       "CoeffDMAConfig[1]",  "CoeffDMAConfig[2]",  "CoeffDMAConfig[3]",
       "CoeffDMAConfig[4]",  "CoeffDMAConfig[5]",  "CoeffDMAConfig[6]",
       "CoeffDMAConfig[7]",  "CoeffDMAConfig[8]",  "CoeffDMAConfig[9]",
@@ -446,9 +446,11 @@ void print_common_h16(const hwx_state_t *state) {
       state->valid[(H16_COMMON_START + 0x10) / 4] ||
       state->valid[H16_COMMON_START / 4]) {
     const char *infmt_name = get_ch_fmt_name(common.ch_cfg.infmt);
+    const char *src2fmt_name = get_ch_fmt_name(common.ch_cfg.src2infmt);
     const char *outfmt_name = get_ch_fmt_name(common.ch_cfg.outfmt);
-    printf("        InDim     : W=%u H=%u C=%u D=%u Type=%s\n", common.inwidth,
-           common.inheight, common.inchannels, common.indepth, infmt_name);
+    printf("        InDim     : W=%u H=%u C=%u D=%u Type=%s (Src2Type=%s)\n",
+           common.inwidth, common.inheight, common.inchannels, common.indepth,
+           infmt_name, src2fmt_name);
     printf("        OutDim    : W=%u H=%u C=%u D=%u Type=%s\n", common.outwidth,
            common.outheight, common.outchannels, common.outdepth, outfmt_name);
   }
@@ -485,31 +487,42 @@ void print_common_h16(const hwx_state_t *state) {
 
   if (state->valid[(H16_COMMON_START + 0x3C) / 4]) {
     printf("        MACCfg    : ActiveNE=%u SmallSrc=%u TaskType=%u L2Barr=%d "
-           "OutTrans=%d\n",
+           "OutTrans=%d FillLowerNE=%d\n",
            common.maccfg.active_ne, common.maccfg.small_src_mode,
            common.maccfg.task_type, common.maccfg.l2_barrier,
-           common.maccfg.out_trans);
+           common.maccfg.out_trans, common.maccfg.fill_lower_ne);
   }
 
   if (state->valid[(H16_COMMON_START + 0x40) / 4]) {
-    printf("        LaneCfg   : OCGSize=%u\n", common.lane_cfg.ocg_size);
+    printf("        NECfg     : OCGSize=%u FatTileEn=%d WUStack=%u\n",
+           common.ne_cfg.ocg_size, common.ne_cfg.fat_tile_en,
+           common.ne_cfg.wustack_log2);
+  }
+
+  if (state->valid[(H16_COMMON_START + 0x44) / 4]) {
+    printf("        PatchCfg  : PW=%u PH=%u\n", common.patch_cfg.patch_width,
+           common.patch_cfg.patch_height);
   }
 
   if (state->valid[(H16_COMMON_START + 0x48) / 4]) {
-    printf("        PERouting : S1WB=%d S1HB=%d S1DB=%d S1CB=%d S2WB=%d "
+    printf("        PECfg     : S1WB=%d S1HB=%d S1DB=%d S1CB=%d S2WB=%d "
            "S2HB=%d S2DB=%d S2CB=%d S1T=%d S2T=%d OT=%d\n",
-           common.pe_routing.src1_w_bcast, common.pe_routing.src1_h_bcast,
-           common.pe_routing.src1_d_bcast, common.pe_routing.src1_c_bcast,
-           common.pe_routing.src2_w_bcast, common.pe_routing.src2_h_bcast,
-           common.pe_routing.src2_d_bcast, common.pe_routing.src2_c_bcast,
-           common.pe_routing.src1_trans, common.pe_routing.src2_trans,
-           common.pe_routing.out_trans);
+           common.pe_cfg.src1_w_bcast, common.pe_cfg.src1_h_bcast,
+           common.pe_cfg.src1_d_bcast, common.pe_cfg.src1_c_bcast,
+           common.pe_cfg.src2_w_bcast, common.pe_cfg.src2_h_bcast,
+           common.pe_cfg.src2_d_bcast, common.pe_cfg.src2_c_bcast,
+           common.pe_cfg.src1_trans, common.pe_cfg.src2_trans,
+           common.pe_cfg.out_trans);
   }
 
   if (state->valid[(H16_COMMON_START + 0x4C) / 4])
     printf("        NID       : 0x%08x\n", common.nid);
   if (state->valid[(H16_COMMON_START + 0x50) / 4])
     printf("        DPE       : 0x%08x\n", common.dpe);
+  if (state->valid[(H16_COMMON_START + 0x54) / 4])
+    printf("        Val21     : 0x%08x\n", common.val_21);
+  if (state->valid[(H16_COMMON_START + 0x58) / 4])
+    printf("        Val22     : 0x%08x\n", common.val_22);
 }
 
 void print_ne_h16(const hwx_state_t *state) {
@@ -620,15 +633,26 @@ void print_l2_h16(const hwx_state_t *state) {
            l2.l2_control.barrier);
   }
   if (state->valid[(H16_L2_START + 0x04) / 4]) {
-    printf("        Src1Cfg  : Type=%d DmaFmt=%d Interleave=%d OffY=%d "
-           "Comp=%d\n",
-           l2.src1_cfg.src_type, l2.src1_cfg.dma_fmt, l2.src1_cfg.interleave,
+    printf("        Src1Cfg  : Type=%d Dep=%d Alias(C=%d, R=%d) Fmt=%d "
+           "Intrlv=%d OffY=%d Comp=%d\n",
+           l2.src1_cfg.src_type, l2.src1_cfg.dependent,
+           l2.src1_cfg.alias_conv_src, l2.src1_cfg.alias_conv_rslt,
+           l2.src1_cfg.dma_fmt, l2.src1_cfg.interleave,
            l2.src1_cfg.offset_y_lsbs, l2.src1_cfg.compression);
   }
   if (state->valid[(H16_L2_START + 0x08) / 4]) {
-    printf("        Src2Cfg  : Type=%d Interleave=%d Comp=%d\n",
-           l2.src2_cfg.src_type, l2.src2_cfg.interleave,
-           l2.src2_cfg.compression);
+    printf("        Src2Cfg  : Type=%d Dep=%d Alias(C=%d, R=%d) Fmt=%d "
+           "Intrlv=%d OffY=%d Comp=%d\n",
+           l2.src2_cfg.src_type, l2.src2_cfg.dependent,
+           l2.src2_cfg.alias_conv_src, l2.src2_cfg.alias_conv_rslt,
+           l2.src2_cfg.dma_fmt, l2.src2_cfg.interleave,
+           l2.src2_cfg.offset_y_lsbs, l2.src2_cfg.compression);
+  }
+  if (state->valid[(H16_L2_START + 0x0c) / 4]) {
+    printf("        SrcIdxCfg: Type=%d Dep=%d Alias(C=%d, R=%d) Fmt=%d B27=%d\n",
+           l2.srcidx_cfg.src_type, l2.srcidx_cfg.dependent,
+           l2.srcidx_cfg.alias_conv_src, l2.srcidx_cfg.alias_conv_rslt,
+           l2.srcidx_cfg.dma_fmt, l2.srcidx_cfg.bit27);
   }
   if (state->valid[(H16_L2_START + 0x10) / 4]) {
     printf("        Src1  : BaseAddr=0x%05x CStride=0x%05x "
@@ -649,10 +673,11 @@ void print_l2_h16(const hwx_state_t *state) {
            l2.srcidx.group_stride);
   }
   if (state->valid[(H16_L2_START + 0x48) / 4]) {
-    printf("        ResCfg: BfrMode=%d CropX=%d Interleave=%d Type=%d "
-           "Comp=%d\n",
-           l2.result_cfg.bfr_mode, l2.result_cfg.crop_offset_x,
-           l2.result_cfg.interleave, l2.result_cfg.res_type,
+    printf("        ResCfg   : Type=%d Bfr=%d Alias(S=%d, R=%d) Fmt=%d "
+           "Intrlv=%d Comp=%d\n",
+           l2.result_cfg.res_type, l2.result_cfg.bfr_mode,
+           l2.result_cfg.src_alias, l2.result_cfg.result_alias,
+           l2.result_cfg.dma_fmt, l2.result_cfg.interleave,
            l2.result_cfg.compression);
   }
   if (state->valid[(H16_L2_START + 0x4c) / 4]) {

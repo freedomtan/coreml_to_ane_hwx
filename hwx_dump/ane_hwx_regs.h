@@ -123,12 +123,10 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
   // Word 0 (0x000)
   struct {
-    uint32_t infmt : 2;
-    uint32_t pad0_0 : 2;
-    uint32_t outfmt : 2;
-    uint32_t pad0_1 : 2;
-    uint32_t src2infmt : 2;
-    uint32_t pad0_2 : 22;
+    uint32_t infmt : 2;     // [1:0]
+    uint32_t src2infmt : 2; // [3:2]
+    uint32_t outfmt : 2;    // [5:4]
+    uint32_t pad0 : 26;
   } ch_cfg;
 
   // Word 1-8
@@ -163,10 +161,10 @@ typedef struct __attribute__((packed)) {
 
   // Word 12 (0x030)
   struct {
-    uint32_t unicast_en : 1;
-    uint32_t pad0 : 3;
-    uint32_t unicast_cin : 14;
-    uint32_t pad1 : 14;
+    uint32_t pad0 : 14;        // [13:0]
+    uint32_t unicast_en : 1;   // [14]
+    uint32_t pad1 : 1;         // [15]
+    uint32_t unicast_cin : 16; // [31:16]
   } unicast_cfg;
 
   // Word 13 (0x034)
@@ -174,31 +172,35 @@ typedef struct __attribute__((packed)) {
 
   // Word 14 (0x038)
   struct {
-    uint32_t pad_bottom : 6;
-    uint32_t pad_top : 6;
-    uint32_t overlap : 14;
-    uint32_t pad0 : 6;
+    uint32_t pad0 : 16;      // [15:0]
+    uint32_t overlap : 5;    // [20:16]
+    uint32_t pad_top : 5;    // [25:21]
+    uint32_t pad_bottom : 5; // [30:26]
+    uint32_t pad1 : 1;       // [31]
   } tile_overlap;
 
   // Word 15 (0x03C)
   struct {
     uint32_t pad0 : 2;
-    uint32_t small_src_mode : 2;
-    uint32_t task_type : 4;
+    uint32_t small_src_mode : 2; // [3:2]
+    uint32_t task_type : 4;       // [7:4]
     uint32_t pad1 : 11;
-    uint32_t active_ne : 3;
+    uint32_t active_ne : 3;       // [21:19]
     uint32_t pad2 : 1;
-    uint32_t l2_barrier : 1;
+    uint32_t l2_barrier : 1;      // [23]
     uint32_t pad3 : 4;
-    uint32_t out_trans : 1;
-    uint32_t pad4 : 3;
+    uint32_t out_trans : 1;       // [28]
+    uint32_t fill_lower_ne : 1;   // [29]
+    uint32_t pad4 : 2;
   } maccfg;
 
   // Word 16 (0x40)
   struct {
-    uint32_t ocg_size : 3;
-    uint32_t pad0 : 29;
-  } lane_cfg;
+    uint32_t ocg_size : 3;        // [2:0]
+    uint32_t fat_tile_en : 1;     // [3]
+    uint32_t wustack_log2 : 2;    // [5:4]
+    uint32_t pad0 : 26;
+  } ne_cfg;
 
   // Word 17 (0x044)
   struct {
@@ -221,7 +223,7 @@ typedef struct __attribute__((packed)) {
     uint32_t src2_trans : 1;
     uint32_t out_trans : 1;
     uint32_t pad0 : 21;
-  } pe_routing;
+  } pe_cfg; // Word 18 (0x048)
 
   uint32_t nid;    // 0x04C (Word 19)
   uint32_t dpe;    // 0x050 (Word 20)
@@ -581,29 +583,56 @@ typedef struct {
 
   // Word 1 (0x4104)
   struct {
-    uint32_t pad0 : 2;
-    uint32_t src_type : 2; // [3:2]
-    uint32_t pad1 : 2;
-    uint32_t dma_fmt : 2;       // [7:6]
-    uint32_t interleave : 4;    // [11:8]
-    uint32_t offset_y_lsbs : 4; // [15:12]
-    uint32_t pad2 : 9;
-    uint32_t compression : 1; // [25]
-    uint32_t pad3 : 6;
+    uint32_t src_type : 2;          // [1:0]
+    uint32_t dependent : 2;         // [3:2]
+    uint32_t alias_conv_src : 1;    // [4]
+    uint32_t alias_conv_rslt : 1;   // [5]
+    uint32_t dma_fmt : 2;           // [7:6]
+    uint32_t interleave : 4;        // [11:8]
+    uint32_t offset_y_lsbs : 4;     // [15:12]
+    uint32_t pad0 : 4;              // [19:16]
+    uint32_t alias_planar_src : 1;  // [20]
+    uint32_t pad1 : 1;              // [21]
+    uint32_t alias_planar_rslt : 1; // [22]
+    uint32_t pad2 : 2;              // [24:23]
+    uint32_t compression : 2;       // [26:25]
+    uint32_t pad3 : 5;              // [31:27]
   } src1_cfg;
 
-  // Word 2 (0x4108)
+  // Word 2 (0x4108) (Src2Cfg)
   struct {
-    uint32_t pad0 : 2;
-    uint32_t src_type : 2; // [3:2]
-    uint32_t pad1 : 4;
-    uint32_t interleave : 4; // [11:8]
-    uint32_t pad2 : 13;
-    uint32_t compression : 1; // [25]
-    uint32_t pad3 : 6;
+    uint32_t src_type : 2;          // [1:0]
+    uint32_t dependent : 2;         // [3:2]
+    uint32_t alias_conv_src : 1;    // [4]
+    uint32_t alias_conv_rslt : 1;   // [5]
+    uint32_t dma_fmt : 2;           // [7:6]
+    uint32_t interleave : 4;        // [11:8]
+    uint32_t offset_y_lsbs : 4;     // [15:12]
+    uint32_t pad0 : 4;              // [19:16]
+    uint32_t alias_planar_src : 1;  // [20]
+    uint32_t pad1 : 1;              // [21]
+    uint32_t alias_planar_rslt : 1; // [22]
+    uint32_t pad2 : 2;              // [24:23]
+    uint32_t compression : 2;       // [26:25]
+    uint32_t pad3 : 5;              // [31:27]
   } src2_cfg;
 
-  uint32_t l2_pad3; // Word 3 (0x410c)
+  // Word 3 (0x410c) (SrcIdxCfg)
+  struct {
+    uint32_t src_type : 2;          // [1:0]
+    uint32_t dependent : 2;         // [3:2]
+    uint32_t alias_conv_src : 1;    // [4]
+    uint32_t alias_conv_rslt : 1;   // [5]
+    uint32_t dma_fmt : 2;           // [7:6]
+    uint32_t interleave : 4;        // [11:8]
+    uint32_t pad0 : 8;              // [19:12]
+    uint32_t alias_planar_src : 1;  // [20]
+    uint32_t pad1 : 1;              // [21]
+    uint32_t alias_planar_rslt : 1; // [22]
+    uint32_t pad2 : 4;              // [26:23]
+    uint32_t bit27 : 1;             // [27]
+    uint32_t pad3 : 4;              // [31:28]
+  } srcidx_cfg;
 
   // Dense 17-bit packed tensor blocks (Bits 4:20)
   struct {
@@ -645,15 +674,16 @@ typedef struct {
 
   // Word 18 (0x4148)
   struct {
-    uint32_t pad0 : 3;
-    uint32_t bfr_mode : 1;      // [3]
-    uint32_t crop_offset_x : 3; // [6:4]
-    uint32_t pad1 : 1;
-    uint32_t interleave : 4; // [11:8]
-    uint32_t res_type : 2;   // [13:12]
-    uint32_t pad2 : 11;
-    uint32_t compression : 1; // [25]
-    uint32_t pad3 : 6;
+    uint32_t res_type : 2;       // [1:0]
+    uint32_t pad0 : 1;           // [2]
+    uint32_t bfr_mode : 1;       // [3]
+    uint32_t src_alias : 1;      // [4]
+    uint32_t result_alias : 1;   // [5]
+    uint32_t dma_fmt : 2;        // [7:6]
+    uint32_t interleave : 4;     // [11:8]
+    uint32_t pad1 : 13;          // [24:12]
+    uint32_t compression : 2;    // [26:25]
+    uint32_t pad2 : 5;           // [31:27]
   } result_cfg;
 
   struct {

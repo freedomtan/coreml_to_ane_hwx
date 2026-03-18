@@ -200,11 +200,11 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x4D44** | `+0x2a0` | **Src1MetaDataAddrHi** | **AddrHi**: 0-31. |
 | **0x4D48** | `+0x2a4` | **Src2MetaDataAddrLo** | **AddrLo**: 0-31. |
 | **0x4D4C** | `+0x2a8` | **Src2MetaDataAddrHi** | **AddrHi**: 0-31. |
-| **0x4D50** | `+0x2ac` | **Src1MetaDataConfig** | *(No direct 17u setter found; may be configured via MetaData helper)* |
-| **0x4D54** | `+0x2b0` | **Src1MetaUnknown1** | *(No direct 17u setter found)* |
+| **0x4D50** | `+0x2ac` | **Src1MetaDataConfig** | **Config0**: 7-31 (shifted). |
+| **0x4D54** | `+0x2b0` | **Src1MetaUnknown1** | **Config1**: 7-31 (shifted). |
 | **0x4D58** | `+0x2b4` | **Src1MetaDataSize** | **Size**: 7-31. |
-| **0x4D5C** | `+0x2b8` | **Src2MetaDataConfig** | *(No direct 17u setter found; may be configured via MetaData helper)* |
-| **0x4D60** | `+0x2bc` | **Src2MetaUnknown1** | *(No direct 17u setter found)* |
+| **0x4D5C** | `+0x2b8` | **Src2MetaDataConfig** | **Config0**: 7-31 (shifted). |
+| **0x4D60** | `+0x2bc` | **Src2MetaUnknown1** | **Config1**: 7-31 (shifted). |
 | **0x4D64** | `+0x2c0` | **Src2MetaDataSize** | **Size**: 7-31. |
 | **0x4D68** | `+0x2c4` | **Src1FmtMode** | **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. |
 | **0x4D6C** | `+0x2c8` | **Src2FmtMode** | **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. |
@@ -230,16 +230,16 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x4DBC** | `+0x318` | **Src2WrapDynamic** | **WrapNumBlocks**: 0-11, **WrapLen**: 12-31. (Dimension Y alternate; see Src2WrapCfg for X) |
 | **0x4DC0** | `+0x31c` | **Src1DependencyOffset** | **Offset**: 0-31. (Also encodes dependency period/interval for DRAM-dependent mode) |
 | **0x4DC4** | `+0x320` | **Src2DependencyOffset** | **Offset**: 0-31. (Also encodes Src2 dependency period/interval for DRAM-dependent mode) |
-| **0x4DC8** | `+0x324` | **TextureConfig** | **Mode**: 0-2, **Normalization**: 3-5, **CropBatchSplit**: 6-8, **Filter/WrapType**: 12-14, **CropCoeff1**: 13-16, **CropCoeff2**: 17-20, **BackgroundEn/WrapBit**: 22, **DepthValueSel**: 23, **Wrap/FilterParam**: 24-28. |
+| **0x4DC8** | `+0x324` | **TextureConfig** | **Mode**: 0-2 (0=off,1=gather,2=bilinear,3=bicubic,4=nearest), **Norm1**: 3-5, **Norm2**: 6-8, **Filter**: 12-14, **CropCoeff1**: 13-16, **CropCoeff2**: 17-20, **BackgroundEn**: 22, **DepthValSel**: 23, **WrapParam**: 24-28. |
 | **0x4DCC** | `+0x328` | **TextureIdxPermute** | **Permute0**: 6-8, **Permute1**: 12-14. |
 | **0x4DD0** | `+0x32c` | **TextureSrcPermute** | **SrcPermute**: 0-2, **Src2Permute**: 12-14, **IndPermute**: 16-18, **PreserveFrac/WrapBit**: 22, **WrapParam**: 24-28. |
 | **0x4DD4** | `+0x330` | **TextureBackgroundVal** | **Value**: 0-15 (strh, unsigned short). |
 | **0x4DD8** | `+0x334` | **TextureExtMaxDim1** | **Lo**: 0-15 (strh), **Hi**: 16-31 (strh at +0x336). |
 | **0x4DDC** | `+0x338` | **TextureExtMaxDim2** | **Lo**: 0-15 (strh), **Hi**: 16-31 (strh at +0x33a). |
 | **0x4DE0** | `+0x33c` | **TextureExtMaxDim3** | **Val**: 0-15 (strh). |
-| **0x4DE4** | `+0x340` | **TextureCropCfg** | **CropCfg**: 12-14. |
-| **0x4DE8** | `+0x344` | **TileDmaSrcReserved** |  |
-| **0x4DEC** | `+0x348` | **TileDmaSrcReserved** |  |
+| **0x4DE4** | `+0x340` | **TextureCropBatchSplitDim1** | **Lo**: 0-15 (strh), **Hi**: 16-31 (strh at +0x342). |
+| **0x4DE8** | `+0x344` | **TextureCropDepthDim1** | **Lo**: 0-15 (strh), **Hi**: 16-31 (strh at +0x346). |
+| **0x4DEC** | `+0x348` | **TextureCropBatchSplitDim2** | **Lo**: 0-15 (strh). |
 | **0x4DF0** | `+0x34c` | **TileDmaSrcReserved** |  |
 | **0x4DF4** | `+0x350` | **TileDmaSrcReserved** |  |
 | **0x4DF8** | `+0x354` | **TileDmaSrcReserved** |  |

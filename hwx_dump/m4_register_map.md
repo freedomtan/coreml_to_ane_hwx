@@ -182,7 +182,7 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | :--- | :--- | :--- | :--- |
 | **0x4D00** | `+0x25c` | **Src1DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **DependencyInterval**: 24-27. |
 | **0x4D04** | `+0x260` | **Src2DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **DependencyInterval**: 24-27. |
-| **0x4D08** | `+0x264` | **Src1WrapCfg** | **CacheHint**: 0-7, **WrapCfg**: 8-10, **WrapStatic**: 16-31. |
+| **0x4D08** | `+0x264` | **Src1WrapCfg** | **CacheHint**: 0-7 (strb), **WrapCfg**: 8-10, **WrapStatic**: 16-31. |
 | **0x4D0C** | `+0x268` | **Src2WrapCfg** | **CacheHint**: 0-7, **WrapCfg**: 8-10, **WrapStatic**: 16-31. |
 | **0x4D10** | `+0x26c` | **Src1BaseAddrLo** | **AddrLo**: 0-31. |
 | **0x4D14** | `+0x270` | **Src1BaseAddrHi** | **AddrHi**: 0-31. |
@@ -200,24 +200,24 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x4D44** | `+0x2a0` | **Src1MetaDataAddrHi** | **AddrHi**: 0-31. |
 | **0x4D48** | `+0x2a4` | **Src2MetaDataAddrLo** | **AddrLo**: 0-31. |
 | **0x4D4C** | `+0x2a8` | **Src2MetaDataAddrHi** | **AddrHi**: 0-31. |
-| **0x4D50** | `+0x2ac` | **Src1MetaDataConfig** |  |
-| **0x4D54** | `+0x2b0` | **Src1MetaUnknown1?** |  |
+| **0x4D50** | `+0x2ac` | **Src1MetaDataConfig** | *(No direct 17u setter found; may be configured via MetaData helper)* |
+| **0x4D54** | `+0x2b0` | **Src1MetaUnknown1** | *(No direct 17u setter found)* |
 | **0x4D58** | `+0x2b4` | **Src1MetaDataSize** | **Size**: 7-31. |
-| **0x4D5C** | `+0x2b8` | **Src2MetaDataConfig** |  |
-| **0x4D60** | `+0x2bc` | **Src2MetaUnknown1?** |  |
+| **0x4D5C** | `+0x2b8` | **Src2MetaDataConfig** | *(No direct 17u setter found; may be configured via MetaData helper)* |
+| **0x4D60** | `+0x2bc` | **Src2MetaUnknown1** | *(No direct 17u setter found)* |
 | **0x4D64** | `+0x2c0` | **Src2MetaDataSize** | **Size**: 7-31. |
 | **0x4D68** | `+0x2c4` | **Src1FmtMode** | **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. |
 | **0x4D6C** | `+0x2c8` | **Src2FmtMode** | **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. |
 | **0x4D70** | `+0x2cc` | **TileDmaSrcReserved** |  |
 | **0x4D74** | `+0x2d0` | **TileDmaSrcReserved** |  |
 | **0x4D78** | `+0x2d4` | **Src1CompressedInfo** | **MdUserTag**: 24-31. |
-| **0x4D7C** | `+0x2d8` | **Src1CompressedSizeLo** |  |
-| **0x4D80** | `+0x2dc` | **Src1CompressedSizeHi** |  |
-| **0x4D84** | `+0x2e0` | **Src1CropOffset** | **OffsetY**: 0-15, **CropOffset**: 16-31. |
+| **0x4D7C** | `+0x2d8` | **Src1CompressedSizeLo** | **SizeLo**: 0-31. |
+| **0x4D80** | `+0x2dc` | **Src1CompressedSizeHi** | **SizeHi**: 0-31. |
+| **0x4D84** | `+0x2e0` | **Src1CropOffset** | **OffsetY**: 0-15 (strh), **CropOffset**: 16-31. |
 | **0x4D88** | `+0x2e4` | **Src2CompressedInfo** | **MdUserTag**: 24-31. |
-| **0x4D8C** | `+0x2e8` | **Src2CompressedSizeLo** |  |
-| **0x4D90** | `+0x2ec` | **Src2CompressedSizeHi** |  |
-| **0x4D94** | `+0x2f0` | **Src2CropOffset** | **OffsetY**: 0-15, **CropOffset**: 16-31. |
+| **0x4D8C** | `+0x2e8` | **Src2CompressedSizeLo** | **SizeLo**: 0-31. |
+| **0x4D90** | `+0x2ec` | **Src2CompressedSizeHi** | **SizeHi**: 0-31. |
+| **0x4D94** | `+0x2f0` | **Src2CropOffset** | **OffsetY**: 0-15 (strh), **CropOffset**: 16-31. |
 | **0x4D98** | `+0x2f4` | **TileDmaSrcReserved** |  |
 | **0x4D9C** | `+0x2f8` | **TileDmaSrcReserved** |  |
 | **0x4DA0** | `+0x2fc` | **TileDmaSrcReserved** |  |
@@ -226,14 +226,14 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x4DAC** | `+0x308` | **TileDmaSrcReserved** |  |
 | **0x4DB0** | `+0x30c` | **TileDmaSrcReserved** |  |
 | **0x4DB4** | `+0x310` | **TileDmaSrcReserved** |  |
-| **0x4DB8** | `+0x314` | **Src1WrapDynamic** |  |
-| **0x4DBC** | `+0x318` | **Src2WrapDynamic** |  |
-| **0x4DC0** | `+0x31c` | **Src1DependencyOffset** |  |
-| **0x4DC4** | `+0x320` | **Src2DependencyOffset** |  |
-| **0x4DC8** | `+0x324` | **TextureMode** |  |
-| **0x4DCC** | `+0x328` | **TextureIdxPermute** |  |
-| **0x4DD0** | `+0x32c` | **TextureSrcPermute** |  |
-| **0x4DD4** | `+0x330` | **TextureBackgroundVal** |  |
+| **0x4DB8** | `+0x314` | **Src1WrapDynamic** | **WrapNumBlocks**: 0-11, **WrapLen**: 12-31. (Dimension Y alternate; see Src1WrapCfg for X) |
+| **0x4DBC** | `+0x318` | **Src2WrapDynamic** | **WrapNumBlocks**: 0-11, **WrapLen**: 12-31. (Dimension Y alternate; see Src2WrapCfg for X) |
+| **0x4DC0** | `+0x31c` | **Src1DependencyOffset** | **Offset**: 0-31. (Also encodes dependency period/interval for DRAM-dependent mode) |
+| **0x4DC4** | `+0x320` | **Src2DependencyOffset** | **Offset**: 0-31. (Also encodes Src2 dependency period/interval for DRAM-dependent mode) |
+| **0x4DC8** | `+0x324` | **TextureMode** | **Mode**: 0-31. (No dedicated 17u setter; may share config with DependencyMode path) |
+| **0x4DCC** | `+0x328` | **TextureIdxPermute** | **Permute**: 0-31. |
+| **0x4DD0** | `+0x32c` | **TextureSrcPermute** | **Permute**: 0-31. |
+| **0x4DD4** | `+0x330` | **TextureBackgroundVal** | **Value**: 0-31. |
 | **0x4DD8** | `+0x334` | **TileDmaSrcReserved** |  |
 | **0x4DDC** | `+0x338` | **TileDmaSrcReserved** |  |
 | **0x4DE0** | `+0x33c` | **TileDmaSrcReserved** |  |

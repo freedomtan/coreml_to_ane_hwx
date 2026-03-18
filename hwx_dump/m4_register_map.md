@@ -6,11 +6,11 @@ The `ZinAneTd<17u>` object maps internal offsets to hardware register blocks as 
 | :--- | :--- | :--- | :--- | :--- |
 | `+0x1f8` | `0x17` | `0x0000` | `0x005C` | Common (InDim, OutDim, Patch, PETra) |
 | `+0x3a8` | `0x29` | `0x4100` | `0x41A4` | L2 Cache / Buffer |
-| `+0x454` | `0x15` | `0x4500` | `0x4550` | PE (Planar Engine) |
-| `+0x498` | `0x0c` | `0x4900` | `0x4930` | NE (Neural Engine) |
+| `+0x454` | `0xf` | `0x4500` | `0x453C` | PE (Planar Engine) |
+| `+0x498` | `0xc` | `0x4900` | `0x4930` | NE (Neural Engine) |
 | `+0x25c` | `0x51` | `0x4d00` | `0x4E44` | TileDmaSrc (Engine Control) |
 | `+0x4d0` | `0x15` | `0x5100` | `0x5154` | TileDmaDst (Engine Control) |
-| `+0x030` | `0x48` | `0x5500` | `0x5547` | KernelDmaSrc (Stride, Coeffs) |
+| `+0x030` | `0x48` | `0x5500` | `0x5620` | KernelDmaSrc (Stride, Coeffs) |
 | `+0x52c` | `0x0c` | `0x5900` | `0x5930` | CacheDMA & Telemetry |
 
 Before registers, there are some header words.
@@ -44,17 +44,11 @@ Before registers, there are some header words.
 | **9** | `0x24` | **Batch** | **Batch**: 0-31. |
 | **10** | `0x28` | **ConvCfg** | **KW**: 0-5, **KH**: 6-11, **SX**: 13-14, **SY**: 15-16, **PX**: 17-21, **PY**: 22-26, **OX**: 28-29, **OY**: 30-31. |
 | **11** | `0x2C` | **ConvCfg3d** | **KD**: 0-5, **SZ**: 6-11, **PZ**: 12-16, **OZ**: 17-21. |
-| **13** | `0x34` | **TileHeight** | **TileHeight**: 0-15. |
-| **15** | `0x3C` | **MacCfg** | **TaskType**: 4-7, **ActiveNE**: 19-21, **OutTrans**: 28. |
-| **16** | `0x40` | **LaneCfg** | **OCGSize**: 0-2. |
-| **17** | `0x44` | **Patch** | **PW**: 0-3, **PH**: 4-8. |
-| **18** | `0x48` | **PERouting** | **Broadcasts**: 0-7, **Transposes**: 8-10. |
 | ... | ... | ... | ... |
 | **0x1240** | `0x4900` | **KernelCfg** | **KernelFmt**: 0-1, **SparseEn**: 8, **PalEn**: 2. |
 | **0x1241** | `0x4904` | **MACCfg** | **OpMode**: 0-2, **KernelMode**: 3. |
 | **0x1546** | `0x5518` | **KernelStrideX** | **StrideX**: 6-31. |
 | **0x1547** | `0x551C` | **KernelStrideY** | **StrideY**: 6-31. |
-| **0x156C** | `0x55b0` | **SparseControl** | **DetectZeros**: 0, **SparseEn**: 1. |
 
 ## Internal Object Blocks
 The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped regions:
@@ -69,8 +63,88 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 
 ## Detailed Bitfield Mappings
 
-#### Common (0x0000 block, Object `+0x1f8`)
-Size: 21 registers (`0x15` words, `0x54` bytes). Dictates fundamental geometries, primary convolutions, and routing.
+### KernelDmaSrc (0x5500 block, Object `+0x030`)
+- **Count**: 72 registers (`0x48` words, `0x120` bytes).
+- **Object Layout**: Starts at `+0x030` of the `ZinAneTd` object.
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
+| :--- | :--- | :--- | :--- |
+| **0x5500** | `+0x030` | **MasterConfig** | **MasterEnable**: 6, **KernelSparseFmt**: 8, **GroupKernelReuse**: 10. (Inferred from setters) |
+| **0x5504** | `+0x034` | **AlignedCoeffSizePerCh** | **Size**: 0-31. |
+| **0x5508** | `+0x038` | **Prefetch** | **EarlyTermEn**: 0, **StopOnError**: 1, **PrefetchRate**: 16-31. |
+| **0x550C** | `+0x03c` | **Reserved0** | Reserved. |
+| **0x5510** | `+0x040` | **Reserved1** | Reserved. |
+| **0x5514** | `+0x044` | **Reserved2** | Reserved. |
+| **0x5518** | `+0x048` | **StrideX** | **Stride**: 6-31. |
+| **0x551C** | `+0x04c` | **StrideY** | **Stride**: 6-31. |
+| **0x5520** | `+0x050` | **CoeffDMAConfig0**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5524** | `+0x054` | **CoeffDMAConfig1**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5528** | `+0x058` | **CoeffDMAConfig2**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x552C** | `+0x05c` | **CoeffDMAConfig3**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5530** | `+0x060` | **CoeffDMAConfig4**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5534** | `+0x064` | **CoeffDMAConfig5**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5538** | `+0x068` | **CoeffDMAConfig6**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x553C** | `+0x06c` | **CoeffDMAConfig7**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5540** | `+0x070` | **CoeffDMAConfig8**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5544** | `+0x074` | **CoeffDMAConfig9**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5548** | `+0x078` | **CoeffDMAConfig10**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x554C** | `+0x07c` | **CoeffDMAConfig11**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5550** | `+0x080` | **CoeffDMAConfig12**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5554** | `+0x084` | **CoeffDMAConfig13**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5558** | `+0x088` | **CoeffDMAConfig14**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x555C** | `+0x08c` | **CoeffDMAConfig15**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5560** | `+0x090` | **CoeffBaseAddr0** | **Addr**: 6-31. |
+| **0x5564** | `+0x094` | **CoeffBaseAddr1** | **Addr**: 6-31. |
+| **0x5568** | `+0x098` | **CoeffBaseAddr2** | **Addr**: 6-31. |
+| **0x556C** | `+0x09c` | **CoeffBaseAddr3** | **Addr**: 6-31. |
+| **0x5570** | `+0x0a0` | **CoeffBaseAddr4** | **Addr**: 6-31. |
+| **0x5574** | `+0x0a4` | **CoeffBaseAddr5** | **Addr**: 6-31. |
+| **0x5578** | `+0x0a8` | **CoeffBaseAddr6** | **Addr**: 6-31. |
+| **0x557C** | `+0x0ac` | **CoeffBaseAddr7** | **Addr**: 6-31. |
+| **0x5580** | `+0x0b0` | **CoeffBaseAddr8** | **Addr**: 6-31. |
+| **0x5584** | `+0x0b4` | **CoeffBaseAddr9** | **Addr**: 6-31. |
+| **0x5588** | `+0x0b8` | **CoeffBaseAddr10** | **Addr**: 6-31. |
+| **0x558C** | `+0x0bc` | **CoeffBaseAddr11** | **Addr**: 6-31. |
+| **0x5590** | `+0x0c0` | **CoeffBaseAddr12** | **Addr**: 6-31. |
+| **0x5594** | `+0x0c4` | **CoeffBaseAddr13** | **Addr**: 6-31. |
+| **0x5598** | `+0x0c8` | **CoeffBaseAddr14** | **Addr**: 6-31. |
+| **0x559C** | `+0x0cc` | **CoeffBaseAddr15** | **Addr**: 6-31. |
+| **0x55A0** | `+0x0d0` | **CoeffBfrSize0** | **Size**: 0-31. |
+| **0x55A4** | `+0x0d4` | **CoeffBfrSize1** | **Size**: 0-31. |
+| **0x55A8** | `+0x0d8` | **CoeffBfrSize2** | **Size**: 0-31. |
+| **0x55AC** | `+0x0dc` | **CoeffBfrSize3** | **Size**: 0-31. |
+| **0x55B0** | `+0x0e0` | **CoeffBfrSize4** | **Size**: 0-31. |
+| **0x55B4** | `+0x0e4` | **CoeffBfrSize5** | **Size**: 0-31. |
+| **0x55B8** | `+0x0e8` | **CoeffBfrSize6** | **Size**: 0-31. |
+| **0x55BC** | `+0x0ec` | **CoeffBfrSize7** | **Size**: 0-31. |
+| **0x55C0** | `+0x0f0` | **CoeffBfrSize8** | **Size**: 0-31. |
+| **0x55C4** | `+0x0f4` | **CoeffBfrSize9** | **Size**: 0-31. |
+| **0x55C8** | `+0x0f8` | **CoeffBfrSize10** | **Size**: 0-31. |
+| **0x55CC** | `+0x0fc` | **CoeffBfrSize11** | **Size**: 0-31. |
+| **0x55D0** | `+0x100` | **CoeffBfrSize12** | **Size**: 0-31. |
+| **0x55D4** | `+0x104` | **CoeffBfrSize13** | **Size**: 0-31. |
+| **0x55D8** | `+0x108` | **CoeffBfrSize14** | **Size**: 0-31. |
+| **0x55DC** | `+0x10c` | **CoeffBfrSize15** | **Size**: 0-31. |
+| **0x55E0** | `+0x110` | **BiasDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x55E4** | `+0x114` | **BiasBaseAddr** | **Addr**: 6-31. |
+| **0x55E8** | `+0x118` | **BiasReserved0** | Reserved. |
+| **0x55EC** | `+0x11c` | **BiasReserved1** | Reserved. |
+| **0x55F0** | `+0x120` | **PostScaleDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x55F4** | `+0x124` | **PostScaleBaseAddr** | **Addr**: 6-31. |
+| **0x55F8** | `+0x128` | **PostScaleReserved0**| Reserved. |
+| **0x55FC** | `+0x12c` | **PostScaleReserved1**| Reserved. |
+| **0x5600** | `+0x130` | **PaletteDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5604** | `+0x134` | **PaletteBaseAddr** | **Addr**: 6-31. |
+| **0x5608** | `+0x138` | **PaletteReserved0** | Reserved. |
+| **0x560C** | `+0x13c` | **PaletteReserved1** | Reserved. |
+| **0x5610** | `+0x140` | **NLutDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5614** | `+0x144` | **NLutBaseAddr** | **Addr**: 6-31. |
+| **0x5618** | `+0x148` | **NLutReserved0** | Reserved. |
+| **0x561C** | `+0x14c` | **NLutReserved1** | Reserved. |
+
+### Common (0x0000 block, Object `+0x1f8`)
+- **Count**: 23 registers (`0x17` words, `0x5c` bytes).
+- **Object Layout**: Starts at `+0x1f8` of the `ZinAneTd` object.
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
@@ -100,143 +174,97 @@ Size: 21 registers (`0x15` words, `0x54` bytes). Dictates fundamental geometries
 
 *Compiler Sub-Struct Note (`ZinAneTdHw_v17`)*: The `ZinGetRegisterProgramming<17u>` getters map directly onto our Common Block layout with a `+0x8` descriptor header offset.
 
-### Neural Engine (NE) (0x4900 block, Object `+0x498`)
-Size: 12 registers (`0x30` bytes).
-
-| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
-| :--- | :--- | :--- | :--- |
-| **0x4900** | `+0x498` | **KernelCfg** | **KernelFmt**: 0-1, **PalEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **GroupKernelReuse**: 10, **SparseBinary**: 15, **AsymQuantEn**: 24. |
-| **0x4904** | `+0x49c` | **MACCfg** | **OpMode**: 0-2 (0:Conv, 1:MatMul, 2:EWise, 3:XCorr), **KernelMode**: 3, **BiasEnable**: 4, **PassthroughEnable**: 5, **MatrixVectorBiasEnable**: 6, **BinaryPoint**: 8-13, **PostScaleEnable**: 14, **NonlinearMode**: 16-17, **MaxPoolMode**: 19, **ArgOutputSelect**: 20-23, **DoubleInt8Enable**: 26. |
-| **0x4908** | `+0x4a0` | **MatrixVectorBias**| **Bias**: 0-15. |
-| **0x490C** | `+0x4a4` | **NEBias** | **Bias**: 0-20 (F19/F21). |
-| **0x4910** | `+0x4a8` | **NEPostScale** | **PostScale**: 0-20 (F19/F21). |
-| **0x4914** | `+0x4ac` | **RcasConfig** | **KeyMask**: 0-7, **CmpBit**: 8-10, **SenseAxis**: 12-13, **SenseBit**: 16-19, **RcasMode**: 20. |
-| **0x4918** | `+0x4b0` | **RoundModeCfg** | **StochasticRoundMode**: 0-1, **StochasticRoundIntegerBits**: 4-8. |
-| **0x491C** | `+0x4b4` | **SRSeed[0]**| **Seed**: 0-31 (Relocations suggest 16-bit granularity). |
-| **0x4920** | `+0x4b8` | **SRSeed[1]**| **Seed**: 0-31. |
-| **0x4924** | `+0x4bc` | **SRSeed[2]**| **Seed**: 0-31. |
-| **0x4928** | `+0x4c0` | **SRSeed[3]**| **Seed**: 0-31. |
-| **0x492C** | `+0x4c4` | **QuantZeroPoint** | **ZeroPoint**: 0-7. |
-
-##### KernelDmaSrc (0x5500 block, Object `+0x030`)
-Size: 72 registers (`0x48` words, `0x120` bytes).
-
-| HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
-| :--- | :--- | :--- | :--- |
-| **0x5500** | `+0x030` | **MasterConfig** | **MasterEnable**: 6. |
-| **0x5504** | `+0x034` | **Reserved1** | Unknown. |
-| **0x5508** | `+0x038` | **Prefetch** | **EarlyTermEn**: 0, **StopOnError**: 1, **PrefetchRate**: 16-31. |
-| **0x550C-0x5514**| `+0x03c`..`+0x044` | **Reserved[3]** | Unknown. |
-| **0x5518** | `+0x048` | **StrideX** | **Stride**: 6-31. |
-| **0x551C** | `+0x04c` | **StrideY** | **Stride**: 6-31. |
-| **0x5520-0x555C**| `+0x050`..`+0x08c` | **CoeffDMAConfig[16]**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x5560-0x559C**| `+0x090`..`+0x0cc` | **CoeffBaseAddr[16]** | **Addr**: 6-31. |
-| **0x55A0-0x55DC**| `+0x0d0`..`+0x10c` | **CoeffBfrSize[16]** | **Size**: 0-31. |
-| **0x55E0** | `+0x110` | **BiasDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
-| **0x55F0** | `+0x120` | **PostScaleDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
-| **0x5600** | `+0x130` | **PaletteDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
-| **0x5610** | `+0x140` | **NLutDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **UserTag**: 16-23. |
-
 ### TileDMA Source (0x4D00 block, Object `+0x25c`)
-Size: 81 registers (`0x51` words, `0x144` bytes).
+- **Count**: 81 registers (`0x51` words, `0x144` bytes).
+- **Object Layout**: Starts at `+0x25c` of the `ZinAneTd` object.
 
 | HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4D00** | `+0x25c` | **Src1DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **Format**: 24-27. |
-| **0x4D04** | `+0x260` | **Src2DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **DependencyMode**: 28-29. |
-| **0x4D08** | `+0x264` | **Src1BaseAddrLo** | **AddrLo**: 0-31. |
-| **0x4D0C** | `+0x268` | **Src1BaseAddrHi** | **AddrHi**: 0-31. |
-| **0x4D10** | `+0x26c` | **Src2BaseAddrLo** | **AddrLo**: 0-31. |
-| **0x4D14** | `+0x270` | **Src2BaseAddrHi** | **AddrHi**: 0-31. |
+| **0x4D00** | `+0x25c` | **Src1DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **DependencyInterval**: 24-27. |
+| **0x4D04** | `+0x260` | **Src2DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **DependencyInterval**: 24-27. |
+| **0x4D08** | `+0x264` | **Src1WrapCfg** | **CacheHint**: 0-7, **WrapCfg**: 8-10, **WrapStatic**: 16-31. |
+| **0x4D0C** | `+0x268` | **Src2WrapCfg** | **CacheHint**: 0-7, **WrapCfg**: 8-10, **WrapStatic**: 16-31. |
+| **0x4D10** | `+0x26c` | **Src1BaseAddrLo** | **AddrLo**: 0-31. |
+| **0x4D14** | `+0x270` | **Src1BaseAddrHi** | **AddrHi**: 0-31. |
 | **0x4D18** | `+0x274` | **Src1RowStride** | **Stride**: 6-31. |
-| **0x4D1C** | `+0x278` | **Src1PlaneStride** | **Stride**: 6-31. |
+| **0x4D1C** | `+0x278` | **Src1ChannelStride** | **Stride**: 6-31. |
 | **0x4D20** | `+0x27c` | **Src1DepthStride** | **Stride**: 6-31. |
 | **0x4D24** | `+0x280` | **Src1GroupStride** | **Stride**: 6-31. |
-| **0x4D28** | `+0x284` | **Src2Config** | Reserved / Mode Flags. |
-| **0x4D2C** | `+0x288` | **Src2Padding** | Reserved / Padding Mode. |
+| **0x4D28** | `+0x284` | **Src2BaseAddrLo** | **AddrLo**: 0-31. |
+| **0x4D2C** | `+0x288` | **Src2BaseAddrHi** | **AddrHi**: 0-31. |
 | **0x4D30** | `+0x28c` | **Src2RowStride** | **Stride**: 6-31. |
-| **0x4D34** | `+0x290` | **Src2PlaneStride** | **Stride**: 6-31. |
+| **0x4D34** | `+0x290` | **Src2ChannelStride** | **Stride**: 6-31. |
 | **0x4D38** | `+0x294` | **Src2DepthStride** | **Stride**: 6-31. |
 | **0x4D3C** | `+0x298` | **Src2GroupStride** | **Stride**: 6-31. |
-| **0x4D40** | `+0x29c` | **Src1MetaDataConfig**| MetaData Enable/Flags. |
-| **0x4D50** | `+0x2ac` | **Src1MetaDataAddrLo**| **AddrLo**: 0-31. |
-| **0x4D54** | `+0x2b0` | **Src1MetaDataAddrHi**| **AddrHi**: 0-31. |
-| **0x4D58** | `+0x2b4` | **Src1MetaDataSize** | MetaData Size / Config. |
-| **0x4D5C** | `+0x2b8` | **Src2MetaDataAddrLo**| **AddrLo**: 0-31. |
-| **0x4D60** | `+0x2bc` | **Src2MetaDataAddrHi**| **AddrHi**: 0-31. |
-| **0x4D64** | `+0x2c0` | **Src2MetaDataSize** | MetaData Size / Config. |
-| **0x4D68** | `+0x2c4` | **Src1Fmt** | **Interleave**: 12-13. |
-| **0x4D6C** | `+0x2c8` | **Src2Fmt** | **Interleave**: 12-13. |
-| **0x4D98** | `+0x2f4` | **Src1PixelOffset** | Cropping Offset. |
-| **0x4DA8** | `+0x304` | **Src2PixelOffset** | Cropping Offset. |
+| **0x4D40** | `+0x29c` | **Src1MetaDataAddrLo** | **AddrLo**: 0-31. |
+| **0x4D44** | `+0x2a0` | **Src1MetaDataAddrHi** | **AddrHi**: 0-31. |
+| **0x4D48** | `+0x2a4` | **Src2MetaDataAddrLo** | **AddrLo**: 0-31. |
+| **0x4D4C** | `+0x2a8` | **Src2MetaDataAddrHi** | **AddrHi**: 0-31. |
+| **0x4D50** | `+0x2ac` | **Src1MetaDataConfig** |  |
+| **0x4D54** | `+0x2b0` | **Src1MetaUnknown1?** |  |
+| **0x4D58** | `+0x2b4` | **Src1MetaDataSize** | **Size**: 7-31. |
+| **0x4D5C** | `+0x2b8` | **Src2MetaDataConfig** |  |
+| **0x4D60** | `+0x2bc` | **Src2MetaUnknown1?** |  |
+| **0x4D64** | `+0x2c0` | **Src2MetaDataSize** | **Size**: 7-31. |
+| **0x4D68** | `+0x2c4` | **Src1FmtMode** | **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. |
+| **0x4D6C** | `+0x2c8` | **Src2FmtMode** | **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. |
+| **0x4D70** | `+0x2cc` | **TileDmaSrcReserved** |  |
+| **0x4D74** | `+0x2d0` | **TileDmaSrcReserved** |  |
+| **0x4D78** | `+0x2d4` | **Src1CompressedInfo** | **MdUserTag**: 24-31. |
+| **0x4D7C** | `+0x2d8` | **Src1CompressedSizeLo** |  |
+| **0x4D80** | `+0x2dc` | **Src1CompressedSizeHi** |  |
+| **0x4D84** | `+0x2e0` | **Src1CropOffset** | **OffsetY**: 0-15, **CropOffset**: 16-31. |
+| **0x4D88** | `+0x2e4` | **Src2CompressedInfo** | **MdUserTag**: 24-31. |
+| **0x4D8C** | `+0x2e8` | **Src2CompressedSizeLo** |  |
+| **0x4D90** | `+0x2ec` | **Src2CompressedSizeHi** |  |
+| **0x4D94** | `+0x2f0` | **Src2CropOffset** | **OffsetY**: 0-15, **CropOffset**: 16-31. |
+| **0x4D98** | `+0x2f4` | **TileDmaSrcReserved** |  |
+| **0x4D9C** | `+0x2f8` | **TileDmaSrcReserved** |  |
+| **0x4DA0** | `+0x2fc` | **TileDmaSrcReserved** |  |
+| **0x4DA4** | `+0x300` | **TileDmaSrcReserved** |  |
+| **0x4DA8** | `+0x304` | **TileDmaSrcReserved** |  |
+| **0x4DAC** | `+0x308` | **TileDmaSrcReserved** |  |
+| **0x4DB0** | `+0x30c` | **TileDmaSrcReserved** |  |
+| **0x4DB4** | `+0x310` | **TileDmaSrcReserved** |  |
+| **0x4DB8** | `+0x314` | **Src1WrapDynamic** |  |
+| **0x4DBC** | `+0x318` | **Src2WrapDynamic** |  |
+| **0x4DC0** | `+0x31c` | **Src1DependencyOffset** |  |
+| **0x4DC4** | `+0x320` | **Src2DependencyOffset** |  |
+| **0x4DC8** | `+0x324` | **TextureMode** |  |
+| **0x4DCC** | `+0x328` | **TextureIdxPermute** |  |
+| **0x4DD0** | `+0x32c` | **TextureSrcPermute** |  |
+| **0x4DD4** | `+0x330` | **TextureBackgroundVal** |  |
+| **0x4DD8** | `+0x334` | **TileDmaSrcReserved** |  |
+| **0x4DDC** | `+0x338` | **TileDmaSrcReserved** |  |
+| **0x4DE0** | `+0x33c` | **TileDmaSrcReserved** |  |
+| **0x4DE4** | `+0x340` | **TileDmaSrcReserved** |  |
+| **0x4DE8** | `+0x344` | **TileDmaSrcReserved** |  |
+| **0x4DEC** | `+0x348` | **TileDmaSrcReserved** |  |
+| **0x4DF0** | `+0x34c` | **TileDmaSrcReserved** |  |
+| **0x4DF4** | `+0x350` | **TileDmaSrcReserved** |  |
+| **0x4DF8** | `+0x354` | **TileDmaSrcReserved** |  |
+| **0x4DFC** | `+0x358` | **TileDmaSrcReserved** |  |
+| **0x4E00** | `+0x35c` | **TileDmaSrcReserved** |  |
+| **0x4E04** | `+0x360` | **TileDmaSrcReserved** |  |
+| **0x4E08** | `+0x364` | **TileDmaSrcReserved** |  |
+| **0x4E0C** | `+0x368` | **TileDmaSrcReserved** |  |
+| **0x4E10** | `+0x36c` | **TileDmaSrcReserved** |  |
+| **0x4E14** | `+0x370` | **TileDmaSrcReserved** |  |
+| **0x4E18** | `+0x374` | **TileDmaSrcReserved** |  |
+| **0x4E1C** | `+0x378` | **TileDmaSrcReserved** |  |
+| **0x4E20** | `+0x37c` | **TileDmaSrcReserved** |  |
+| **0x4E24** | `+0x380` | **TileDmaSrcReserved** |  |
+| **0x4E28** | `+0x384` | **TileDmaSrcReserved** |  |
+| **0x4E2C** | `+0x388` | **TileDmaSrcReserved** |  |
+| **0x4E30** | `+0x38c` | **TileDmaSrcReserved** |  |
+| **0x4E34** | `+0x390` | **TileDmaSrcReserved** |  |
+| **0x4E38** | `+0x394` | **TileDmaSrcReserved** |  |
+| **0x4E3C** | `+0x398` | **TileDmaSrcReserved** |  |
+| **0x4E40** | `+0x39c` | **TileDmaSrcReserved** |  |
 
-### TileDMA Destination (0x5100 block, Object `+0x4d0`)
-Size: 21 registers (`0x15` words, `0x54` bytes).
-
-| HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
-| :--- | :--- | :--- | :--- |
-| **0x5100** | `+0x4d0` | **DstDMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x5104** | `+0x4d4` | **DstPadding** | Reserved / Padding Mode. |
-| **0x5108** | `+0x4d8` | **DstBaseAddrLo** | **AddrLo**: 0-31. |
-| **0x510C** | `+0x4dc` | **DstBaseAddrHi** | **AddrHi**: 0-31. |
-| **0x5110** | `+0x4e0` | **DstRowStride** | **Stride**: 6-31. |
-| **0x5114** | `+0x4e4` | **DstPlaneStride** | **Stride**: 6-31. |
-| **0x5118** | `+0x4e8` | **DstDepthStride** | **Stride**: 6-31. |
-| **0x511C** | `+0x4ec` | **DstGroupStride** | **Stride**: 6-31. |
-| **0x5120** | `+0x4f0` | **DstInternalCfg**| **InternalBits**: 0-15, **Flag1**: 16, **Flag2**: 17, **Flag3**: 18. |
-| **0x5124** | `+0x4f4` | **DstReserved1** | Unknown. |
-| **0x5128** | `+0x4f8` | **DstMetaDataAddrLo**| **AddrLo**: 0-31. |
-| **0x512C** | `+0x4fc` | **DstMetaDataAddrHi**| **AddrHi**: 0-31. |
-| **0x5130** | `+0x500` | **DstFormatMode** | **FormatMode**: 0-1, **MetaDataSize**: 7-31. |
-| **0x5148** | `+0x518` | **DstCompSizeLo** | **SizeLo**: 0-31. |
-| **0x514C** | `+0x51c` | **DstCompSizeHi** | **SizeHi**: 0-31. |
-| **0x5150** | `+0x520` | **DstPixelOffset** | Cropping Offset. |
-
-### CacheDMA / Telemetry (0x5900 block, Object `+0x52c`)
-This block handles telemetry, caching hints, and task synchronization.
-Size: 12 registers (`0x30` bytes, `0x0c` words).
-
-| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
-| :--- | :--- | :--- | :--- |
-| **0x5900** | `+0x52c` | **TelemetryControl** | **Flush**: 0, **Enable**: 1, **TaskSync**: 2-3, **EarlyTerm**: 4-8. |
-| **0x5904** | `+0x530` | **TelemetryPre0** | **BandwidthLimit**: 0-9... |
-| **0x5908** | `+0x534` | **TelemetryPre1** | **Sieve1**: 0-13. |
-| **0x5918** | `+0x544` | **TelemetryDSID** | **DataSetIdAndSize**: 7-29. |
-| **0x591C** | `+0x548` | **FootprintArg** | **FootprintArg2**: 17-27. |
-| **0x5920** | `+0x54c` | **EarlyTermArg12** | **Arg1**: 0-15, **Arg2**: 16-31. |
-| **0x5924** | `+0x550` | **FlushRegister** | **FlushArg**: 0-15. |
-| **0x5928** | `+0x554` | **EarlyTermArg34** | **Arg3**: 0-7, **Arg4**: 16-23. |
-| **0x592C** | `+0x558` | **BackoffControl** | **Enable**: 0, **Delay**: 4-7, **Min**: 8-15... |
-
-### Planar Engine (PE) (0x4500 block, Object `+0x454`)
-This block controls the Planar Engine (PE) which handles element-wise operations, pooling, and scaling.
-Size: 15 registers (`0xf` words, `0x3c` bytes).
-
-| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
-| :--- | :--- | :--- | :--- |
-| **0x4500** | `+0x454` | **Config** | **Op**: 2-4 (1:Add, 2:Mul, 3:Min, 4:Max), **LUTEnable**: 5, **Cond**: 6-8, **Src1Selection**: 16, **Src2Selection**: 18-19. |
-| **0x4504** | `+0x458` | **Bias** | 19-bit Floating Point (F19) bias value (Bits 0-18). |
-| **0x4508** | `+0x45c` | **Scale** | 19-bit Floating Point (F19) scale value (Bits 0-18). |
-| **0x4510** | `+0x464` | **PreScale** | 19-bit Floating Point (F19) pre-scale value (Bits 0-18). |
-| **0x4514** | `+0x468` | **FinalScale** | 19-bit Floating Point (F19) final scale value (Bits 0-18). |
-| **0x4518** | `+0x46c` | **LUT1** | Piecewise Linear LUT Parameter. |
-| **0x4520** | `+0x474` | **LUT2** | Piecewise Linear LUT Parameter. |
-| **0x4524** | `+0x478` | **LUT3** | Piecewise Linear LUT Parameter. |
-| **0x4528** | `+0x47c` | **LUT4** | Piecewise Linear LUT Parameter. |
-| **0x4530** | `+0x484` | **LUT5** | Piecewise Linear LUT Parameter. |
-| **0x4534** | `+0x488` | **LUT6** | Piecewise Linear LUT Parameter. |
-| **0x4538** | `+0x48c` | **Quant** | **Src1InputOffset**: 0-7, **Src2InputOffset**: 8-15, **OutputZeroPoint**: 16-23. |
-
-#### PE Indexing Extension (H16_PE_EXT_START block, Object `+0x434`)
-These registers coordinate with the PE for indexing operations.
-
-| HW Addr | Index | Register Name | Bit-Field Mapping |
-| :--- | :--- | :--- | :--- |
-| **H16_PE_EXT_START** | Word 0 | **IndexCfg** | **MaxIndex**: 0-15, **IndexMode**: 16-18, **IndexBroadcast**: 24-25, **IndexTranspose**: 26. |
-
-#### L2 Cache / Buffer (0x4100 block, Object `+0x3a8`)
-The L2 block handles local buffering and tensor tiling.
-Size: 41 registers (`0xA4` bytes, `0x29` words).
+### L2 Cache / Buffer (0x4100 block, Object `+0x3a8`)
+- **Count**: 41 registers (`0x29` words, `0xA4` bytes).
+- **Object Layout**: Starts at `+0x3a8` of the `ZinAneTd` object.
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
@@ -255,36 +283,117 @@ Size: 41 registers (`0xA4` bytes, `0x29` words).
 | **0x4130** | `+0x3d8` | **Src2DepthStride** | **Stride**: 4-20 (16B units). |
 | **0x4134** | `+0x3dc` | **Src2GroupStride** | **Stride**: 4-20 (16B units). |
 | **0x4138** | `+0x3e0` | **SrcIdxBase** | **Addr**: 4-20 (16B units). |
-| **0x413C** | `+0x3e4` | **SrcIdxChStride** | **Stride**: 4-20 (16B units). |
-| **0x4140** | `+0x3e8` | **SrcIdxDepStride** | **Stride**: 4-20 (16B units). |
-| **0x4144** | `+0x3ec` | **SrcIdxGrpStride** | **Stride**: 4-20 (16B units). |
-| **0x4148** | `+0x3f0` | **ResultCfg** | **Type**: 0-1, **BfrMode**: 3, **SrcAlias**: 4, **ResultAlias**: 5, **Format**: 6-7, **Interleave**: 8-11, **Compression**: 25-26. |
+| **0x413C** | `+0x3e4` | **SrcIdxChannelStride**| **Stride**: 4-20 (16B units). |
+| **0x4140** | `+0x3e8` | **SrcIdxDepthStride** | **Stride**: 4-20 (16B units). |
+| **0x4144** | `+0x3ec` | **SrcIdxGroupStride** | **Stride**: 4-20 (16B units). |
+| **0x4148** | `+0x3f0` | **ResultCfg** | **Type**: 0-1, **Format**: 6-7, **Interleave**: 8-11, **Compression**: 25-26. |
 | **0x414C** | `+0x3f4` | **ResultBase** | **Addr**: 4-20 (16B units). |
-| **0x4150** | `+0x3f8` | **ResultChStride** | **Stride**: 4-20 (16B units). |
+| **0x4150** | `+0x3f8` | **ResultChannelStride**| **Stride**: 4-20 (16B units). |
 | **0x4154** | `+0x3fc` | **ResultRowStride** | **Stride**: 4-20 (16B units). |
-| **0x4158** | `+0x400` | **ResultDepStride** | **Stride**: 4-20 (16B units). |
-| **0x415C** | `+0x404` | **ResultGrpStride** | **Stride**: 4-20 (16B units). |
-| **0x4160** | `+0x408` | **ResultWrapBase** | **Addr**: 0-16. |
-| **0x4164** | `+0x40c` | **GlobalWrapCfg** | **Src1Mode**: 0-2, **Src2Mode**: 4-6, **ResultMode**: 14-16. |
-| **0x4168** | `+0x410` | **Src1WrapStride** | **Stride**: 16-31. |
-| **0x416C** | `+0x414` | **Src2WrapStride** | **Stride**: 16-31. |
-| **0x4170** | `+0x418` | **ResultWrapStride**| **Stride**: 16-31. |
-| **0x4174** | `+0x41c` | **ResultWrapIdxOff** | **WrapIndex**: 0-15, **WrapStartOffs**: 16-31. |
-| **0x4178** | `+0x420` | **PEIndexCfg** | **0To17**: 0-17. |
-| **0x417C** | `+0x424` | **PEIndexUknownCfg0** | **0To16**: 0-16, **17**: 17, **18To31**: 18-31. |
-| **0x4180** | `+0x428` | **PEIndexUknownCfg1** | **0To17**: 0-17. |
-| **0x4184** | `+0x42c` | **PEIndexUknownCfg2** | **0To16**: 0-16, **17**: 17, **18To31**: 18-31. |
-| **0x4188** | `+0x430` | **PEIndexUknownCfg3** | **0To17**: 0-17. |
-| **0x418C** | `+0x434` | **PEIndexSetting** | **MaxIndex**: 0-15, **IndexMode**: 16-18, **IndexBroadcast**: 24-25, **IndexTranspose**: 26. |
-| **0x4190** | `+0x438` | **Src1AddrWrap** | **WrapAddr**: 0-11. |
-| **0x4194** | `+0x43c` | **Src2AddrWrap** | **WrapAddr**: 0-11. |
-| **0x419C** | `+0x444` | **ResultWrapAddr** | **WrapAddr**: 0-11. |
-| **0x41A0** | `+0x448` | **ConsolidatedOff** | **Src1X**: 0-5, **Src1Y**: 8-12, **Src2X**: 16-21, **Src2Y**: 24-28. |
+| **0x4158** | `+0x400` | **ResultDepthStride**| **Stride**: 4-20 (16B units). |
+| **0x415C** | `+0x404` | **ResultGroupStride**| **Stride**: 4-20 (16B units). |
+| **0x4160** | `+0x408` | **L2Reserved** |  |
+| **0x4164** | `+0x40c` | **SrcAndResultWrapCfg** | **WrapNumBlocks**: 0-11, **WrapLen**: 12-31. |
+| **0x4168** | `+0x410` | **Src1WrapStart** | **WrapNumBlocks**: 0-11, **WrapLen**: 12-31. |
+| **0x416C** | `+0x414` | **Src2WrapStart** | **WrapNumBlocks**: 0-11, **WrapLen**: 12-31. |
+| **0x4170** | `+0x418` | **L2Reserved** |  |
+| **0x4174** | `+0x41c` | **ResultWrapStart**| **IndexMask**: 0-3, **StartOffset**: 4-15. |
+| **0x4178** | `+0x420` | **MiscField0x4178** |  |
+| **0x417C** | `+0x424` | **MiscField0x417C** |  |
+| **0x4180** | `+0x428` | **MiscField0x4180** |  |
+| **0x4184** | `+0x42c` | **MiscField0x4184** |  |
+| **0x4188** | `+0x430` | **MiscField0x4188** |  |
+| **0x418C** | `+0x434` | **PEIndexCfg** | **Transpose**: 0, **Mode**: 1, **MaxIndex**: 16-31. |
+| **0x4190** | `+0x438` | **Src1AddrWrap** |  |
+| **0x4194** | `+0x43c` | **Src2AddrWrap** |  |
+| **0x4198** | `+0x440` | **L2Reserved** |  |
+| **0x419C** | `+0x444` | **ResultWrapAddr** |  |
+| **0x41A0** | `+0x448` | **CropOffsetTexture** | **Src1X**: 0-5, **Src1Y**: 8-12, **Src2X**: 16-21, **Src2Y**: 24-28. |
 
-#### L2 Wrap Constraints:
-- `0x4164`: **ResultWrapCfg**
-- `0x4174`: **ResultWrapIdxOff**
-- `0x419C`: **ResultWrapAddr**
+### Planar Engine (PE) (0x4500 block, Object `+0x454`)
+- **Count**: 15 registers (`0x0f` words, `0x3c` bytes).
+- **Object Layout**: Starts at `+0x454` of the `ZinAneTd` object.
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
+| :--- | :--- | :--- | :--- |
+| **0x4500** | `+0x454` | **Config** | **Op**: 2-4 (1:Add, 2:Mul, 3:Min, 4:Max), **LUTEnable**: 5, **Cond**: 6-8, **Src1Selection**: 16, **Src2Selection**: 18-19. |
+| **0x4504** | `+0x458` | **Bias** | 19-bit Floating Point (F19) bias value (Bits 0-18). |
+| **0x4508** | `+0x45c` | **Scale** | 19-bit Floating Point (F19) scale value (Bits 0-18). |
+| **0x4510** | `+0x464` | **PreScale** | 19-bit Floating Point (F19) pre-scale value (Bits 0-18). |
+| **0x4514** | `+0x468` | **FinalScale** | 19-bit Floating Point (F19) final scale value (Bits 0-18). |
+| **0x4518** | `+0x46c` | **LUT1** | Piecewise Linear LUT Parameter. |
+| **0x4520** | `+0x474` | **LUT2** | Piecewise Linear LUT Parameter. |
+| **0x4524** | `+0x478` | **LUT3** | Piecewise Linear LUT Parameter. |
+| **0x4528** | `+0x47c` | **LUT4** | Piecewise Linear LUT Parameter. |
+| **0x4530** | `+0x484` | **LUT5** | Piecewise Linear LUT Parameter. |
+| **0x4534** | `+0x488` | **LUT6** | Piecewise Linear LUT Parameter. |
+| **0x4538** | `+0x48c` | **Quant** | **Src1InputOffset**: 0-7, **Src2InputOffset**: 8-15, **OutputZeroPoint**: 16-23. |
+
+### Neural Engine (NE) (0x4900 block, Object `+0x498`)
+- **Count**: 12 registers (`0x0c` words, `0x30` bytes).
+- **Object Layout**: Starts at `+0x498` of the `ZinAneTd` object.
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
+| :--- | :--- | :--- | :--- |
+| **0x4900** | `+0x498` | **KernelCfg** | **KernelFmt**: 0-1, **PalEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **GroupKernelReuse**: 10, **SparseBinary**: 15, **AsymQuantEn**: 24. |
+| **0x4904** | `+0x49c` | **MACCfg** | **OpMode**: 0-2 (0:Conv, 1:MatMul, 2:EWise, 3:XCorr), **KernelMode**: 3, **BiasEnable**: 4, **PassthroughEnable**: 5, **MatrixVectorBiasEnable**: 6, **BinaryPoint**: 8-13, **PostScaleEnable**: 14, **NonlinearMode**: 16-17, **MaxPoolMode**: 19, **ArgOutputSelect**: 20-23, **DoubleInt8Enable**: 26. |
+| **0x4908** | `+0x4a0` | **MatrixVectorBias**| **Bias**: 0-15. |
+| **0x490C** | `+0x4a4` | **NEBias** | **Bias**: 0-20 (F19/F21). |
+| **0x4910** | `+0x4a8` | **NEPostScale** | **PostScale**: 0-20 (F19/F21). |
+| **0x4914** | `+0x4ac` | **RcasConfig** | **KeyMask**: 0-7, **CmpBit**: 8-10, **SenseAxis**: 12-13, **SenseBit**: 16-19, **RcasMode**: 20. |
+| **0x4918** | `+0x4b0` | **RoundModeCfg** | **StochasticRoundMode**: 0-1, **StochasticRoundIntegerBits**: 4-8. |
+| **0x491C** | `+0x4b4` | **SRSeed[0]**| **Seed**: 0-31. |
+| **0x4920** | `+0x4b8` | **SRSeed[1]**| **Seed**: 0-31. |
+| **0x4924** | `+0x4bc` | **SRSeed[2]**| **Seed**: 0-31. |
+| **0x4928** | `+0x4c0` | **SRSeed[3]**| **Seed**: 0-31. |
+| **0x492C** | `+0x4c4` | **QuantZeroPoint** | **ZeroPoint**: 0-7. |
+
+### TileDMA Destination (0x5100 block, Object `+0x4d0`)
+- **Count**: 21 registers (`0x15` words, `0x54` bytes).
+- **Object Layout**: Starts at `+0x4d0` of the `ZinAneTd` object.
+
+| HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
+| :--- | :--- | :--- | :--- |
+| **0x5100** | `+0x4d0` | **DstDMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x5104** | `+0x4d4` | **DstPadding** | Reserved / Padding Mode. |
+| **0x5108** | `+0x4d8` | **DstBaseAddrLo** | **AddrLo**: 0-31. |
+| **0x510C** | `+0x4dc` | **DstBaseAddrHi** | **AddrHi**: 0-31. |
+| **0x5110** | `+0x4e0` | **DstRowStride** | **Stride**: 6-31. |
+| **0x5114** | `+0x4e4` | **DstPlaneStride** | **Stride**: 6-31. |
+| **0x5118** | `+0x4e8` | **DstDepthStride** | **Stride**: 6-31. |
+| **0x511C** | `+0x4ec` | **DstGroupStride** | **Stride**: 6-31. |
+| **0x5120** | `+0x4f0` | **DstInternalCfg**| **InternalBits**: 0-15, **Flag1**: 16, **Flag2**: 17, **Flag3**: 18. |
+| **0x5124** | `+0x4f4` | **DstReserved1** | Unknown. |
+| **0x5128** | `+0x4f8` | **DstMetaDataAddrLo**| **AddrLo**: 0-31. |
+| **0x512C** | `+0x4fc` | **DstMetaDataAddrHi**| **AddrHi**: 0-31. |
+| **0x5130** | `+0x500` | **DstFormatMode** | **FormatMode**: 0-1, **MetaDataSize**: 7-31. |
+| **0x5134** | `+0x504` | **DstReserved2** | Reserved. |
+| **0x5138** | `+0x508` | **DstFmtCtrl** | **ZeroPad**, **FmtOffsetCh**, **FmtCmpVec**. |
+| **0x513C** | `+0x50C` | **DstReserved3** | Reserved. |
+| **0x5140** | `+0x510` | **DstCompressedInfo**| **PackingFormat**, **MacroblockSize**, **LossyMode**. |
+| **0x5144** | `+0x514` | **DstReserved4** | Reserved. |
+| **0x5148** | `+0x518` | **DstCompSizeLo** | **SizeLo**: 0-31. |
+| **0x514C** | `+0x51c` | **DstCompSizeHi** | **SizeHi**: 0-31. |
+| **0x5150** | `+0x520` | **DstPixelOffset** | Cropping Offset. |
+
+### CacheDMA / Telemetry (0x5900 block, Object `+0x52c`)
+- **Count**: 12 registers (`0x0c` words, `0x30` bytes).
+- **Object Layout**: Starts at `+0x52c` of the `ZinAneTd` object.
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
+| :--- | :--- | :--- | :--- |
+| **0x5900** | `+0x52c` | **TelemetryControl** | **Flush**: 0, **Enable**: 1, **TaskSync**: 2-3, **EarlyTerm**: 4-8. |
+| **0x5904** | `+0x530` | **TelemetryPre0** | **BandwidthLimit**, **SieveFiltering**, **ResponseAgeOut**. |
+| **0x5908** | `+0x534` | **TelemetryPre1** | **UserTag**, **Sieve1**: 0-13. |
+| **0x590C** | `+0x538` | **TelemetryReserved1** | Reserved. |
+| **0x5910** | `+0x53c` | **TelemetryReserved2** | Reserved. |
+| **0x5914** | `+0x540` | **TelemetryReserved3** | Reserved. |
+| **0x5918** | `+0x544` | **TelemetryDSID** | **DataSetIdAndSize**: 7-29. |
+| **0x591C** | `+0x548` | **FootprintArg** | **FootprintArg2**: 17-27. |
+| **0x5920** | `+0x54c` | **EarlyTermArg12** | **Arg1**: 0-15, **Arg2**: 16-31. |
+| **0x5924** | `+0x550` | **FlushRegister** | **FlushArg**: 0-15. |
+| **0x5928** | `+0x554` | **EarlyTermArg34** | **Arg3**: 0-7, **Arg4**: 16-23. |
+| **0x592C** | `+0x558` | **BackoffControl** | **Enable**: 0, **Delay**: 4-7, **Min**: 8-15. |
 
 ### Cross-Cutting Subsystems: Quantization
 Certain high-level configurations, like Quantization, touch multiple disparate hardware blocks simultaneously to coordinate data scaling and types across the pipeline. As decompiled from `ZinAneTd<17u>::SetQuantization*` methods:

@@ -2,7 +2,7 @@
 
 The `ZinAneTd<17u>` object maps internal offsets to hardware register blocks as follows:
 
-| Source Offset (`this`) | Reg Count (Words) | HW Start Address | HW End Address (approx) | Primary Feature Area |
+| Source Offset (`this`) | Reg Count (Words) | HW Start Address | HW End Address | Primary Feature Area |
 | :--- | :--- | :--- | :--- | :--- |
 | `+0x1f8` | `0x17` | `0x0000` | `0x005C` | Common (InDim, OutDim, Patch, PETra) |
 | `+0x3a8` | `0x29` | `0x4100` | `0x41A4` | L2 Cache / Buffer |
@@ -30,7 +30,7 @@ Before registers, there are some header words.
 
 ## Register Offsets and Meanings
 
-| Word Index | Byte Offset | Name | Description |
+| Word Index | HW Addr | Name | Description |
 | :--- | :--- | :--- | :--- |
 | **0** | `0x00` | **ChannelCfg** | **InFmt**: 0-1, **OutFmt**: 4-5. |
 | **1** | `0x04` | **InWidth** | **Win**: 0-13. |
@@ -41,7 +41,7 @@ Before registers, there are some header words.
 | **6** | `0x18` | **OutHeight** | **Hout**: 0-13. |
 | **7** | `0x1C` | **OutChannels** | **Cout**: 0-13. |
 | **8** | `0x20` | **OutDepth** | **Dout**: 0-13. |
-| **9** | `0x24` | **Batch** | **Batch**: 0-31. |
+| **9** | `0x24` | **NumGroups** | Batch size / Number of groups. |
 | **10** | `0x28` | **ConvCfg** | **KW**: 0-5, **KH**: 6-11, **SX**: 13-14, **SY**: 15-16, **PX**: 17-21, **PY**: 22-26, **OX**: 28-29, **OY**: 30-31. |
 | **11** | `0x2C` | **ConvCfg3d** | **KD**: 0-5, **SZ**: 6-11, **PZ**: 12-16, **OZ**: 17-21. |
 | ... | ... | ... | ... |
@@ -69,9 +69,9 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x5500** | `+0x030` | **MasterConfig** | **MasterEnable**: 6, **KernelSparseFmt**: 8, **GroupKernelReuse**: 10. (Inferred from setters) |
-| **0x5504** | `+0x034` | **AlignedCoeffSizePerCh** | **Size**: 0-31. |
-| **0x5508** | `+0x038` | **Prefetch** | **EarlyTermEn**: 0, **StopOnError**: 1, **PrefetchRate**: 16-31. |
+| **0x5500** | `+0x030` | **MasterConfig** | **GroupKernelReuse**: 4, **KernelSparseFmt**: 5, **MasterEnable**: 6. (Verified via binary) |
+| **0x5504** | `+0x034` | **AlignedCoeffSizePerCh** | **Size**: 0-27. (Verified via binary) |
+| **0x5508** | `+0x038` | **Prefetch** | **EarlyTermEn**: 0, **StopOnError**: 1, **PrefetchRate**: 16-31. (Verified via binary) |
 | **0x550C** | `+0x03c` | **Reserved0** | Reserved. |
 | **0x5510** | `+0x040` | **Reserved1** | Reserved. |
 | **0x5514** | `+0x044` | **Reserved2** | Reserved. |
@@ -109,22 +109,22 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x5594** | `+0x0c4` | **CoeffBaseAddr13** | **Addr**: 6-31. |
 | **0x5598** | `+0x0c8` | **CoeffBaseAddr14** | **Addr**: 6-31. |
 | **0x559C** | `+0x0cc` | **CoeffBaseAddr15** | **Addr**: 6-31. |
-| **0x55A0** | `+0x0d0` | **CoeffBfrSize0** | **Size**: 0-31. |
-| **0x55A4** | `+0x0d4` | **CoeffBfrSize1** | **Size**: 0-31. |
-| **0x55A8** | `+0x0d8` | **CoeffBfrSize2** | **Size**: 0-31. |
-| **0x55AC** | `+0x0dc` | **CoeffBfrSize3** | **Size**: 0-31. |
-| **0x55B0** | `+0x0e0` | **CoeffBfrSize4** | **Size**: 0-31. |
-| **0x55B4** | `+0x0e4` | **CoeffBfrSize5** | **Size**: 0-31. |
-| **0x55B8** | `+0x0e8` | **CoeffBfrSize6** | **Size**: 0-31. |
-| **0x55BC** | `+0x0ec` | **CoeffBfrSize7** | **Size**: 0-31. |
-| **0x55C0** | `+0x0f0` | **CoeffBfrSize8** | **Size**: 0-31. |
-| **0x55C4** | `+0x0f4` | **CoeffBfrSize9** | **Size**: 0-31. |
-| **0x55C8** | `+0x0f8` | **CoeffBfrSize10** | **Size**: 0-31. |
-| **0x55CC** | `+0x0fc` | **CoeffBfrSize11** | **Size**: 0-31. |
-| **0x55D0** | `+0x100` | **CoeffBfrSize12** | **Size**: 0-31. |
-| **0x55D4** | `+0x104` | **CoeffBfrSize13** | **Size**: 0-31. |
-| **0x55D8** | `+0x108` | **CoeffBfrSize14** | **Size**: 0-31. |
-| **0x55DC** | `+0x10c` | **CoeffBfrSize15** | **Size**: 0-31. |
+| **0x55A0** | `+0x0d0` | **CoeffBfrSize0** | **Size**: 6-31. (Verified via binary) |
+| **0x55A4** | `+0x0d4` | **CoeffBfrSize1** | **Size**: 6-31. (Verified via binary) |
+| **0x55A8** | `+0x0d8` | **CoeffBfrSize2** | **Size**: 6-31. (Verified via binary) |
+| **0x55AC** | `+0x0dc` | **CoeffBfrSize3** | **Size**: 6-31. (Verified via binary) |
+| **0x55B0** | `+0x0e0` | **CoeffBfrSize4** | **Size**: 6-31. (Verified via binary) |
+| **0x55B4** | `+0x0e4` | **CoeffBfrSize5** | **Size**: 6-31. (Verified via binary) |
+| **0x55B8** | `+0x0e8` | **CoeffBfrSize6** | **Size**: 6-31. (Verified via binary) |
+| **0x55BC** | `+0x0ec` | **CoeffBfrSize7** | **Size**: 6-31. (Verified via binary) |
+| **0x55C0** | `+0x0f0` | **CoeffBfrSize8** | **Size**: 6-31. (Verified via binary) |
+| **0x55C4** | `+0x0f4` | **CoeffBfrSize9** | **Size**: 6-31. (Verified via binary) |
+| **0x55C8** | `+0x0f8` | **CoeffBfrSize10** | **Size**: 6-31. (Verified via binary) |
+| **0x55CC** | `+0x0fc` | **CoeffBfrSize11** | **Size**: 6-31. (Verified via binary) |
+| **0x55D0** | `+0x100` | **CoeffBfrSize12** | **Size**: 6-31. (Verified via binary) |
+| **0x55D4** | `+0x104` | **CoeffBfrSize13** | **Size**: 6-31. (Verified via binary) |
+| **0x55D8** | `+0x108` | **CoeffBfrSize14** | **Size**: 6-31. (Verified via binary) |
+| **0x55DC** | `+0x10c` | **CoeffBfrSize15** | **Size**: 6-31. (Verified via binary) |
 | **0x55E0** | `+0x110` | **BiasDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
 | **0x55E4** | `+0x114` | **BiasBaseAddr** | **Addr**: 6-31. |
 | **0x55E8** | `+0x118` | **BiasReserved0** | Reserved. |
@@ -327,7 +327,7 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x4528** | `+0x47c` | **LUT4** | Piecewise Linear LUT Parameter. |
 | **0x4530** | `+0x484` | **LUT5** | Piecewise Linear LUT Parameter. |
 | **0x4534** | `+0x488` | **LUT6** | Piecewise Linear LUT Parameter. |
-| **0x4538** | `+0x48c` | **Quant** | **Src1InputOffset**: 0-7, **Src2InputOffset**: 8-15, **OutputZeroPoint**: 16-23. |
+| **0x4538** | `+0x48c` | **Quant** | **Src1InputOffset**: 0-7, **Src2InputOffset**: 8-15, **OutputZeroPoint**: 16-23. (Verified via binary) |
 
 ### Neural Engine (NE) (0x4900 block, Object `+0x498`)
 - **Count**: 12 registers (`0x0c` words, `0x30` bytes).
@@ -335,7 +335,7 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4900** | `+0x498` | **KernelCfg** | **KernelFmt**: 0-1, **PalEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **GroupKernelReuse**: 10, **SparseBinary**: 15, **AsymQuantEn**: 24. |
+| **0x4900** | `+0x498` | **KernelCfg** | **KernelFmt**: 0-1, **PalEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **GroupKernelReuse**: 10, **SparseBinary**: 15, **KernelAlignmentFormat**: 16, **AsymQuantEn**: 24. (Verified via binary) |
 | **0x4904** | `+0x49c` | **MACCfg** | **OpMode**: 0-2 (0:Conv, 1:MatMul, 2:EWise, 3:XCorr), **KernelMode**: 3, **BiasEnable**: 4, **PassthroughEnable**: 5, **MatrixVectorBiasEnable**: 6, **BinaryPoint**: 8-13, **PostScaleEnable**: 14, **NonlinearMode**: 16-17, **MaxPoolMode**: 19, **ArgOutputSelect**: 20-23, **DoubleInt8Enable**: 26. |
 | **0x4908** | `+0x4a0` | **MatrixVectorBias**| **Bias**: 0-15. |
 | **0x490C** | `+0x4a4` | **NEBias** | **Bias**: 0-20 (F19/F21). |
@@ -380,7 +380,7 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 - **Count**: 12 registers (`0x0c` words, `0x30` bytes).
 - **Object Layout**: Starts at `+0x52c` of the `ZinAneTd` object.
 
-| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
+| HW Addr | Offset (`this`) | Word | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
 | **0x5900** | `+0x52c` | **TelemetryControl** | **Flush**: 0, **Enable**: 1, **TaskSync**: 2-3, **EarlyTerm**: 4-8. |
 | **0x5904** | `+0x530` | **TelemetryPre0** | **BandwidthLimit**, **SieveFiltering**, **ResponseAgeOut**. |

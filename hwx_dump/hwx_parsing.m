@@ -109,33 +109,31 @@ const char *get_m4_reg_name(uint32_t addr) {
       "CacheDMAFlushArg", "EarlyTermArg34",    "TelemetryBackOff"};
   static const char *pe_index_names[] = {"PE_IndexCfg"};
   static const char *tdma_src_names[81] = {
-      "Src1DMAConfig",      "Src2DMAConfig",      "Src1BaseAddrLo",
-      "Src1BaseAddrHi",      "Src2BaseAddrLo",      "Src2BaseAddrHi",
-      "Src1RowStride",      "Src1PlaneStride",     "Src1DepthStride",
-      "Src1GroupStride",     "Src2Config",         "Src2Padding",
-      "Src2RowStride",      "Src2PlaneStride",     "Src2DepthStride",
-      "Src2GroupStride",     "Src1MetaDataConfig", "pad_17",
-      "pad_18",             "pad_19",             "Src1MetaDataAddrLo",
-      "Src1MetaDataAddrHi", "Src1MetaDataSize",   "Src2MetaDataAddrLo",
-      "Src2MetaDataAddrHi", "Src2MetaDataSize",   "Src1Fmt",
-      "Src2Fmt",            "pad_28",             "pad_29",
-      "pad_30",             "pad_31",             "pad_32",
-      "pad_33",             "pad_34",             "pad_35",
-      "pad_36",             "pad_37",             "Src1PixelOffset[0]",
-      "Src1PixelOffset[1]", "Src1PixelOffset[2]", "Src1PixelOffset[3]",
-      "Src2PixelOffset[0]", "Src2PixelOffset[1]", "Src2PixelOffset[2]",
-      "Src2PixelOffset[3]", "pad_46",             "pad_47",
-      "pad_48",             "pad_49",             "pad_50",
-      "pad_51",             "pad_52",             "pad_53",
-      "pad_54",             "pad_55",             "pad_56",
-      "pad_57",             "pad_58",             "pad_59",
-      "pad_60",             "pad_61",             "pad_62",
-      "pad_63",             "pad_64",             "pad_65",
-      "pad_66",             "pad_67",             "pad_68",
-      "pad_69",             "pad_70",             "pad_71",
-      "pad_72",             "pad_73",             "pad_74",
-      "pad_75",             "pad_76",             "pad_77",
-      "pad_78",             "pad_79",             "pad_80"};
+      "Src1DMAConfig",      "Src2DMAConfig",      "Src1WrapCfg",
+      "Src2WrapCfg",        "Src1BaseAddrLo",     "Src1BaseAddrHi",
+      "Src1RowStride",      "Src1PlaneStride",    "Src2BaseAddrLo",
+      "Src1GroupStride",    "Src2BaseAddrHi",     "Src2RowStride",
+      "Src2PlaneStride",    "Src2GroupStride",    "pad_38",
+      "pad_3C",             "Src1MetaDataConfig", "pad_44",
+      "pad_48",             "pad_4C",             "Src1MetaDataAddrLo",
+      "Src1MetaDataAddrHi", "Src1MetaDataSize",   "Src2MetaDataConfig",
+      "Src2MetaDataAddrLo", "Src2MetaDataAddrHi", "Src1FmtMode",
+      "Src2FmtMode",        "Reserved_0x4D70",    "Reserved_0x4D74",
+      "Src1CompressedSizeLo", "Src1CompressedSizeHi", "Src1CompressedInfo",
+      "Src1CropOffset",     "Src2CompressedSizeLo", "Src2CompressedSizeHi",
+      "Src2CompressedInfo", "Src2CropOffset",     "Reserved_0x4D98",
+      "Reserved_0x4D9C",    "Reserved_0x4DA0",    "Reserved_0x4DA4",
+      "Reserved_0x4DA8",    "Reserved_0x4DAC",    "Reserved_0x4DB0",
+      "Reserved_0x4DB4",    "Src1WrapDynamic",    "Src2WrapDynamic",
+      "Src1DependencyOffset", "Src2DependencyOffset", "TextureConfig",
+      "TextureIdxPermute",  "TextureSrcPermute",  "TextureBackgroundVal",
+      "TextureExtMaxDim1",  "TextureExtMaxDim2",  "TextureExtMaxDim3",
+      "TextureCropBatchSplitDim1", "TextureCropDepthDim1", "TextureCropBatchSplitDim2",
+      "Reserved_0x4DF0",    "Reserved_0x4DF4",    "Reserved_0x4DF8",
+      "Reserved_0x4DFC",    "Reserved_0x4E00",    "TextureCropCoeffVal",
+      "pad_66", "pad_67", "pad_68", "pad_69", "pad_70", "pad_71",
+      "pad_72", "pad_73", "pad_74", "pad_75", "pad_76", "pad_77",
+      "pad_78", "pad_79", "pad_80"};
   static const char *tdma_dst_names[] = {
       "DstDMAConfig",      "pad0",
       "DstBaseAddrLo",     "DstBaseAddrHi",
@@ -149,8 +147,8 @@ const char *get_m4_reg_name(uint32_t addr) {
       "DstCompSizeLo",     "DstCompSizeHi",
       "DstPixelOffset"};
   static const char *kdma_names[72] = {
-      "MasterConfig",  "Reserved1",     "Prefetch",
-      "Reserved[0]",   "Reserved[1]",   "Reserved[2]",
+      "MasterCfg",     "AlignedCoeffSize", "Prefetch",
+      "Reserved[0]",   "Reserved[1]",      "Reserved[2]",
       "StrideX",       "StrideY",       "CoeffDMAConfig[0]",
       "CoeffDMAConfig[1]",  "CoeffDMAConfig[2]",  "CoeffDMAConfig[3]",
       "CoeffDMAConfig[4]",  "CoeffDMAConfig[5]",  "CoeffDMAConfig[6]",
@@ -167,11 +165,11 @@ const char *get_m4_reg_name(uint32_t addr) {
       "CoeffBfrSize[5]",    "CoeffBfrSize[6]",    "CoeffBfrSize[7]",
       "CoeffBfrSize[8]",    "CoeffBfrSize[9]",    "CoeffBfrSize[10]",
       "CoeffBfrSize[11]",   "CoeffBfrSize[12]",   "CoeffBfrSize[13]",
-      "CoeffBfrSize[14]",   "CoeffBfrSize[15]",   "BiasDMAConfig",
+      "CoeffBfrSize[14]",   "CoeffBfrSize[15]",   "BiasCfg",
       "pad_57",             "pad_58",             "pad_59",
-      "PostScaleDMAConfig", "pad_61",             "pad_62",
-      "pad_63",             "PaletteDMAConfig",   "pad_65",
-      "pad_66",             "pad_67",             "NLutDMAConfig",
+      "PSScaleCfg",         "pad_61",             "pad_62",
+      "pad_63",             "PalCfg",             "pad_65",
+      "pad_66",             "pad_67",             "NLutCfg",
       "pad_69",             "pad_70",             "pad_71"};
 
   static const hwx_reg_range_t m4_ranges[] = {
@@ -195,7 +193,7 @@ void dump_hw_blocks(const hwx_state_t *state, const hwx_block_info_t *blocks,
   for (int b = 0; b < count; b++) {
     bool printed_header = false;
     uint32_t word_start = blocks[b].startAddr / 4;
-    uint32_t word_end = word_start + 0x100; // Look ahead 0x400 bytes
+    uint32_t word_end = word_start + blocks[b].count;
 
     for (uint32_t r = word_start; r < word_end; r++) {
       if (state->valid[r]) {
@@ -467,7 +465,10 @@ void print_common_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_COMMON_START + 0x2C) / 4]) {
-    printf("        ConvCfg3D : 0x%08x\n", common.conv_cfg_3d);
+    uint32_t v = state->values[(H16_COMMON_START + 0x2C) / 4];
+    printf("        ConvCfg3D : 0x%08x (Kd=%u Sz=%u Pz=%u Oz=%u)\n", v,
+           common.conv_cfg_3d.kd, common.conv_cfg_3d.sz, common.conv_cfg_3d.pz,
+           common.conv_cfg_3d.oz);
   }
 
   if (state->valid[(H16_COMMON_START + 0x30) / 4]) {
@@ -486,10 +487,10 @@ void print_common_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_COMMON_START + 0x3C) / 4]) {
-    printf("        MACCfg    : ActiveNE=%u SmallSrc=%u TaskType=%u L2Barr=%d "
+    printf("        MACCfg    : ActiveNE=%u SmallSrc=%u TaskType=%u "
            "OutTrans=%d FillLowerNE=%d\n",
            common.maccfg.active_ne, common.maccfg.small_src_mode,
-           common.maccfg.task_type, common.maccfg.l2_barrier,
+           common.maccfg.task_type,
            common.maccfg.out_trans, common.maccfg.fill_lower_ne);
   }
 
@@ -505,14 +506,10 @@ void print_common_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_COMMON_START + 0x48) / 4]) {
-    printf("        PECfg     : S1WB=%d S1HB=%d S1DB=%d S1CB=%d S2WB=%d "
-           "S2HB=%d S2DB=%d S2CB=%d S1T=%d S2T=%d OT=%d\n",
-           common.pe_cfg.src1_w_bcast, common.pe_cfg.src1_h_bcast,
-           common.pe_cfg.src1_d_bcast, common.pe_cfg.src1_c_bcast,
-           common.pe_cfg.src2_w_bcast, common.pe_cfg.src2_h_bcast,
-           common.pe_cfg.src2_d_bcast, common.pe_cfg.src2_c_bcast,
+    printf("        PECfg     : S1BR=%d S2BR=%d S1T=%d S2T=%d OCTW=%d\n",
+           common.pe_cfg.src1_br, common.pe_cfg.src2_br,
            common.pe_cfg.src1_trans, common.pe_cfg.src2_trans,
-           common.pe_cfg.out_trans);
+           common.pe_cfg.out_ctow);
   }
 
   if (state->valid[(H16_COMMON_START + 0x4C) / 4])
@@ -530,13 +527,13 @@ void print_ne_h16(const hwx_state_t *state) {
   printf("        --- Neural Engine (0x4900) ---\n");
 
   if (state->valid[H16_NE_START / 4]) {
-    printf("        KernelCfg: Fmt=%s Palettized=%d (%dbit) SparseFmt=%d "
-           "GroupKernelReuse=%d AlignmentFmt=%d SparseBlockSize=%d "
+    printf("        KernelCfg: Fmt=%s Palettized=%d (%dbit) SparseEn=%d "
+           "GroupKernelReuse=%d AlignmentFmt=%d "
            "AsymQuant=%d\n",
            get_ch_fmt_name(ne.kernel_cfg.kernel_fmt),
            ne.kernel_cfg.palettized_en, ne.kernel_cfg.palettized_bits,
-           ne.kernel_cfg.sparse_fmt, ne.kernel_cfg.group_kernel_reuse,
-           ne.kernel_cfg.alignment_fmt, ne.kernel_cfg.sparse_block_size,
+           ne.kernel_cfg.sparse_en, ne.kernel_cfg.group_kernel_reuse,
+           ne.kernel_cfg.kernel_align_fmt,
            ne.kernel_cfg.asym_quant_en);
   }
 
@@ -607,7 +604,7 @@ void print_pe_h16(const hwx_state_t *state) {
     printf("        PE Final Scale: 0x%05x (%f)\n", pe.final_scale & 0x7FFFF,
            decode_f19(pe.final_scale));
   if (state->valid[(H16_PE_START + 0x38) / 4]) {
-    printf("        PE Quant: ZeroPoint=%d\n", pe.quant.zero_point);
+    printf("        PE Quant: OutZP=%d\n", pe.quant.out_zp);
   }
 }
 
@@ -634,19 +631,19 @@ void print_l2_h16(const hwx_state_t *state) {
   }
   if (state->valid[(H16_L2_START + 0x04) / 4]) {
     printf("        Src1Cfg  : Type=%d Dep=%d Alias(C=%d, R=%d) Fmt=%d "
-           "Intrlv=%d OffY=%d Comp=%d\n",
+           "Intrlv=%d Comp=%d\n",
            l2.src1_cfg.src_type, l2.src1_cfg.dependent,
            l2.src1_cfg.alias_conv_src, l2.src1_cfg.alias_conv_rslt,
            l2.src1_cfg.dma_fmt, l2.src1_cfg.interleave,
-           l2.src1_cfg.offset_y_lsbs, l2.src1_cfg.compression);
+           l2.src1_cfg.compression);
   }
   if (state->valid[(H16_L2_START + 0x08) / 4]) {
     printf("        Src2Cfg  : Type=%d Dep=%d Alias(C=%d, R=%d) Fmt=%d "
-           "Intrlv=%d OffY=%d Comp=%d\n",
+           "Intrlv=%d Comp=%d\n",
            l2.src2_cfg.src_type, l2.src2_cfg.dependent,
            l2.src2_cfg.alias_conv_src, l2.src2_cfg.alias_conv_rslt,
            l2.src2_cfg.dma_fmt, l2.src2_cfg.interleave,
-           l2.src2_cfg.offset_y_lsbs, l2.src2_cfg.compression);
+           l2.src2_cfg.compression);
   }
   if (state->valid[(H16_L2_START + 0x0c) / 4]) {
     printf("        SrcIdxCfg: Type=%d Dep=%d Alias(C=%d, R=%d) Fmt=%d B27=%d\n",
@@ -698,8 +695,11 @@ void print_l2_h16(const hwx_state_t *state) {
            l2.result_wrap_idx_off.wrap_start_offset);
   }
   if (state->valid[(H16_L2_START + 0x9c) / 4]) {
-    printf("        ResultWrap: Addr=0x%x AddrOffset=0x%x\n",
-           l2.result_wrap_addr.wrap_addr, l2.result_wrap_addr.wrap_addr_offset);
+    printf("        ResultWrap: Addr=0x%x\n", l2.wrap_addr);
+  }
+  if (state->valid[(H16_L2_START + 0xa0) / 4]) {
+    printf("        CropTex   : S1X=%d S1Y=%d S2X=%d S2Y=%d\n",
+           l2.crop_tex.s1x, l2.crop_tex.s1y, l2.crop_tex.s2x, l2.crop_tex.s2y);
   }
 }
 
@@ -708,47 +708,50 @@ void print_tiledmasrc_h16(const hwx_state_t *state) {
       (const ane_tiledmasrc_h16_t *)&state->values[H16_TILEDMA_SRC_START / 4];
   printf("        --- TileDMASrc (0x4D00) ---\n");
   if (state->valid[H16_TILEDMA_SRC_START / 4]) {
-    printf("        Src1DMAConfig: En=%d DSID=%u Tag=%u Format=%u\n",
+    printf("        Src1DMAConfig: En=%d DSID=%u Tag=%u DepInt=%u\n",
            src->src1cfg.en, src->src1cfg.dataset_id, src->src1cfg.user_tag,
-           src->src1cfg.format);
+           src->src1cfg.dep_interval);
   }
   if (state->valid[(H16_TILEDMA_SRC_START + 0x04) / 4]) {
     printf("        Src2DMAConfig: En=%d DSID=%u Tag=%u DepMode=%u\n",
            src->src2cfg.en, src->src2cfg.dataset_id, src->src2cfg.user_tag,
            src->src2cfg.dep_mode);
   }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x28) / 4]) {
-    printf("        Src2Config: 0x%08x\n", src->src2config);
-  }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x2c) / 4]) {
-    printf("        Src2Padding: 0x%08x\n", src->src2padding);
-  }
   if (state->valid[(H16_TILEDMA_SRC_START + 0x18) / 4]) {
-    printf("        Src1Strides: RowStride=0x%08x PlaneStride=0x%08x "
-           "DepthStride=0x%08x GroupStride=0x%08x\n",
-           src->src1row_stride, src->src1plane_stride, src->src1depth_stride,
+    printf("        Src1Strides: Row=0x%x Plane=0x%x Depth=0x%x Group=0x%x\n",
+           src->src1row_stride, src->src1plane_stride, 0,
            src->src1group_stride);
   }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x30) / 4]) {
-    printf("        Src2Strides: RowStride=0x%08x PlaneStride=0x%08x "
-           "DepthStride=0x%08x GroupStride=0x%08x\n",
-           src->src2row_stride, src->src2plane_stride, src->src2depth_stride,
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x2C) / 4]) {
+    printf("        Src2Strides: Row=0x%x Plane=0x%x Depth=0x%x Group=0x%x\n",
+           src->src2row_stride, src->src2plane_stride, 0,
            src->src2group_stride);
   }
   if (state->valid[(H16_TILEDMA_SRC_START + 0x40) / 4]) {
-    printf("        Src1MetaDataConfig: 0x%08x\n", src->src1metadataconfig);
+    printf("        Src1MetaCfg: 0x%08x\n", src->src1metadataconfig);
   }
   if (state->valid[(H16_TILEDMA_SRC_START + 0x50) / 4]) {
-    printf("        Src1MetaData: Addr=0x%08x%08x Size=0x%08x\n",
+    printf("        Src1MetaData: Addr=0x%08x%08x Size=0x%x\n",
            src->src1meta_hi, src->src1meta_lo, src->src1meta_size);
   }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x5c) / 4]) {
-    printf("        Src2MetaData: Addr=0x%08x%08x Size=0x%08x\n",
-           src->src2meta_hi, src->src2meta_lo, src->src2meta_size);
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x5C) / 4]) {
+    printf("        Src2MetaCfg: 0x%08x\n", src->src2metadataconfig);
+  }
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x60) / 4]) {
+    printf("        Src2MetaData: Addr=0x%08x%08x\n", src->src2meta_hi,
+           src->src2meta_lo);
   }
   if (state->valid[(H16_TILEDMA_SRC_START + 0x68) / 4]) {
     printf("        Src1Fmt: 0x%08x, Src2Fmt: 0x%08x\n", src->src1memfmt,
            src->src2memfmt);
+  }
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x80) / 4]) {
+    printf("        Src1Comp: Info=0x%x Size=0x%x%08x Crop=0x%x\n",
+           src->src1compinfo, src->src1compsize_hi, src->src1compsize_lo,
+           src->src1cropoffset);
+  }
+  if (state->valid[(H16_TILEDMA_SRC_START + 0xc8) / 4]) {
+    printf("        TextureCfg: 0x%08x\n", src->texture_config);
   }
 }
 
@@ -757,18 +760,21 @@ void print_tiledmadst_h16(const hwx_state_t *state) {
       (const ane_tiledmadst_h16_t *)&state->values[H16_TILEDMA_DST_START / 4];
   printf("        --- TileDMADst (0x5100) ---\n");
   if (state->valid[H16_TILEDMA_DST_START / 4]) {
-    printf("        DstDMAConfig: En=%d CacheHint=%u DSID=%u Tag=%u\n",
-           dst->dstcfg.en, dst->dstcfg.cache_hint, dst->dstcfg.dataset_id,
-           dst->dstcfg.user_tag);
-  }
-  if (state->valid[(H16_TILEDMA_DST_START + 0x04) / 4]) {
-    printf("        DstPadding: 0x%08x\n", dst->dstpadding);
+    printf("        DstDMAConfig: En=%d DSID=%u Tag=%u\n", dst->dstcfg.en,
+           dst->dstcfg.dataset_id, dst->dstcfg.user_tag);
   }
   if (state->valid[(H16_TILEDMA_DST_START + 0x10) / 4]) {
-    printf("        DstStrides: RowStride=0x%08x PlaneStride=0x%08x "
-           "DepthStride=0x%08x GroupStride=0x%08x\n",
+    printf("        DstStrides: Row=0x%08x Plane=0x%08x Depth=0x%08x "
+           "Group=0x%08x\n",
            dst->dstrow_stride, dst->dstplane_stride, dst->dstdepth_stride,
            dst->dstgroup_stride);
+  }
+  if (state->valid[(H16_TILEDMA_DST_START + 0x28) / 4]) {
+    printf("        DstMeta   : Addr=0x%x%08x Mode=0x%x\n", dst->dstmeta_hi,
+           dst->dstmeta_lo, dst->dstfmtmode);
+  }
+  if (state->valid[(H16_TILEDMA_DST_START + 0x50) / 4]) {
+    printf("        DstPixelOff: 0x%08x\n", dst->dstpixeloffset);
   }
 }
 
@@ -777,32 +783,33 @@ void print_kerneldmasrc_h16(const hwx_state_t *state) {
       (const ane_kerneldmasrc_h16_t *)&state->values[H16_KERNELDMA_START / 4];
   printf("        --- KernelDMASrc (0x5500) ---\n");
   if (state->valid[H16_KERNELDMA_START / 4])
-    printf("        MasterConfig: MasterEnable=%d\n",
-           k->master_cfg.master_enable);
+    printf("        MasterCfg: En=%d Sparse=%d Reuse=%d\n",
+           k->master_cfg.master_enable, k->master_cfg.kernel_sparse_fmt,
+           k->master_cfg.group_kernel_reuse);
+  if (state->valid[(H16_KERNELDMA_START + 0x08) / 4])
+    printf("        Prefetch : Rate=%u Early=%d\n", k->prefetch.prefetch_rate,
+           k->prefetch.early_term_en);
+
   for (int i = 0; i < 16; i++) {
     if (state->valid[(H16_KERNELDMA_START + 0x20) / 4 + i] ||
-        state->valid[(H16_KERNELDMA_START + 0x60) / 4 + i]) {
-      printf("        Coeff[%d]: En=%d CacheHint=%u DSID=%u Tag=%u "
+        state->valid[(H16_KERNELDMA_START + 0x60) / 4 + i] ||
+        state->valid[(H16_KERNELDMA_START + 0xa0) / 4 + i]) {
+      printf("        Coeff[%d]: En=%d DSID=%u Tag=%u "
              "Base=0x%08x "
              "Size=0x%08x\n",
-             i, k->coeff_cfg[i].en, k->coeff_cfg[i].cache_hint,
-             k->coeff_cfg[i].dataset_id, k->coeff_cfg[i].user_tag,
-             k->coeff_base[i], k->coeff_size[i]);
+             i, k->coeff_cfg[i].en, k->coeff_cfg[i].dataset_id,
+             k->coeff_cfg[i].user_tag, k->coeff_base[i],
+             k->coeff_size[i] & 0x3ffffff);
     }
   }
   if (state->valid[(H16_KERNELDMA_START + 0xe0) / 4])
-    printf("        Bias: En=%d CacheHint=%u Tag=%u\n", k->bias_cfg.en,
-           k->bias_cfg.cache_hint, k->bias_cfg.user_tag);
+    printf("        Bias: En=%d Tag=%u\n", k->bias_cfg.en,
+           k->bias_cfg.user_tag);
   if (state->valid[(H16_KERNELDMA_START + 0xf0) / 4])
-    printf("        PostScale: En=%d CacheHint=%u Tag=%u\n",
-           k->post_scale_cfg.en, k->post_scale_cfg.cache_hint,
+    printf("        PSScale: En=%d Tag=%u\n", k->post_scale_cfg.en,
            k->post_scale_cfg.user_tag);
-  if (state->valid[(H16_KERNELDMA_START + 0x100) / 4])
-    printf("        Palette: En=%d CacheHint=%u Tag=%u\n", k->palette_cfg.en,
-           k->palette_cfg.cache_hint, k->palette_cfg.user_tag);
   if (state->valid[(H16_KERNELDMA_START + 0x110) / 4])
-    printf("        NonLinear: En=%d CacheHint=%u Tag=%u\n",
-           k->non_linear_cfg.en, k->non_linear_cfg.cache_hint,
+    printf("        NLut: En=%d Tag=%u\n", k->non_linear_cfg.en,
            k->non_linear_cfg.user_tag);
 }
 
@@ -859,14 +866,14 @@ void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
 
     if (dump_reg_blocks) {
       hwx_block_info_t blocks[] = {
-          {"[0x0000] Common Module", H16_COMMON_START},
-          {"[0x4100] L2 Cache Control", H16_L2_START},
-          {"[0x4500] Planar Engine (PE)", H16_PE_START},
-          {"[0x4900] Neural Engine Core (NE)", H16_NE_START},
-          {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START},
-          {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START},
-          {"[0x5500] KernelDMA Source", H16_KERNELDMA_START},
-          {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START},
+          {"[0x0000] Common Module", H16_COMMON_START, 23},
+          {"[0x4100] L2 Cache Control", H16_L2_START, 41},
+          {"[0x4500] Planar Engine (PE)", H16_PE_START, 16},
+          {"[0x4900] Neural Engine Core (NE)", H16_NE_START, 12},
+          {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START, 81},
+          {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START, 21},
+          {"[0x5500] KernelDMA Source", H16_KERNELDMA_START, 72},
+          {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START, 12},
       };
       dump_hw_blocks(state, blocks, 8, get_m4_reg_name);
     }
@@ -881,13 +888,13 @@ void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
 
     if (dump_reg_blocks) {
       hwx_block_info_t blocks[] = {
-          {"[0x00000] Common Module", H13_COMMON_START},
-          {"[0x04800] L2 Cache Control", H13_L2_START},
-          {"[0x08800] Planar Engine (PE)", H13_PE_START},
-          {"[0x0C800] Neural Engine Core (NE)", H13_NE_START},
-          {"[0x13800] TileDMA Source", H13_TILEDMA_SRC_START},
-          {"[0x17800] TileDMA Destination", H13_TILEDMA_DST_START},
-          {"[0x1F800] KernelDMA Source", H13_KERNELDMA_START},
+          {"[0x00000] Common Module", H13_COMMON_START, 16},
+          {"[0x04800] L2 Cache Control", H13_L2_START, 16},
+          {"[0x08800] Planar Engine (PE)", H13_PE_START, 4},
+          {"[0x0C800] Neural Engine Core (NE)", H13_NE_START, 5},
+          {"[0x13800] TileDMA Source", H13_TILEDMA_SRC_START, 24},
+          {"[0x17800] TileDMA Destination", H13_TILEDMA_DST_START, 7},
+          {"[0x1F800] KernelDMA Source", H13_KERNELDMA_START, 5},
       };
       dump_hw_blocks(state, blocks, 7, get_m1_reg_name);
     }
@@ -1047,15 +1054,12 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
       uint32_t size_bytes = m4h->task_size * 4;
       printf("      [ANE Task %d @ 0x%x] (Size: 0x%x bytes)\n", task_idx++,
              offset, size_bytes);
-      printf("        TID: 0x%04x ExeCycles: %u ENE: %u\n", m4h->tid,
-             m4h->exe_cycles, m4h->ene);
+      printf("        TID: 0x%04x ExeCycles: %u ENE: %u DTID: 0x%04x\n", m4h->tid,
+             m4h->exe_cycles, m4h->ctrl_flags.ene, m4h->dtid);
       printf("        LogEvents: 0x%06x Exceptions: 0x%06x\n", m4h->log_events,
              m4h->exceptions);
       printf("        LiveOuts: 0x%08x TSR: %d TDE: %d\n", m4h->live_outs,
-             m4h->tsr, m4h->tde);
-      if (m4h->tde == 1) {
-        printf("        DTID: 0x%04x\n", m4h->dtid);
-      }
+             m4h->ctrl_flags.tsr, m4h->ctrl_flags.tde);
     } else {
       task_idx++;
     }

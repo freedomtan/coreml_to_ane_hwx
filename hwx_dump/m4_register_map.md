@@ -163,10 +163,10 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x0030** | `+0x228` | **UnicastCfg** | **UnicastEn**: 14, **UnicastCin**: 16-31. |
 | **0x0034** | `+0x22c` | **TileHeight** | **TileHeight**: 0-16. |
 | **0x0038** | `+0x230` | **TileOverlap** | **Overlap**: 16-20, **PadTop**: 21-25, **PadBottom**: 26-30. |
-| **0x003C** | `+0x234` | **MacCfg** | **SmallSrcMode**: 2-3, **TaskType**: 4-7, **ActiveNE**: 19-21, **OutTranspose**: 28, **FillLowerNEFirst**: 29. |
+| **0x003C** | `+0x234` | **MacCfg** | **SmallSrcMode**: 2-3, **TaskType**: 4-7, **ActiveNE**: 19-21, **OutTranspose**: 28, **FillLowerNEFirst**: 29. (Verified via binary) |
 | **0x0040** | `+0x238` | **NECfg** | **OCGSize**: 0-2 (1=16, 2=32, 4=64), **FatTileEnable**: 3, **WUStackLog2**: 4-5. |
 | **0x0044** | `+0x23c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
-| **0x0048** | `+0x240` | **PECfg** | **Src1Broadcast**: 0-3 (W:0, H:1, D:2, C:3), **Src2Broadcast**: 4-7 (W:4, H:5, D:6, C:7), **Src1Transpose**: 8, **Src2Transpose**: 9, **OutputCtoW**: 10. |
+| **0x0048** | `+0x240` | **PECfg** | **Src1Broadcast**: 0-3 (W:0, H:1, D:2, C:3), **Src2Broadcast**: 4-7 (W:4, H:5, D:6, C:7), **Src1Transpose**: 8, **Src2Transpose**: 9, **OutputTranspose**: 10. (Verified via binary) |
 | **0x004C** | `+0x244` | **NID** | Network ID / Layer Trace ID. |
 | **0x0050** | `+0x248` | **DPE** | Distributed Processing Element config. |
 
@@ -210,11 +210,11 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x4D6C** | `+0x2c8` | **Src2FmtMode** | **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. |
 | **0x4D70** | `+0x2cc` | **TileDmaSrcReserved** |  |
 | **0x4D74** | `+0x2d0` | **TileDmaSrcReserved** |  |
-| **0x4D78** | `+0x2d4` | **Src1CompressedInfo** | **MdUserTag**: 24-31. |
+| **0x4D78** | `+0x2d4` | **Src1CompressedInfo** | **CompressedEnable**: 0, **MacroblockSize**: 2, **PackingFormatTableIdx**: 4-9, **LossyEnable**: 13, **MdUserTag**: 24-31. (Verified via binary) |
 | **0x4D7C** | `+0x2d8` | **Src1CompressedSizeLo** | **SizeLo**: 0-31. |
 | **0x4D80** | `+0x2dc` | **Src1CompressedSizeHi** | **SizeHi**: 0-31. |
 | **0x4D84** | `+0x2e0` | **Src1CropOffset** | **OffsetY**: 0-15 (strh), **CropOffset**: 16-31. |
-| **0x4D88** | `+0x2e4` | **Src2CompressedInfo** | **MdUserTag**: 24-31. |
+| **0x4D88** | `+0x2e4` | **Src2CompressedInfo** | **CompressedEnable**: 0, **MacroblockSize**: 2, **PackingFormatTableIdx**: 4-9, **LossyEnable**: 13, **MdUserTag**: 24-31. (Verified via binary) |
 | **0x4D8C** | `+0x2e8` | **Src2CompressedSizeLo** | **SizeLo**: 0-31. |
 | **0x4D90** | `+0x2ec` | **Src2CompressedSizeHi** | **SizeHi**: 0-31. |
 | **0x4D94** | `+0x2f0` | **Src2CropOffset** | **OffsetY**: 0-15 (strh), **CropOffset**: 16-31. |
@@ -242,7 +242,7 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x4DEC** | `+0x348` | **TextureCropBatchSplitDim2** | **Lo**: 0-15 (strh). |
 | **0x4DF0** | `+0x34c` | **TileDmaSrcReserved** |  |
 | **0x4DF4** | `+0x350` | **TileDmaSrcReserved** |  |
-| **0x4DF8** | `+0x354` | **TileDmaSrcReserved** |  |
+| **0x4DF8** | `+0x354` | **Src1Ephemeral** | **EphemeralEnable**: 0. (Verified via binary) |
 | **0x4DFC** | `+0x358` | **TileDmaSrcReserved** |  |
 | **0x4E00** | `+0x35c` | **TileDmaSrcReserved** |  |
 | **0x4E04** | `+0x360` | **TextureCropCoeffVal** | **CoeffValue**: 0-31. |
@@ -368,9 +368,9 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x512C** | `+0x4fc` | **DstMetaDataAddrHi**| **AddrHi**: 0-31. |
 | **0x5130** | `+0x500` | **DstFormatMode** | **FormatMode**: 0-1, **MetaDataSize**: 7-31. |
 | **0x5134** | `+0x504` | **DstReserved2** | Reserved. |
-| **0x5138** | `+0x508` | **DstFmtCtrl** | **ZeroPad**, **FmtOffsetCh**, **FmtCmpVec**. |
+| **0x5138** | `+0x508` | **DstFmtCtrl** | **ZeroPadLast**: 0, **ZeroPadFirst**: 1, **OffsetCh**: 8-11, **CmpVec**: 12-15, **Interleave**: 24-27. (Verified via binary) |
 | **0x513C** | `+0x50C` | **DstReserved3** | Reserved. |
-| **0x5140** | `+0x510` | **DstCompressedInfo**| **PackingFormat**, **MacroblockSize**, **LossyMode**. |
+| **0x5140** | `+0x510` | **DstCompressedInfo**| **CompressedEnable**: 0, **MacroblockSize**: 2, **PackingFormatTableIdx**: 4-9, **LossyEnable**: 13. (Verified via binary) |
 | **0x5144** | `+0x514` | **DstReserved4** | Reserved. |
 | **0x5148** | `+0x518` | **DstCompSizeLo** | **SizeLo**: 0-31. |
 | **0x514C** | `+0x51c` | **DstCompSizeHi** | **SizeHi**: 0-31. |

@@ -201,7 +201,7 @@ typedef struct __attribute__((packed)) {
     uint32_t pad1 : 11;
     uint32_t active_ne : 3;       // [21:19]
     uint32_t pad2 : 6;
-    uint32_t out_trans : 1;       // [28]
+    uint32_t out_trans : 1;       // [28] (Verified via binary)
     uint32_t fill_lower_ne : 1;   // [29]
     uint32_t pad4 : 2;
   } maccfg;
@@ -223,11 +223,11 @@ typedef struct __attribute__((packed)) {
 
   // Word 18 (0x048)
   struct {
-    uint32_t src1_br : 4;   // [3:0]
-    uint32_t src2_br : 4;   // [7:4]
+    uint32_t src1_br : 4;   // [3:0] (W:0, H:1, D:2, C:3)
+    uint32_t src2_br : 4;   // [7:4] (W:4, H:5, D:6, C:7)
     uint32_t src1_trans : 1; // [8]
     uint32_t src2_trans : 1; // [9]
-    uint32_t out_ctow : 1;   // [10]
+    uint32_t out_trans : 1;  // [10] (Verified via binary)
     uint32_t pad0 : 21;
   } pe_cfg; // Word 18 (0x048)
 
@@ -446,13 +446,33 @@ typedef struct {
 
   uint32_t res_4d70_74[2]; // Word 28-29 (0x4D70-0x4D74)
 
-  uint32_t src1compsize_lo; // Word 30 (0x4D78)
-  uint32_t src1compsize_hi; // Word 31 (0x4D7C)
-  uint32_t src1compinfo;    // Word 32 (0x4D80)
+  struct {
+    uint32_t compressed_enable : 1; // [0]
+    uint32_t pad0 : 1;
+    uint32_t macroblock_size : 1;   // [2]
+    uint32_t pad1 : 1;
+    uint32_t packing_format : 6;    // [9:4]
+    uint32_t pad2 : 3;
+    uint32_t lossy_mode : 1;        // [13]
+    uint32_t pad3 : 10;
+    uint32_t md_user_tag : 8;       // [31:24]
+  } src1compinfo;    // Word 30 (0x4D78)
+  uint32_t src1compsize_lo; // Word 31 (0x4D7C)
+  uint32_t src1compsize_hi; // Word 32 (0x4D80)
   uint32_t src1cropoffset;  // Word 33 (0x4D84)
-  uint32_t src2compsize_lo; // Word 34 (0x4D88)
-  uint32_t src2compsize_hi; // Word 35 (0x4D8C)
-  uint32_t src2compinfo;    // Word 36 (0x4D90)
+  struct {
+    uint32_t compressed_enable : 1; // [0]
+    uint32_t pad0 : 1;
+    uint32_t macroblock_size : 1;   // [2]
+    uint32_t pad1 : 1;
+    uint32_t packing_format : 6;    // [9:4]
+    uint32_t pad2 : 3;
+    uint32_t lossy_mode : 1;        // [13]
+    uint32_t pad3 : 10;
+    uint32_t md_user_tag : 8;       // [31:24]
+  } src2compinfo;    // Word 34 (0x4D88)
+  uint32_t src2compsize_lo; // Word 35 (0x4D8C)
+  uint32_t src2compsize_hi; // Word 36 (0x4D90)
   uint32_t src2cropoffset;  // Word 37 (0x4D94)
 
   uint32_t res_4d98_b4[8];  // Word 38-45 (0x4D98-0x4DB4)
@@ -473,7 +493,9 @@ typedef struct {
   uint32_t texture_crop_depth_dim1;       // Word 58 (0x4DE8)
   uint32_t texture_crop_batch_split_dim2; // Word 59 (0x4DEC)
 
-  uint32_t res_4df0_e00[5]; // Word 60-64 (0x4DF0-0x4E00)
+  uint32_t res_4df0_f4[2]; // Word 60-61 (0x4DF0-0x4DF4)
+  uint32_t src1ephemeral;  // Word 62 (0x4DF8) - bits [0]: enable
+  uint32_t res_4dfc_e00[2]; // Word 63-64 (0x4DFC-0x4E00)
   uint32_t texture_crop_coeff_val; // Word 65 (0x4E04)
 
   uint32_t pad3[15]; // Word 66-80 (Size 81)
@@ -507,10 +529,20 @@ typedef struct {
   uint32_t dstfmtmode; // Word 12 (0x5130)
   uint32_t pad1;       // Word 13
 
-  uint32_t dstcompstatus; // Word 14 (0x5138)
+  uint32_t dstfmtctrl; // Word 14 (0x5138)
   uint32_t pad2;          // Word 15
+  
+  struct {
+    uint32_t compressed_enable : 1; // [0]
+    uint32_t pad0 : 1;
+    uint32_t macroblock_size : 1;   // [2]
+    uint32_t pad1 : 1;
+    uint32_t packing_format : 6;    // [9:4]
+    uint32_t pad2 : 3;
+    uint32_t lossy_mode : 1;        // [13]
+    uint32_t pad3 : 18;
+  } dstcompinfo; // Word 16 (0x5140)
 
-  uint32_t dstcompressioncfg; // Word 16 (0x5140)
   uint32_t pad3;              // Word 17
 
   uint32_t dstcompsize_lo; // Word 18 (0x5148)

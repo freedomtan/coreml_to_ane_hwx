@@ -138,13 +138,13 @@ const char *get_m4_reg_name(uint32_t addr) {
                                            "Src2FmtMode",
                                            "Reserved_0x4D70",
                                            "Reserved_0x4D74",
+                                           "Src1CompressedInfo",
                                            "Src1CompressedSizeLo",
                                            "Src1CompressedSizeHi",
-                                           "Src1CompressedInfo",
                                            "Src1CropOffset",
+                                           "Src2CompressedInfo",
                                            "Src2CompressedSizeLo",
                                            "Src2CompressedSizeHi",
-                                           "Src2CompressedInfo",
                                            "Src2CropOffset",
                                            "Reserved_0x4D98",
                                            "Reserved_0x4D9C",
@@ -170,7 +170,7 @@ const char *get_m4_reg_name(uint32_t addr) {
                                            "TextureCropBatchSplitDim2",
                                            "Reserved_0x4DF0",
                                            "Reserved_0x4DF4",
-                                           "Reserved_0x4DF8",
+                                           "Src1Ephemeral",
                                            "Reserved_0x4DFC",
                                            "Reserved_0x4E00",
                                            "TextureCropCoeffVal",
@@ -197,8 +197,8 @@ const char *get_m4_reg_name(uint32_t addr) {
       "DstInternalCfg",    "pad1",
       "DstMetaDataAddrLo", "DstMetaDataAddrHi",
       "DstFmtMode",        "pad2",
-      "DstCompStatus",     "pad3",
-      "DstCompressionCfg", "pad4",
+      "DstFmtCtrl",        "pad3",
+      "DstCompressedInfo", "pad4",
       "DstCompSizeLo",     "DstCompSizeHi",
       "DstPixelOffset"};
   static const char *kdma_names[72] = {"MasterCfg",
@@ -613,10 +613,10 @@ void print_common_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_COMMON_START + 0x48) / 4]) {
-    printf("        PECfg     : S1BR=%d S2BR=%d S1T=%d S2T=%d OCTW=%d\n",
+    printf("        PECfg     : S1BR=%d S2BR=%d S1T=%d S2T=%d OutTrans=%d\n",
            common.pe_cfg.src1_br, common.pe_cfg.src2_br,
            common.pe_cfg.src1_trans, common.pe_cfg.src2_trans,
-           common.pe_cfg.out_ctow);
+           common.pe_cfg.out_trans);
   }
 
   if (state->valid[(H16_COMMON_START + 0x4C) / 4])
@@ -852,10 +852,26 @@ void print_tiledmasrc_h16(const hwx_state_t *state) {
     printf("        Src1Fmt: 0x%08x, Src2Fmt: 0x%08x\n", src->src1memfmt,
            src->src2memfmt);
   }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x80) / 4]) {
-    printf("        Src1Comp: Info=0x%x Size=0x%x%08x Crop=0x%x\n",
-           src->src1compinfo, src->src1compsize_hi, src->src1compsize_lo,
-           src->src1cropoffset);
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x78) / 4]) {
+    printf("        Src1Comp: En=%d MBS=%d PF=%d Lossy=%d MdTag=0x%02x Size=0x%x%08x Crop=0x%x\n",
+           src->src1compinfo.compressed_enable,
+           src->src1compinfo.macroblock_size,
+           src->src1compinfo.packing_format,
+           src->src1compinfo.lossy_mode,
+           src->src1compinfo.md_user_tag,
+           src->src1compsize_hi, src->src1compsize_lo, src->src1cropoffset);
+  }
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x88) / 4]) {
+    printf("        Src2Comp: En=%d MBS=%d PF=%d Lossy=%d MdTag=0x%02x Size=0x%x%08x Crop=0x%x\n",
+           src->src2compinfo.compressed_enable,
+           src->src2compinfo.macroblock_size,
+           src->src2compinfo.packing_format,
+           src->src2compinfo.lossy_mode,
+           src->src2compinfo.md_user_tag,
+           src->src2compsize_hi, src->src2compsize_lo, src->src2cropoffset);
+  }
+  if (state->valid[(H16_TILEDMA_SRC_START + 0xf8) / 4]) {
+    printf("        Src1Ephemeral: En=%d\n", src->src1ephemeral & 1);
   }
   if (state->valid[(H16_TILEDMA_SRC_START + 0xc8) / 4]) {
     printf("        TextureCfg: 0x%08x\n", src->texture_config);
@@ -880,8 +896,20 @@ void print_tiledmadst_h16(const hwx_state_t *state) {
     printf("        DstMeta   : Addr=0x%x%08x Mode=0x%x\n", dst->dstmeta_hi,
            dst->dstmeta_lo, dst->dstfmtmode);
   }
+  if (state->valid[(H16_TILEDMA_DST_START + 0x38) / 4]) {
+    printf("        DstFmtCtrl: ZeroPad(L=%d,F=%d) OffCh=%d CmpVec=%d Intrlv=%d\n",
+           dst->dstfmtctrl & 1, (dst->dstfmtctrl >> 1) & 1,
+           (dst->dstfmtctrl >> 8) & 0xF, (dst->dstfmtctrl >> 12) & 0xF,
+           (dst->dstfmtctrl >> 24) & 0xF);
+  }
+  if (state->valid[(H16_TILEDMA_DST_START + 0x40) / 4]) {
+    printf("        DstComp: En=%d Packing=%d MBSize=%d Lossy=%d\n",
+           dst->dstcompinfo.compressed_enable, dst->dstcompinfo.packing_format,
+           dst->dstcompinfo.macroblock_size, dst->dstcompinfo.lossy_mode);
+  }
   if (state->valid[(H16_TILEDMA_DST_START + 0x50) / 4]) {
-    printf("        DstPixelOff: 0x%08x\n", dst->dstpixeloffset);
+    printf("        DstPixelOff: 0x%08x (CropY=%u)\n", dst->dstpixeloffset,
+           dst->dstpixeloffset >> 16);
   }
 }
 

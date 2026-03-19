@@ -46,7 +46,7 @@ Before registers, there are some header words.
 | **11** | `0x2C` | **ConvCfg3d** | **KD**: 0-5, **SZ**: 6-11, **PZ**: 12-16, **OZ**: 17-21. |
 | ... | ... | ... | ... |
 | **0x1240** | `0x4900` | **KernelCfg** | **KernelFmt**: 0-1, **SparseEn**: 8, **PalEn**: 2. |
-| **0x1241** | `0x4904` | **MACCfg** | **OpMode**: 0-2, **KernelMode**: 3. |
+| **0x1241** | `0x4904` | **MacCfg** | **OpMode**: 0-2, **KernelMode**: 3. |
 | **0x1546** | `0x5518` | **KernelStrideX** | **StrideX**: 6-31. |
 | **0x1547** | `0x551C` | **KernelStrideY** | **StrideY**: 6-31. |
 
@@ -336,7 +336,7 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
 | **0x4900** | `+0x498` | **KernelCfg** | **KernelFmt**: 0-1, **PalEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **GroupKernelReuse**: 10, **SparseBinary**: 15, **KernelAlignmentFormat**: 16, **AsymQuantEn**: 24. (Verified via binary) |
-| **0x4904** | `+0x49c` | **MACCfg** | **OpMode**: 0-2 (0:Conv, 1:MatMul, 2:EWise, 3:XCorr), **KernelMode**: 3, **BiasEnable**: 4, **PassthroughEnable**: 5, **MatrixVectorBiasEnable**: 6, **BinaryPoint**: 8-13, **PostScaleEnable**: 14, **NonlinearMode**: 16-17, **MaxPoolMode**: 19, **ArgOutputSelect**: 20-23, **DoubleInt8Enable**: 26. |
+| **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0: Conv, 1: ElemWise, 2: unknown, 3: EWSqr, 4: EWMult, 5: RCAS, 6: Bypass, 7: TransposedConv), **KernelMode**: 3, **BiasEnable**: 4, **PassthroughEnable**: 5, **MatrixVectorBiasEnable**: 6, **BinaryPoint**: 8-13, **PostScaleEnable**: 14, **NonlinearMode**: 16-17, **MaxPoolMode**: 19, **ArgOutputSelect**: 20-23, **DoubleInt8Enable**: 26. |
 | **0x4908** | `+0x4a0` | **MatrixVectorBias**| **Bias**: 0-15. |
 | **0x490C** | `+0x4a4` | **NEBias** | **Bias**: 0-20 (F19/F21). |
 | **0x4910** | `+0x4a8` | **NEPostScale** | **PostScale**: 0-20 (F19/F21). |

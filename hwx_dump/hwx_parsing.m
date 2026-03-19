@@ -382,6 +382,20 @@ const char *get_ch_fmt_name(uint32_t fmt) {
   }
 }
 
+const char *get_ne_op_mode_name(uint32_t mode) {
+  switch (mode) {
+  case 0: return "Conv";
+  case 1: return "ElemWise";
+  case 2: return "unknown";
+  case 3: return "EWSqr";
+  case 4: return "EWMult";
+  case 5: return "RCAS";
+  case 6: return "Bypass";
+  case 7: return "TransposedConv";
+  default: return "Invalid";
+  }
+}
+
 void print_common_h13(const hwx_state_t *state) {
   printf("        --- Common (0x0000) ---\n");
   const ane_common_h13_t *common =
@@ -644,12 +658,13 @@ void print_ne_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_NE_START + 0x4) / 4]) {
-    printf("        MacCfg: OpMode=%d KernelMode=%d BiasEn=%d Passthrough=%d "
+    printf("        MacCfg: OpMode=%s KernelMode=%d BiasEn=%d Passthrough=%d "
            "MVBiasEn=%d BinaryPoint=%u PostScaleEn=%d NonLinear=%d\n"
            "                PaddingMode=%d MaxPoolMode=%d "
            "ArgOutputSelect=%d "
            "DoubleInt8En=%d\n",
-           ne.mac_cfg.op_mode, ne.mac_cfg.kernel_mode, ne.mac_cfg.ne_bias_en,
+           get_ne_op_mode_name(ne.mac_cfg.op_mode), ne.mac_cfg.kernel_mode,
+           ne.mac_cfg.ne_bias_en,
            ne.mac_cfg.passthrough_en, ne.mac_cfg.matrix_bias_en,
            ne.mac_cfg.binary_point, ne.mac_cfg.post_scale_en,
            ne.mac_cfg.non_linear_mode, ne.mac_cfg.padding_mode,

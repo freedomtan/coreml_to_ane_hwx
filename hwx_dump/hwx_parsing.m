@@ -43,7 +43,7 @@ const char *get_m1_reg_name(uint32_t addr) {
                                    "ConvResultRowStride"};
   static const char *pe_names[] = {"Cfg", "BiasScale", "PreScale",
                                    "FinalScale"};
-  static const char *ne_names[] = {"KernelCfg", "MACCfg", "MatrixVectorBias",
+  static const char *ne_names[] = {"KernelCfg", "MacCfg", "MatrixVectorBias",
                                    "AccBias", "PostScale"};
   static const char *tdma_src_names[] = {
       "DMAConfig",    "pad0",         "BaseAddr",     "RowStride",
@@ -94,46 +94,101 @@ const char *get_m4_reg_name(uint32_t addr) {
       "L2_Res36",          "L2_Res37",          "L2_Res38",
       "L2_ResultWrapAddr", "L2_Res40"};
   static const char *pe_names[] = {
-      "PE_Config",    "PE_Bias",        "PE_Scale",     "PE_Reserved1",
-      "PE_PreScale",  "PE_FinalScale",  "PE_Reserved2", "PE_Reserved3",
-      "PE_Reserved4", "PE_Reserved5",   "PE_Reserved6", "PE_Reserved7",
-      "PE_Reserved8", "PE_Reserved9",   "PE_Quant",     "PE_Reserved10"};
+      "PE_Config",    "PE_Bias",       "PE_Scale",     "PE_Reserved1",
+      "PE_PreScale",  "PE_FinalScale", "PE_Reserved2", "PE_Reserved3",
+      "PE_Reserved4", "PE_Reserved5",  "PE_Reserved6", "PE_Reserved7",
+      "PE_Reserved8", "PE_Reserved9",  "PE_Quant",     "PE_Reserved10"};
   static const char *ne_names[] = {
-      "KernelCfg", "MACCfg", "MatrixVectorBias", "NEBias", "NEPostScale",
-      "RcasConfig", "RoundModeCfg", "SRSeed[0]", "SRSeed[1]", "SRSeed[2]",
-      "SRSeed[3]", "QuantZeroPoint"};
+      "KernelCfg",   "Macfg",      "MatrixVectorBias", "NEBias",
+      "NEPostScale", "RcasConfig", "RoundModeCfg",     "SRSeed[0]",
+      "SRSeed[1]",   "SRSeed[2]",  "SRSeed[3]",        "QuantZeroPoint"};
   static const char *cdma_names[] = {
       "CacheDMAControl",  "CacheDMAPre0",      "CacheDMAPre1",
       "CacheDMAPad3",     "CacheDMAPad4",      "CacheDMAPad5",
       "CacheDMADsid",     "CacheDMAFootprint", "EarlyTermArg12",
       "CacheDMAFlushArg", "EarlyTermArg34",    "TelemetryBackOff"};
   static const char *pe_index_names[] = {"PE_IndexCfg"};
-  static const char *tdma_src_names[81] = {
-      "Src1DMAConfig",      "Src2DMAConfig",      "Src1WrapCfg",
-      "Src2WrapCfg",        "Src1BaseAddrLo",     "Src1BaseAddrHi",
-      "Src1RowStride",      "Src1PlaneStride",    "Src2BaseAddrLo",
-      "Src1GroupStride",    "Src2BaseAddrHi",     "Src2RowStride",
-      "Src2PlaneStride",    "Src2GroupStride",    "pad_38",
-      "pad_3C",             "Src1MetaDataConfig", "pad_44",
-      "pad_48",             "pad_4C",             "Src1MetaDataAddrLo",
-      "Src1MetaDataAddrHi", "Src1MetaDataSize",   "Src2MetaDataConfig",
-      "Src2MetaDataAddrLo", "Src2MetaDataAddrHi", "Src1FmtMode",
-      "Src2FmtMode",        "Reserved_0x4D70",    "Reserved_0x4D74",
-      "Src1CompressedSizeLo", "Src1CompressedSizeHi", "Src1CompressedInfo",
-      "Src1CropOffset",     "Src2CompressedSizeLo", "Src2CompressedSizeHi",
-      "Src2CompressedInfo", "Src2CropOffset",     "Reserved_0x4D98",
-      "Reserved_0x4D9C",    "Reserved_0x4DA0",    "Reserved_0x4DA4",
-      "Reserved_0x4DA8",    "Reserved_0x4DAC",    "Reserved_0x4DB0",
-      "Reserved_0x4DB4",    "Src1WrapDynamic",    "Src2WrapDynamic",
-      "Src1DependencyOffset", "Src2DependencyOffset", "TextureConfig",
-      "TextureIdxPermute",  "TextureSrcPermute",  "TextureBackgroundVal",
-      "TextureExtMaxDim1",  "TextureExtMaxDim2",  "TextureExtMaxDim3",
-      "TextureCropBatchSplitDim1", "TextureCropDepthDim1", "TextureCropBatchSplitDim2",
-      "Reserved_0x4DF0",    "Reserved_0x4DF4",    "Reserved_0x4DF8",
-      "Reserved_0x4DFC",    "Reserved_0x4E00",    "TextureCropCoeffVal",
-      "pad_66", "pad_67", "pad_68", "pad_69", "pad_70", "pad_71",
-      "pad_72", "pad_73", "pad_74", "pad_75", "pad_76", "pad_77",
-      "pad_78", "pad_79", "pad_80"};
+  static const char *tdma_src_names[81] = {"Src1DMAConfig",
+                                           "Src2DMAConfig",
+                                           "Src1WrapCfg",
+                                           "Src2WrapCfg",
+                                           "Src1BaseAddrLo",
+                                           "Src1BaseAddrHi",
+                                           "Src1RowStride",
+                                           "Src1PlaneStride",
+                                           "Src2BaseAddrLo",
+                                           "Src1GroupStride",
+                                           "Src2BaseAddrHi",
+                                           "Src2RowStride",
+                                           "Src2PlaneStride",
+                                           "Src2GroupStride",
+                                           "pad_38",
+                                           "pad_3C",
+                                           "Src1MetaDataConfig",
+                                           "pad_44",
+                                           "pad_48",
+                                           "pad_4C",
+                                           "Src1MetaDataAddrLo",
+                                           "Src1MetaDataAddrHi",
+                                           "Src1MetaDataSize",
+                                           "Src2MetaDataConfig",
+                                           "Src2MetaDataAddrLo",
+                                           "Src2MetaDataAddrHi",
+                                           "Src1FmtMode",
+                                           "Src2FmtMode",
+                                           "Reserved_0x4D70",
+                                           "Reserved_0x4D74",
+                                           "Src1CompressedSizeLo",
+                                           "Src1CompressedSizeHi",
+                                           "Src1CompressedInfo",
+                                           "Src1CropOffset",
+                                           "Src2CompressedSizeLo",
+                                           "Src2CompressedSizeHi",
+                                           "Src2CompressedInfo",
+                                           "Src2CropOffset",
+                                           "Reserved_0x4D98",
+                                           "Reserved_0x4D9C",
+                                           "Reserved_0x4DA0",
+                                           "Reserved_0x4DA4",
+                                           "Reserved_0x4DA8",
+                                           "Reserved_0x4DAC",
+                                           "Reserved_0x4DB0",
+                                           "Reserved_0x4DB4",
+                                           "Src1WrapDynamic",
+                                           "Src2WrapDynamic",
+                                           "Src1DependencyOffset",
+                                           "Src2DependencyOffset",
+                                           "TextureConfig",
+                                           "TextureIdxPermute",
+                                           "TextureSrcPermute",
+                                           "TextureBackgroundVal",
+                                           "TextureExtMaxDim1",
+                                           "TextureExtMaxDim2",
+                                           "TextureExtMaxDim3",
+                                           "TextureCropBatchSplitDim1",
+                                           "TextureCropDepthDim1",
+                                           "TextureCropBatchSplitDim2",
+                                           "Reserved_0x4DF0",
+                                           "Reserved_0x4DF4",
+                                           "Reserved_0x4DF8",
+                                           "Reserved_0x4DFC",
+                                           "Reserved_0x4E00",
+                                           "TextureCropCoeffVal",
+                                           "pad_66",
+                                           "pad_67",
+                                           "pad_68",
+                                           "pad_69",
+                                           "pad_70",
+                                           "pad_71",
+                                           "pad_72",
+                                           "pad_73",
+                                           "pad_74",
+                                           "pad_75",
+                                           "pad_76",
+                                           "pad_77",
+                                           "pad_78",
+                                           "pad_79",
+                                           "pad_80"};
   static const char *tdma_dst_names[] = {
       "DstDMAConfig",      "pad0",
       "DstBaseAddrLo",     "DstBaseAddrHi",
@@ -146,31 +201,78 @@ const char *get_m4_reg_name(uint32_t addr) {
       "DstCompressionCfg", "pad4",
       "DstCompSizeLo",     "DstCompSizeHi",
       "DstPixelOffset"};
-  static const char *kdma_names[72] = {
-      "MasterCfg",     "AlignedCoeffSize", "Prefetch",
-      "Reserved[0]",   "Reserved[1]",      "Reserved[2]",
-      "StrideX",       "StrideY",       "CoeffDMAConfig[0]",
-      "CoeffDMAConfig[1]",  "CoeffDMAConfig[2]",  "CoeffDMAConfig[3]",
-      "CoeffDMAConfig[4]",  "CoeffDMAConfig[5]",  "CoeffDMAConfig[6]",
-      "CoeffDMAConfig[7]",  "CoeffDMAConfig[8]",  "CoeffDMAConfig[9]",
-      "CoeffDMAConfig[10]", "CoeffDMAConfig[11]", "CoeffDMAConfig[12]",
-      "CoeffDMAConfig[13]", "CoeffDMAConfig[14]", "CoeffDMAConfig[15]",
-      "CoeffBaseAddr[0]",   "CoeffBaseAddr[1]",   "CoeffBaseAddr[2]",
-      "CoeffBaseAddr[3]",   "CoeffBaseAddr[4]",   "CoeffBaseAddr[5]",
-      "CoeffBaseAddr[6]",   "CoeffBaseAddr[7]",   "CoeffBaseAddr[8]",
-      "CoeffBaseAddr[9]",   "CoeffBaseAddr[10]",  "CoeffBaseAddr[11]",
-      "CoeffBaseAddr[12]",  "CoeffBaseAddr[13]",  "CoeffBaseAddr[14]",
-      "CoeffBaseAddr[15]",  "CoeffBfrSize[0]",    "CoeffBfrSize[1]",
-      "CoeffBfrSize[2]",    "CoeffBfrSize[3]",    "CoeffBfrSize[4]",
-      "CoeffBfrSize[5]",    "CoeffBfrSize[6]",    "CoeffBfrSize[7]",
-      "CoeffBfrSize[8]",    "CoeffBfrSize[9]",    "CoeffBfrSize[10]",
-      "CoeffBfrSize[11]",   "CoeffBfrSize[12]",   "CoeffBfrSize[13]",
-      "CoeffBfrSize[14]",   "CoeffBfrSize[15]",   "BiasCfg",
-      "pad_57",             "pad_58",             "pad_59",
-      "PSScaleCfg",         "pad_61",             "pad_62",
-      "pad_63",             "PalCfg",             "pad_65",
-      "pad_66",             "pad_67",             "NLutCfg",
-      "pad_69",             "pad_70",             "pad_71"};
+  static const char *kdma_names[72] = {"MasterCfg",
+                                       "AlignedCoeffSize",
+                                       "Prefetch",
+                                       "Reserved[0]",
+                                       "Reserved[1]",
+                                       "Reserved[2]",
+                                       "StrideX",
+                                       "StrideY",
+                                       "CoeffDMAConfig[0]",
+                                       "CoeffDMAConfig[1]",
+                                       "CoeffDMAConfig[2]",
+                                       "CoeffDMAConfig[3]",
+                                       "CoeffDMAConfig[4]",
+                                       "CoeffDMAConfig[5]",
+                                       "CoeffDMAConfig[6]",
+                                       "CoeffDMAConfig[7]",
+                                       "CoeffDMAConfig[8]",
+                                       "CoeffDMAConfig[9]",
+                                       "CoeffDMAConfig[10]",
+                                       "CoeffDMAConfig[11]",
+                                       "CoeffDMAConfig[12]",
+                                       "CoeffDMAConfig[13]",
+                                       "CoeffDMAConfig[14]",
+                                       "CoeffDMAConfig[15]",
+                                       "CoeffBaseAddr[0]",
+                                       "CoeffBaseAddr[1]",
+                                       "CoeffBaseAddr[2]",
+                                       "CoeffBaseAddr[3]",
+                                       "CoeffBaseAddr[4]",
+                                       "CoeffBaseAddr[5]",
+                                       "CoeffBaseAddr[6]",
+                                       "CoeffBaseAddr[7]",
+                                       "CoeffBaseAddr[8]",
+                                       "CoeffBaseAddr[9]",
+                                       "CoeffBaseAddr[10]",
+                                       "CoeffBaseAddr[11]",
+                                       "CoeffBaseAddr[12]",
+                                       "CoeffBaseAddr[13]",
+                                       "CoeffBaseAddr[14]",
+                                       "CoeffBaseAddr[15]",
+                                       "CoeffBfrSize[0]",
+                                       "CoeffBfrSize[1]",
+                                       "CoeffBfrSize[2]",
+                                       "CoeffBfrSize[3]",
+                                       "CoeffBfrSize[4]",
+                                       "CoeffBfrSize[5]",
+                                       "CoeffBfrSize[6]",
+                                       "CoeffBfrSize[7]",
+                                       "CoeffBfrSize[8]",
+                                       "CoeffBfrSize[9]",
+                                       "CoeffBfrSize[10]",
+                                       "CoeffBfrSize[11]",
+                                       "CoeffBfrSize[12]",
+                                       "CoeffBfrSize[13]",
+                                       "CoeffBfrSize[14]",
+                                       "CoeffBfrSize[15]",
+                                       "BiasCfg",
+                                       "pad_57",
+                                       "pad_58",
+                                       "pad_59",
+                                       "PSScaleCfg",
+                                       "pad_61",
+                                       "pad_62",
+                                       "pad_63",
+                                       "PalCfg",
+                                       "pad_65",
+                                       "pad_66",
+                                       "pad_67",
+                                       "NLutCfg",
+                                       "pad_69",
+                                       "pad_70",
+                                       "pad_71"};
 
   static const hwx_reg_range_t m4_ranges[] = {
       {H16_COMMON_START, 23, common_names},
@@ -344,7 +446,7 @@ void print_ne_h13(const hwx_state_t *state) {
   printf("        --- Neural Engine (0xC800) ---\n");
   const ane_ne_h13_t *ne =
       (const ane_ne_h13_t *)&state->values[H13_NE_START / 4];
-  printf("        NE MACCfg: OpMode=%u NLMode=%u KernelMode=%d BiasMode=%d "
+  printf("        NE MacCfg: OpMode=%u NLMode=%u KernelMode=%d BiasMode=%d "
          "BinaryPoint=%u\n",
          ne->mac_cfg.op_mode, ne->mac_cfg.non_linear_mode,
          ne->mac_cfg.kernel_mode, ne->mac_cfg.bias_mode,
@@ -438,17 +540,22 @@ void print_common_h16(const hwx_state_t *state) {
   ane_common_h16_t common =
       *(ane_common_h16_t *)&state->values[H16_COMMON_START / 4];
 
-  if (state->valid[(H16_COMMON_START + 0x4) / 4] ||
-      state->valid[(H16_COMMON_START + 0x8) / 4] ||
-      state->valid[(H16_COMMON_START + 0xC) / 4] ||
-      state->valid[(H16_COMMON_START + 0x10) / 4] ||
-      state->valid[H16_COMMON_START / 4]) {
+  if (state->valid[(H16_COMMON_START + 0x04) / 4] ||
+      state->valid[(H16_COMMON_START + 0x08) / 4] ||
+      state->valid[(H16_COMMON_START + 0x0C) / 4] ||
+      state->valid[(H16_COMMON_START + 0x10) / 4]) {
     const char *infmt_name = get_ch_fmt_name(common.ch_cfg.infmt);
     const char *src2fmt_name = get_ch_fmt_name(common.ch_cfg.src2infmt);
-    const char *outfmt_name = get_ch_fmt_name(common.ch_cfg.outfmt);
     printf("        InDim     : W=%u H=%u C=%u D=%u Type=%s (Src2Type=%s)\n",
            common.inwidth, common.inheight, common.inchannels, common.indepth,
            infmt_name, src2fmt_name);
+  }
+
+  if (state->valid[(H16_COMMON_START + 0x14) / 4] ||
+      state->valid[(H16_COMMON_START + 0x18) / 4] ||
+      state->valid[(H16_COMMON_START + 0x1C) / 4] ||
+      state->valid[(H16_COMMON_START + 0x20) / 4]) {
+    const char *outfmt_name = get_ch_fmt_name(common.ch_cfg.outfmt);
     printf("        OutDim    : W=%u H=%u C=%u D=%u Type=%s\n", common.outwidth,
            common.outheight, common.outchannels, common.outdepth, outfmt_name);
   }
@@ -487,11 +594,11 @@ void print_common_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_COMMON_START + 0x3C) / 4]) {
-    printf("        MACCfg    : ActiveNE=%u SmallSrc=%u TaskType=%u "
+    printf("        MacCfg    : ActiveNE=%u SmallSrc=%u TaskType=%u "
            "OutTrans=%d FillLowerNE=%d\n",
            common.maccfg.active_ne, common.maccfg.small_src_mode,
-           common.maccfg.task_type,
-           common.maccfg.out_trans, common.maccfg.fill_lower_ne);
+           common.maccfg.task_type, common.maccfg.out_trans,
+           common.maccfg.fill_lower_ne);
   }
 
   if (state->valid[(H16_COMMON_START + 0x40) / 4]) {
@@ -533,12 +640,11 @@ void print_ne_h16(const hwx_state_t *state) {
            get_ch_fmt_name(ne.kernel_cfg.kernel_fmt),
            ne.kernel_cfg.palettized_en, ne.kernel_cfg.palettized_bits,
            ne.kernel_cfg.sparse_en, ne.kernel_cfg.group_kernel_reuse,
-           ne.kernel_cfg.kernel_align_fmt,
-           ne.kernel_cfg.asym_quant_en);
+           ne.kernel_cfg.kernel_align_fmt, ne.kernel_cfg.asym_quant_en);
   }
 
   if (state->valid[(H16_NE_START + 0x4) / 4]) {
-    printf("        MACCfg: OpMode=%d KernelMode=%d BiasEn=%d Passthrough=%d "
+    printf("        MacCfg: OpMode=%d KernelMode=%d BiasEn=%d Passthrough=%d "
            "MVBiasEn=%d BinaryPoint=%u PostScaleEn=%d NonLinear=%d\n"
            "                PaddingMode=%d MaxPoolMode=%d "
            "ArgOutputSelect=%d "
@@ -646,10 +752,11 @@ void print_l2_h16(const hwx_state_t *state) {
            l2.src2_cfg.compression);
   }
   if (state->valid[(H16_L2_START + 0x0c) / 4]) {
-    printf("        SrcIdxCfg: Type=%d Dep=%d Alias(C=%d, R=%d) Fmt=%d B27=%d\n",
-           l2.srcidx_cfg.src_type, l2.srcidx_cfg.dependent,
-           l2.srcidx_cfg.alias_conv_src, l2.srcidx_cfg.alias_conv_rslt,
-           l2.srcidx_cfg.dma_fmt, l2.srcidx_cfg.bit27);
+    printf(
+        "        SrcIdxCfg: Type=%d Dep=%d Alias(C=%d, R=%d) Fmt=%d B27=%d\n",
+        l2.srcidx_cfg.src_type, l2.srcidx_cfg.dependent,
+        l2.srcidx_cfg.alias_conv_src, l2.srcidx_cfg.alias_conv_rslt,
+        l2.srcidx_cfg.dma_fmt, l2.srcidx_cfg.bit27);
   }
   if (state->valid[(H16_L2_START + 0x10) / 4]) {
     printf("        Src1  : BaseAddr=0x%05x CStride=0x%05x "
@@ -698,8 +805,8 @@ void print_l2_h16(const hwx_state_t *state) {
     printf("        ResultWrap: Addr=0x%x\n", l2.wrap_addr);
   }
   if (state->valid[(H16_L2_START + 0xa0) / 4]) {
-    printf("        CropTex   : S1X=%d S1Y=%d S2X=%d S2Y=%d\n",
-           l2.crop_tex.s1x, l2.crop_tex.s1y, l2.crop_tex.s2x, l2.crop_tex.s2y);
+    printf("        CropTex   : S1X=%d S1Y=%d S2X=%d S2Y=%d\n", l2.crop_tex.s1x,
+           l2.crop_tex.s1y, l2.crop_tex.s2x, l2.crop_tex.s2y);
   }
 }
 
@@ -1054,8 +1161,8 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
       uint32_t size_bytes = m4h->task_size * 4;
       printf("      [ANE Task %d @ 0x%x] (Size: 0x%x bytes)\n", task_idx++,
              offset, size_bytes);
-      printf("        TID: 0x%04x ExeCycles: %u ENE: %u DTID: 0x%04x\n", m4h->tid,
-             m4h->exe_cycles, m4h->ctrl_flags.ene, m4h->dtid);
+      printf("        TID: 0x%04x ExeCycles: %u ENE: %u DTID: 0x%04x\n",
+             m4h->tid, m4h->exe_cycles, m4h->ctrl_flags.ene, m4h->dtid);
       printf("        LogEvents: 0x%06x Exceptions: 0x%06x\n", m4h->log_events,
              m4h->exceptions);
       printf("        LiveOuts: 0x%08x TSR: %d TDE: %d\n", m4h->live_outs,

@@ -270,8 +270,8 @@ typedef struct {
 
   uint32_t res_550c_5514[3]; // Word 3-5
 
-  uint32_t stridex;  // Word 6 (0x5518) - bits 6-31
-  uint32_t stridey;  // Word 7 (0x551C) - bits 6-31
+  uint32_t kernel_group_stride; // Word 6 (0x5518) - bits 6-31
+  uint32_t kernel_ocg_stride;   // Word 7 (0x551C) - bits 6-31
 
   struct {
     uint32_t en : 1;             // [0]
@@ -565,7 +565,8 @@ typedef struct {
     uint32_t pad1_1 : 4;             // [14:11]
     uint32_t sparse_binary : 1;      // [15]
     uint32_t kernel_align_fmt : 1;   // [16]
-    uint32_t pad2 : 7;               // [23:17]
+    uint32_t pad2 : 4;               // [20:17]
+    uint32_t sparse_block_size : 3;  // [23:21]
     uint32_t asym_quant_en : 1;      // [24]
     uint32_t pad3 : 7;
   } kernel_cfg;
@@ -831,23 +832,26 @@ typedef struct {
 typedef struct {
   // Word 0 (0x4500)
   struct {
-    uint32_t pad_0 : 2;
-    uint32_t op : 3;    // [4:2]
-    uint32_t lut_en : 1; // [5]
-    uint32_t cond : 3;  // [8:6]
-    uint32_t pad0 : 7;  // [15:9]
-    uint32_t src1 : 1;  // [16]
-    uint32_t pad1 : 1;  // [17]
-    uint32_t src2 : 2;  // [19:18]
-    uint32_t pad2 : 12;
+    uint32_t pool_mode : 2; // [1:0]
+    uint32_t op : 3;        // [4:2]
+    uint32_t lut_en : 1;    // [5]
+    uint32_t cond : 3;      // [8:6]
+    uint32_t red_idx : 2;   // [10:9]
+    uint32_t red_keep : 1;  // [11]
+    uint32_t nl_mode : 2;   // [13:12]
+    uint32_t pad0 : 2;      // [15:14]
+    uint32_t src1 : 1;      // [16]
+    uint32_t pad1 : 1;      // [17]
+    uint32_t src2 : 2;      // [19:18]
+    uint32_t pad2 : 12;     // [31:20]
   } pe_cfg;
 
   uint32_t bias;        // Word 1 (0x4504) - F19
   uint32_t scale;       // Word 2 (0x4508) - F19
-  uint32_t res3;        // Word 3 (0x450C)
-  uint32_t pre_scale;   // Word 4 (0x4510) - F19
-  uint32_t final_scale; // Word 5 (0x4514) - F19
-  uint32_t res6[8];     // Words 6-13
+  uint32_t final_scale_epsilon; // Word 3 (0x450C) - F19
+  uint32_t pre_scale;           // Word 4 (0x4510) - F19
+  uint32_t final_scale;         // Word 5 (0x4514) - F19
+  uint32_t lut[8];              // Words 6-13 (0x4518-0x4534)
 
   // Word 14 (0x4538)
   struct {

@@ -75,8 +75,8 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x550C** | `+0x03c` | **Reserved0** | Reserved. |
 | **0x5510** | `+0x040` | **Reserved1** | Reserved. |
 | **0x5514** | `+0x044` | **Reserved2** | Reserved. |
-| **0x5518** | `+0x048` | **StrideX** | **Stride**: 6-31. |
-| **0x551C** | `+0x04c` | **StrideY** | **Stride**: 6-31. |
+| **0x5518** | `+0x048` | **KernelGroupStride** | **Stride**: 6-31. (arg1 of `SetKernelStrideRegisters`) |
+| **0x551C** | `+0x04c` | **KernelOCGStride** | **Stride**: 6-31. (arg2 of `SetKernelStrideRegisters`) |
 | **0x5520** | `+0x050` | **CoeffDMAConfig0**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
 | **0x5524** | `+0x054` | **CoeffDMAConfig1**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
 | **0x5528** | `+0x058` | **CoeffDMAConfig2**| **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
@@ -316,17 +316,20 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4500** | `+0x454` | **Config** | **Op**: 2-4 (1:Add, 2:Mul, 3:Min, 4:Max), **LUTEnable**: 5, **Cond**: 6-8, **Src1Selection**: 16, **Src2Selection**: 18-19. |
+| **0x4500** | `+0x454` | **Config** | **PoolMode**: 0-1, **Op**: 2-4, **LUTEnable**: 5, **Cond**: 6-8, **ReductionResultIndex**: 9-10, **ReductionKeepDims**: 11, **NonLinearMode**: 12-13, **Src1Selection**: 16, **Src2Selection**: 18-19. |
 | **0x4504** | `+0x458` | **Bias** | 19-bit Floating Point (F19) bias value (Bits 0-18). |
 | **0x4508** | `+0x45c` | **Scale** | 19-bit Floating Point (F19) scale value (Bits 0-18). |
+| **0x450c** | `+0x460` | **FinalScaleEpsilon** | 19-bit Floating Point (F19) epsilon value (Bits 0-18). |
 | **0x4510** | `+0x464` | **PreScale** | 19-bit Floating Point (F19) pre-scale value (Bits 0-18). |
 | **0x4514** | `+0x468` | **FinalScale** | 19-bit Floating Point (F19) final scale value (Bits 0-18). |
 | **0x4518** | `+0x46c` | **LUT1** | Piecewise Linear LUT Parameter. |
-| **0x4520** | `+0x474` | **LUT2** | Piecewise Linear LUT Parameter. |
-| **0x4524** | `+0x478` | **LUT3** | Piecewise Linear LUT Parameter. |
-| **0x4528** | `+0x47c` | **LUT4** | Piecewise Linear LUT Parameter. |
-| **0x4530** | `+0x484` | **LUT5** | Piecewise Linear LUT Parameter. |
-| **0x4534** | `+0x488` | **LUT6** | Piecewise Linear LUT Parameter. |
+| **0x451c** | `+0x470` | **LUT2** | Piecewise Linear LUT Parameter. |
+| **0x4520** | `+0x474` | **LUT3** | Piecewise Linear LUT Parameter. |
+| **0x4524** | `+0x478` | **LUT4** | Piecewise Linear LUT Parameter. |
+| **0x4528** | `+0x47c` | **LUT5** | Piecewise Linear LUT Parameter. |
+| **0x452c** | `+0x480` | **LUT6** | Piecewise Linear LUT Parameter. |
+| **0x4530** | `+0x484` | **LUT7** | Piecewise Linear LUT Parameter. |
+| **0x4534** | `+0x488` | **LUT8** | Piecewise Linear LUT Parameter. |
 | **0x4538** | `+0x48c` | **Quant** | **Src1InputOffset**: 0-7, **Src2InputOffset**: 8-15, **OutputZeroPoint**: 16-23. (Verified via binary) |
 
 ### Neural Engine (NE) (0x4900 block, Object `+0x498`)
@@ -335,11 +338,11 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4900** | `+0x498` | **KernelCfg** | **KernelFmt**: 0-1, **PalEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **GroupKernelReuse**: 10, **SparseBinary**: 15, **KernelAlignmentFormat**: 16, **AsymQuantEn**: 24. (Verified via binary) |
-| **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0: Conv, 1: ElemWise, 2: unknown, 3: EWSqr, 4: EWMult, 5: RCAS, 6: Bypass, 7: TransposedConv), **KernelMode**: 3, **BiasEnable**: 4, **PassthroughEnable**: 5, **MatrixVectorBiasEnable**: 6, **BinaryPoint**: 8-13, **PostScaleEnable**: 14, **NonlinearMode**: 16-17, **MaxPoolMode**: 19, **ArgOutputSelect**: 20-23, **DoubleInt8Enable**: 26. |
-| **0x4908** | `+0x4a0` | **MatrixVectorBias**| **Bias**: 0-15. |
-| **0x490C** | `+0x4a4` | **NEBias** | **Bias**: 0-20 (F19/F21). |
-| **0x4910** | `+0x4a8` | **NEPostScale** | **PostScale**: 0-20 (F19/F21). |
+| **0x4900** | `+0x498` | **KernelCfg** | **KernelFmt**: 0-1, **PalEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **GroupKernelReuse**: 10, **SparseBinary**: 15, **KernelAlignmentFormat**: 16, **SparseBlockSize**: 21-23, **AsymQuantEn**: 24. (Verified via binary) |
+| **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0: Conv, 1: ElemWise, 2: RCAS, 3: unknown, 4: Bypass, 5: TransposedConv), **KernelMode**: 3, **BiasEnable**: 4, **PassthroughEnable**: 5, **MatrixVectorBiasEnable**: 6, **BinaryPoint**: 8-13, **PostScaleEnable**: 14, **NonlinearMode**: 16-17, **MaxPoolMode**: 19, **ArgOutputSelect**: 20-23, **DoubleInt8Enable**: 26. |
+| **0x4908** | `+0x4a0` | **MatrixVectorBias**| **Bias**: 0-15. (Verified via `SetNEMatrixVectorBias`) |
+| **0x490C** | `+0x4a4` | **NEBias** | **Bias**: 0-20. (Verified via `SetNEBias`) |
+| **0x4910** | `+0x4a8` | **NEPostScale** | **PostScale**: 0-20. (Verified via `SetNEPostScale`) |
 | **0x4914** | `+0x4ac` | **RcasConfig** | **KeyMask**: 0-7, **CmpBit**: 8-10, **SenseAxis**: 12-13, **SenseBit**: 16-19, **RcasMode**: 20. |
 | **0x4918** | `+0x4b0` | **RoundModeCfg** | **StochasticRoundMode**: 0-1, **StochasticRoundIntegerBits**: 4-8. |
 | **0x491C** | `+0x4b4` | **SRSeed[0]**| **Seed**: 0-31. |

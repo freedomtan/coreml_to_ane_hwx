@@ -94,13 +94,13 @@ const char *get_m4_reg_name(uint32_t addr) {
       "L2_Res36",          "L2_Res37",          "L2_Res38",
       "L2_ResultWrapAddr", "L2_Res40"};
   static const char *pe_names[] = {
-      "PE_Config",    "PE_Bias",       "PE_Scale",     "PE_Reserved1",
-      "PE_PreScale",  "PE_FinalScale", "PE_Reserved2", "PE_Reserved3",
-      "PE_Reserved4", "PE_Reserved5",  "PE_Reserved6", "PE_Reserved7",
-      "PE_Reserved8", "PE_Reserved9",  "PE_Quant",     "PE_Reserved10"};
+      "PE_Config",    "PE_Bias",       "PE_Scale",     "PE_FinalScaleEpsilon",
+      "PE_PreScale",  "PE_FinalScale", "PE_LUT1",      "PE_LUT2",
+      "PE_LUT3",      "PE_LUT4",       "PE_LUT5",      "PE_LUT6",
+      "PE_LUT7",      "PE_LUT8",       "PE_Quant"};
   static const char *ne_names[] = {
-      "KernelCfg",   "Macfg",      "MatrixVectorBias", "NEBias",
-      "NEPostScale", "RcasConfig", "RoundModeCfg",     "SRSeed[0]",
+      "KernelCfg",   "MacCfg",      "MatrixVectorBias", "NEBias",
+      "PostScale",   "RcasConfig", "RoundModeCfg",     "SRSeed[0]",
       "SRSeed[1]",   "SRSeed[2]",  "SRSeed[3]",        "QuantZeroPoint"};
   static const char *cdma_names[] = {
       "CacheDMAControl",  "CacheDMAPre0",      "CacheDMAPre1",
@@ -207,8 +207,8 @@ const char *get_m4_reg_name(uint32_t addr) {
                                        "Reserved[0]",
                                        "Reserved[1]",
                                        "Reserved[2]",
-                                       "StrideX",
-                                       "StrideY",
+                                       "KernelGroupStride",
+                                       "KernelOCGStride",
                                        "CoeffDMAConfig[0]",
                                        "CoeffDMAConfig[1]",
                                        "CoeffDMAConfig[2]",
@@ -706,8 +706,12 @@ void print_pe_h16(const hwx_state_t *state) {
   printf("        --- Planar Engine (0x4500) ---\n");
 
   if (state->valid[H16_PE_START / 4]) {
-    printf("        PE Config: Op=%d Cond=%d Src1=%d Src2=%d\n", pe.pe_cfg.op,
-           pe.pe_cfg.cond, pe.pe_cfg.src1, pe.pe_cfg.src2);
+    static const char *pe_op_names[] = {"None", "Add", "Mul", "Min", "Max",
+                                        "5?",   "6?",  "7?"};
+    printf("        PE Config : Pool=%u Op=%u(%s) LutEn=%u Cond=%u RedIdx=%u RedKeep=%u NLMode=%u Src1=%u Src2=%u\n",
+           pe.pe_cfg.pool_mode, pe.pe_cfg.op, pe_op_names[pe.pe_cfg.op & 7],
+           pe.pe_cfg.lut_en, pe.pe_cfg.cond, pe.pe_cfg.red_idx,
+           pe.pe_cfg.red_keep, pe.pe_cfg.nl_mode, pe.pe_cfg.src1, pe.pe_cfg.src2);
   }
   if (state->valid[(H16_PE_START + 0x4) / 4])
     printf("        PE Bias   : 0x%05x (%f)\n", pe.bias & 0x7FFFF,
@@ -716,16 +720,21 @@ void print_pe_h16(const hwx_state_t *state) {
     printf("        PE Scale  : 0x%05x (%f)\n", pe.scale & 0x7FFFF,
            decode_f19(pe.scale));
   if (state->valid[(H16_PE_START + 0x0c) / 4])
-    printf("        PE Final Scale : 0x%05x (%f)\n", pe.final_scale & 0x7FFFF,
-           decode_f19(pe.final_scale));
+    printf("        PE Final Scale Epsilon : 0x%05x (%f)\n",
+           pe.final_scale_epsilon & 0x7FFFF, decode_f19(pe.final_scale_epsilon));
   if (state->valid[(H16_PE_START + 0x10) / 4])
-    printf("        PE Pre Scale : 0x%05x (%f)\n", pe.pre_scale & 0x7FFFF,
+    printf("        PE PreScale  : 0x%05x (%f)\n", pe.pre_scale & 0x7FFFF,
            decode_f19(pe.pre_scale));
   if (state->valid[(H16_PE_START + 0x14) / 4])
-    printf("        PE Final Scale: 0x%05x (%f)\n", pe.final_scale & 0x7FFFF,
+    printf("        PE Final Scale : 0x%05x (%f)\n", pe.final_scale & 0x7FFFF,
            decode_f19(pe.final_scale));
+  for (int i = 0; i < 8; i++) {
+    if (state->valid[(H16_PE_START + 0x18 + i * 4) / 4])
+      printf("        PE LUT%d    : 0x%08x\n", i + 1, pe.lut[i]);
+  }
   if (state->valid[(H16_PE_START + 0x38) / 4]) {
-    printf("        PE Quant: OutZP=%d\n", pe.quant.out_zp);
+    printf("        PE Quant  : Src1Off=%u Src2Off=%u OutZP=%u\n",
+           pe.quant.src1_in_off, pe.quant.src2_in_off, pe.quant.out_zp);
   }
 }
 
@@ -936,9 +945,15 @@ void print_kerneldmasrc_h16(const hwx_state_t *state) {
     printf("        MasterCfg: En=%d Sparse=%d Reuse=%d\n",
            k->master_cfg.master_enable, k->master_cfg.kernel_sparse_fmt,
            k->master_cfg.group_kernel_reuse);
+  if (state->valid[(H16_KERNELDMA_START + 0x04) / 4])
+    printf("        AlignedCoeffSize: 0x%08x\n", k->aligned_coeff_size_per_ch);
   if (state->valid[(H16_KERNELDMA_START + 0x08) / 4])
     printf("        Prefetch : Rate=%u Early=%d\n", k->prefetch.prefetch_rate,
            k->prefetch.early_term_en);
+  if (state->valid[(H16_KERNELDMA_START + 0x18) / 4])
+    printf("        KernelGroupStride: %u\n", k->kernel_group_stride & 0x3ffffff);
+  if (state->valid[(H16_KERNELDMA_START + 0x1c) / 4])
+    printf("        KernelOCGStride  : %u\n", k->kernel_ocg_stride & 0x3ffffff);
 
   for (int i = 0; i < 16; i++) {
     if (state->valid[(H16_KERNELDMA_START + 0x20) / 4 + i] ||

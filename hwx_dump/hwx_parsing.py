@@ -120,9 +120,11 @@ def get_m4_reg_name(addr):
             "OutDepth", "NumGroups", "ConvCfg", "ConvCfg3d",
             "UnicastCfg", "TileHeight", "TileOverlap", "MacCfg",
             "NECfg", "PatchCfg", "PECfg", "NID",
-            "DPE", "CommonReserved_0x54", "CommonReserved_0x58"
+            "DPE"
         ]
-        return common_names[(addr - H16_COMMON_START) // 4]
+        off = (addr - H16_COMMON_START) // 4
+        if off < len(common_names): return common_names[off]
+        return f"CommonReserved_0x{addr:02x}"
 
     # L2 (0x4100)
     if H16_L2_START <= addr < H16_L2_START + 41 * 4:
@@ -146,21 +148,21 @@ def get_m4_reg_name(addr):
         return "IndexCfg"
 
     # PE (0x4500)
-    if H16_PE_START <= addr < H16_PE_START + 16 * 4:
+    if H16_PE_START <= addr < H16_PE_START + 15 * 4:
         pe_names = [
-            "Config", "Bias", "Scale", "AluMode",
+            "Config", "Bias", "Scale", "Reserved_0x450C",
             "PreScale", "FinalScale", "LUT1", "LUT2",
             "LUT3", "LUT4", "LUT5", "LUT6",
-            "QuantizationSrc1InputOffset", "QuantizationSrc2InputOffset", "PEOutputQuantization"
+            "CommonReserved_0x4530", "CommonReserved_0x4534", "Quant"
         ]
         return pe_names[(addr - H16_PE_START) // 4]
 
     # NE (0x4900)
     if H16_NE_START <= addr < H16_NE_START + 12 * 4:
         ne_names = [
-            "KernelMode1", "KernelMode2", "KernelMode3", "NEBias",
-            "NEPostScale", "RcasConfig", "StochasticRoundMode", "NEReserved_0x491c",
-            "NEReserved_0x4920", "NEReserved_0x4924", "NEReserved_0x4928", "OutputFmt"
+            "KernelMode1", "KernelMode2", "MatrixVectorBias", "NEBias",
+            "NEPostScale", "RcasConfig", "RoundModeCfg", "SRSeed[0]",
+            "SRSeed[1]", "SRSeed[2]", "SRSeed[3]", "QuantZeroPoint"
         ]
         return ne_names[(addr - H16_NE_START) // 4]
 
@@ -219,18 +221,30 @@ def get_m4_reg_name(addr):
     if H16_KERNELDMA_START <= addr < H16_KERNELDMA_START + 72 * 4:
         off = (addr - H16_KERNELDMA_START) // 4
         if off == 0: return "MasterConfig"
-        if off == 1: return "Reserved1"
+        if off == 1: return "AlignedCoeffSizePerCh"
         if off == 2: return "Prefetch"
         if 3 <= off <= 5: return f"Reserved[{off-3}]"
         if off == 6: return "StrideX"
         if off == 7: return "StrideY"
-        if 8 <= off <= 23: return f"CoeffDMAConfig[{off-8}]"
-        if 24 <= off <= 39: return f"CoeffBaseAddr[{off-24}]"
-        if 40 <= off <= 55: return f"CoeffBfrSize[{off-40}]"
+        if 8 <= off <= 23: return f"CoeffDMAConfig{off-8}"
+        if 24 <= off <= 39: return f"CoeffBaseAddr{off-24}"
+        if 40 <= off <= 55: return f"CoeffBfrSize{off-40}"
         if off == 56: return "BiasDMAConfig"
+        if off == 57: return "BiasBaseAddr"
+        if off == 58: return "BiasReserved0"
+        if off == 59: return "BiasReserved1"
         if off == 60: return "PostScaleDMAConfig"
+        if off == 61: return "PostScaleBaseAddr"
+        if off == 62: return "PostScaleReserved0"
+        if off == 63: return "PostScaleReserved1"
         if off == 64: return "PaletteDMAConfig"
+        if off == 65: return "PaletteBaseAddr"
+        if off == 66: return "PaletteReserved0"
+        if off == 67: return "PaletteReserved1"
         if off == 68: return "NLutDMAConfig"
+        if off == 69: return "NLutBaseAddr"
+        if off == 70: return "NLutReserved0"
+        if off == 71: return "NLutReserved1"
         return f"KDMA_pad_{off}"
 
     # CacheDMA / Telemetry (0x5900)
@@ -389,30 +403,32 @@ def decode_common_h16(values, valid):
         print("        --- Common (0x0000) ---")
         if valid[base]:
             cf = values.get(base, 0)
-            print(f"        ChannelCfg: InFmt={fmt(cf&3)} Src2Fmt={fmt((cf>>2)&3)} OutFmt={fmt((cf>>4)&3)}")
-        
-        if any(valid[base+i] for i in range(1, 5)):
-            print(f"        InDim     : W={values.get(base+1,0)} H={values.get(base+2,0)} C={values.get(base+3,0)} D={values.get(base+4,0)}")
-        if any(valid[base+i] for i in range(5, 9)):
-            print(f"        OutDim    : W={values.get(base+5,0)} H={values.get(base+6,0)} C={values.get(base+7,0)} D={values.get(base+8,0)}")
+        if valid[base+0]:
+            cc = values.get(base+0, 0)
+            print(f"        ChannelCfg: InFmt={get_ch_fmt_name(cc&3)} Src2Fmt={get_ch_fmt_name((cc>>2)&3)} OutFmt={get_ch_fmt_name((cc>>4)&3)}")
+
+        for name, off in [("InDim ", 1), ("OutDim", 5)]:
+            if all(valid[base+off+i] for i in range(4)):
+                w, h, c, d = [values.get(base+off+i, 0) & 0x1ffff for i in range(4)]
+                print(f"        {name:10}: W={w} H={h} C={c} D={d}")
         
         if valid[base+9]:
-            print(f"        Batch     : {values.get(base+9, 0)}")
+            print(f"        NumGroups : {values.get(base+9, 0)}")
             
         if valid[base+10]:
             cv = values.get(base+10, 0)
-            print(f"        ConvCfg   : K={cv&0x3f}x{(cv>>6)&0x3f} S={(cv>>13)&3}x{(cv>>15)&3} P(left/top)={(cv>>17)&0x1f}x{(cv>>22)&0x1f} O={(cv>>28)&3}x{(cv>>30)&3}")
+            print(f"        ConvCfg   : K={cv&0x3f}x{(cv>>6)&0x3f} S={(cv>>13)&3}x{(cv>>15)&3} P(L/T)={(cv>>17)&0x1f}x{(cv>>22)&0x1f} O={(cv>>28)&3}x{(cv>>30)&3}")
             
         if valid[base+11]:
             c3 = values.get(base+11, 0)
-            print(f"        ConvCfg3D : KD={c3&0x3f} SZ={(c3>>6)&0x3f} PZ={(c3>>12)&0x1f} OZ={(c3>>17)&0x1f}")
+            print(f"        ConvCfg3D : KD={c3&0x1f} SZ={(c3>>6)&3} PZ={(c3>>8)&0xf} OZ={(c3>>13)&3}")
             
         if valid[base+12]:
             u = values.get(base+12, 0)
             print(f"        Unicast   : Cin={(u>>16)&0xffff} En={(u>>14)&1}")
             
         if valid[base+13]:
-            print(f"        TileHeight: {values.get(base+13, 0)}")
+            print(f"        TileHeight: {values.get(base+13, 0) & 0x1ffff}")
             
         if valid[base+14]:
             o = values.get(base+14, 0)
@@ -424,7 +440,7 @@ def decode_common_h16(values, valid):
             
         if valid[base+16]:
             ne = values.get(base+16, 0)
-            print(f"        LaneCfg   : OCGSize={ne&7}")
+            print(f"        LaneCfg   : OCGSize={(ne&7)} FatTile={(ne>>3)&1} WUStack={(ne>>4)&3}")
             
         if valid[base+17]:
             pc = values.get(base+17, 0)
@@ -432,7 +448,7 @@ def decode_common_h16(values, valid):
             
         if valid[base+18]:
             pec = values.get(base+18, 0)
-            print(f"        PERouting : Bcasts={pec&0xff} Trans={ (pec>>8)&7 } OutCtoW={(pec>>10)&1}")
+            print(f"        PERouting : Src1Br={(pec)&0xf} Src2Br={(pec>>4)&0xf} S1Tr={(pec>>8)&1} S2Tr={(pec>>9)&1} OutCtoW={(pec>>10)&1}")
 
         if valid[base+19]: print(f"        NID       : 0x{values.get(base+19, 0):02x}")
         if valid[base+20]: print(f"        DPE       : 0x{values.get(base+20, 0):08x}")
@@ -449,7 +465,8 @@ def decode_ne_h16(values, valid):
             sparse = (k >> 8) & 1
             reuse = (k >> 10) & 1
             asym = (k >> 24) & 1
-            print(f"        KernelCfg : Fmt={fmt} Palettized={pal_en} ({pal_bits}bit) Sparse={sparse} Reuse={reuse} AsymQuant={asym}")
+            align = (k >> 16) & 1
+            print(f"        KernelCfg : Fmt={fmt} Palettized={pal_en} ({pal_bits}bit) Sparse={sparse} Reuse={reuse} Align={align} AsymQuant={asym}")
         
         if valid[base + 1]:
             m = values.get(base + 1, 0)
@@ -495,7 +512,7 @@ def decode_pe_h16(values, valid):
         if valid[base + 5]: print(f"        PE FinScl : 0x{values.get(base+5, 0)&0x7ffff:05x} ({f19(values.get(base+5, 0)):.4f})")
         if valid[base + 14]:
             q = values.get(base + 14, 0)
-            print(f"        PE Quant  : S1Off={q&0xff} S2Off={(q>>8)&0xff} ZeroPoint={(q>>16)&0xff}")
+            print(f"        PE Quant  : S1Off={q&0xff} S2Off={(q>>8)&0xff} OutZP={(q>>16)&0xff}")
 
 def decode_l2_h16(values, valid):
     base = H16_L2_START // 4
@@ -510,7 +527,9 @@ def decode_l2_h16(values, valid):
                 cfg = values.get(base + off, 0)
                 t, d, asrc, arsl = cfg&3, (cfg>>2)&3, (cfg>>4)&1, (cfg>>5)&1
                 fmt = (cfg>>6)&3
-                print(f"        {name}Cfg  : Type={t} Dep={d} Alias(C={asrc}, R={arsl}) Fmt={fmt} Intrlv={(cfg>>8)&0xf} OffY={(cfg>>12)&0xf} Comp={(cfg>>25)&3}")
+                intrlv = (cfg>>8)&0xf
+                comp = (cfg>>25)&3
+                print(f"        {name}Cfg  : Type={t} Dep={d} Alias(C={asrc}, R={arsl}) Fmt={fmt} Intrlv={intrlv} Comp={comp}")
         
         def print_l2_unit(name, ubase):
             if any(valid[ubase+i] for i in range(5)):
@@ -540,7 +559,11 @@ def decode_l2_h16(values, valid):
 
         if valid[base + 39]: # WrapAddr
             wa = values.get(base + 39, 0)
-            print(f"        WrapAddr  : Addr=0x{wa&0xfff:03x} Off=0x{(wa>>16)&0x7ff:03x}")
+            print(f"        ResultWrap: Addr=0x{wa:08x}")
+
+        if valid[base + 40]: # CropOffsetTexture
+            cot = values.get(base + 40, 0)
+            print(f"        CropTex   : S1X={cot&0x3f} S1Y={(cot>>8)&0x1f} S2X={(cot>>16)&0x3f} S2Y={(cot>>24)&0x1f}")
 
 def decode_cachedma_h16(values, valid):
     base = H16_CACHEDMA_START // 4
@@ -571,7 +594,7 @@ def decode_tiledma_h16(values, valid):
         print("        --- TileDMASrc (0x4D00) ---")
         if valid[base]:
             c1 = values.get(base, 0)
-            print(f"        Src1DMAConfig: En={c1&1} DSID={(c1>>8)&0xff} Tag={(c1>>16)&0xff} Format={(c1>>24)&0xf}")
+            print(f"        Src1DMAConfig: En={c1&1} DSID={(c1>>8)&0xff} Tag={(c1>>16)&0xff} DepInt={(c1>>24)&0xf}")
         if valid[base + 1]:
             c2 = values.get(base+1, 0)
             print(f"        Src2DMAConfig: En={c2&1} DSID={(c2>>8)&0xff} Tag={(c2>>16)&0xff} DepMode={(c2>>28)&3}")
@@ -591,26 +614,41 @@ def decode_tiledma_h16(values, valid):
         print("        --- TileDMADst (0x5100) ---")
         if valid[dst_base]:
             c = values.get(dst_base, 0)
-            print(f"        DstDMAConfig : En={c&1} CacheHint={(c>>4)&0xf} DSID={(c>>8)&0xff} Tag={(c>>16)&0xff}")
+            print(f"        DstDMAConfig : En={c&1} DSID={(c>>8)&0xff} Tag={(c>>16)&0xff}")
         if valid[dst_base + 2]: print(f"        DstBase    : 0x{values.get(dst_base+3, 0):08x}{values.get(dst_base+2,0):08x}")
         if valid[dst_base + 4]:
             print(f"        DstStrides  : Row=0x{values.get(dst_base+4,0):08x} Plane=0x{values.get(dst_base+5,0):08x} Depth=0x{values.get(dst_base+6,0):08x} Group=0x{values.get(dst_base+7,0):08x}")
         if valid[dst_base + 10]:
-            print(f"        DstMeta     : Addr=0x{values.get(dst_base+11,0):08x}{values.get(dst_base+10,0):08x}")
+            print(f"        DstMetaAddr : Addr=0x{values.get(dst_base+11,0):08x}{values.get(dst_base+10,0):08x}")
+        if valid[dst_base + 12]:
+            fm = values.get(dst_base + 12, 0)
+            print(f"        DstFmtMode  : Fmt={fm&3} MetaSize={(fm>>7)&0x1ffffff}")
+        if valid[dst_base + 14]:
+            fc = values.get(dst_base + 14, 0)
+            print(f"        DstFmtCtrl  : ZeroPad={fc&1} OffsetCh={(fc>>8)&7} CmpVec={(fc>>12)&0xf}")
+        if valid[dst_base + 20]:
+            print(f"        DstPixelOff : 0x{values.get(dst_base+20, 0):08x}")
 
 def decode_kerneldma_h16(values, valid):
     base = H16_KERNELDMA_START // 4
     if any(valid[base + i] for i in range(72)):
         print("        --- KernelDMASrc (0x5500) ---")
-        if valid[base]: print(f"        MasterConfig: MasterEnable={(values.get(base, 0) >> 6) & 1}")
-        if valid[base+2]: print(f"        Prefetch  : 0x{values.get(base+2, 0):08x}")
-        if valid[base+6]: print(f"        StrideX   : {values.get(base+6, 0)}")
-        if valid[base+7]: print(f"        StrideY   : {values.get(base+7, 0)}")
+        if valid[base]:
+            kv = values.get(base, 0)
+            print(f"        MasterCfg : En={(kv>>6)&1} Sparse={(kv>>5)&1} Reuse={(kv>>4)&1}")
+        if valid[base+1]:
+            print(f"        CoeffSize : 0x{values.get(base+1, 0)&0xfffffff:08x}")
+        if valid[base+2]:
+            pv = values.get(base+2, 0)
+            print(f"        Prefetch  : Rate={(pv>>16)&0xffff} EarlyEn={pv&1} StopErr={(pv>>1)&1}")
+        if valid[base+6]: print(f"        StrideX   : {values.get(base+6, 0) & 0x3ffffff}")
+        if valid[base+7]: print(f"        StrideY   : {values.get(base+7, 0) & 0x3ffffff}")
         
         for i in range(16):
             if valid[base+8+i] or valid[base+24+i] or valid[base+40+i]:
                 c = values.get(base + 8 + i, 0)
-                print(f"        Coeff[{i:2}]: En={c&1} DSID={(c>>8)&0xff} Tag={(c>>16)&0xff} Base=0x{values.get(base+24+i, 0):08x} Size=0x{values.get(base+40+i, 0):08x}")
+                sz = values.get(base+40+i, 0) & 0x3ffffff
+                print(f"        Coeff[{i:2}]: En={c&1} DSID={(c>>8)&0xff} Tag={(c>>16)&0xff} Base=0x{values.get(base+24+i, 0):08x} Size=0x{sz:08x}")
         
         for name, off in [("BiasCfg", 56), ("PSScaleCfg", 60), ("PalCfg", 64), ("NLutCfg", 68)]:
             if valid[base + off]:

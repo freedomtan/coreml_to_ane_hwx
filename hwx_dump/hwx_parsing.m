@@ -579,10 +579,10 @@ void print_common_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_COMMON_START + 0x28) / 4]) {
-    printf("        ConvCfg   : K=%ux%u S=%ux%u P(left/top)=%ux%u O=%ux%u\n",
+    printf("        ConvCfg   : K=%ux%u S=%ux%u P(left/top)=%ux%u\n",
            common.conv_cfg.kw, common.conv_cfg.kh, common.conv_cfg.sx,
            common.conv_cfg.sy, common.conv_cfg.pad_left,
-           common.conv_cfg.pad_top, common.conv_cfg.ox, common.conv_cfg.oy);
+           common.conv_cfg.pad_top);
   }
 
   if (state->valid[(H16_COMMON_START + 0x2C) / 4]) {
@@ -1023,15 +1023,20 @@ void print_kerneldmasrc_h16(const hwx_state_t *state) {
     printf("        KernelOCGStride  : %u\n", k->kernel_ocg_stride & 0x3ffffff);
 
   for (int i = 0; i < 16; i++) {
-    if (state->valid[(H16_KERNELDMA_START + 0x20) / 4 + i] ||
-        state->valid[(H16_KERNELDMA_START + 0x60) / 4 + i] ||
-        state->valid[(H16_KERNELDMA_START + 0xa0) / 4 + i]) {
-      printf("        Coeff[%d]: En=%d DSID=%u Tag=%u "
-             "Base=0x%08x "
-             "Size=0x%08x\n",
+    if (state->valid[(H16_KERNELDMA_START + 0x20) / 4 + i]) {
+      printf("        CoeffCfg[%d] : En=%d DSID=%u Tag=%u\n",
              i, k->coeff_cfg[i].en, k->coeff_cfg[i].dataset_id,
-             k->coeff_cfg[i].user_tag, k->coeff_base[i],
-             k->coeff_size[i] & 0x3ffffff);
+             k->coeff_cfg[i].user_tag);
+    }
+  }
+  for (int i = 0; i < 16; i++) {
+    if (state->valid[(H16_KERNELDMA_START + 0x60) / 4 + i]) {
+      printf("        CoeffBase[%d]: 0x%08x\n", i, k->coeff_base[i]);
+    }
+  }
+  for (int i = 0; i < 16; i++) {
+    if (state->valid[(H16_KERNELDMA_START + 0xa0) / 4 + i]) {
+      printf("        CoeffSize[%d]: 0x%08x\n", i, k->coeff_size[i] & 0x3ffffff);
     }
   }
   if (state->valid[(H16_KERNELDMA_START + 0xe0) / 4])

@@ -148,7 +148,7 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x0000** | `+0x1f8` | **ChannelCfg** | **InFmt**: 0-1, **Src2InFmt**: 2-3, **OutFmt**: 4-5. |
+| **0x0000** | `+0x1f8` | **ChannelCfg** | **InFmt**: 0-1, **Src2InFmt**: 2-3, **OutFmt**: 4-5. (Verified via `SetCommonSrc1InFmt`, `SetCommonSrc2InFmt`) |
 | **0x0004** | `+0x1fc` | **InWidth** | **Win**: 0-16. |
 | **0x0008** | `+0x200` | **InHeight** | **Hin**: 0-16. |
 | **0x000C** | `+0x204` | **InChannels** | **Cin**: 0-16. |
@@ -339,16 +339,16 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
 | **0x4900** | `+0x498` | **KernelCfg** | **KernelFmt**: 0-1, **PalEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **GroupKernelReuse**: 10, **SparseBinary**: 15, **KernelAlignmentFormat**: 16, **SparseBlockSize**: 21-23, **AsymQuantEn**: 24. (Verified via binary) |
-| **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0: Conv, 1: ElemWise, 2: RCAS, 3: unknown, 4: Bypass, 5: TransposedConv), **KernelMode**: 3, **BiasEnable**: 4, **PassthroughEnable**: 5, **MatrixVectorBiasEnable**: 6, **BinaryPoint**: 8-13, **PostScaleEnable**: 14, **NonlinearMode**: 16-17, **MaxPoolMode**: 19, **ArgOutputSelect**: 20-23, **DoubleInt8Enable**: 26. |
+| **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0: Conv, 1: ElemWise, 2: RCAS, 3: unknown, 4: Bypass, 5: TransposedConv), **KernelMode**: 3, **BiasEnable**: 4, **PassthroughEnable**: 5, **MatrixVectorBiasEnable**: 6, **BinaryPoint**: 8-13, **PostScaleEnable**: 14, **NonlinearMode**: 16-17, **MaxPoolMode**: 19, **ArgOutputSelect**: 20-23, **DoubleInt8Enable**: 26. (Verified via binary) |
 | **0x4908** | `+0x4a0` | **MatrixVectorBias**| **Bias**: 0-15. (Verified via `SetNEMatrixVectorBias`) |
 | **0x490C** | `+0x4a4` | **NEBias** | **Bias**: 0-20. (Verified via `SetNEBias`) |
 | **0x4910** | `+0x4a8` | **NEPostScale** | **PostScale**: 0-20. (Verified via `SetNEPostScale`) |
 | **0x4914** | `+0x4ac` | **RcasConfig** | **KeyMask**: 0-7, **CmpBit**: 8-10, **SenseAxis**: 12-13, **SenseBit**: 16-19, **RcasMode**: 20. |
-| **0x4918** | `+0x4b0` | **RoundModeCfg** | **StochasticRoundMode**: 0-1, **StochasticRoundIntegerBits**: 4-8. |
-| **0x491C** | `+0x4b4` | **SRSeed[0]**| **Seed**: 0-31. |
-| **0x4920** | `+0x4b8` | **SRSeed[1]**| **Seed**: 0-31. |
-| **0x4924** | `+0x4bc` | **SRSeed[2]**| **Seed**: 0-31. |
-| **0x4928** | `+0x4c0` | **SRSeed[3]**| **Seed**: 0-31. |
+| **0x4918** | `+0x4b0` | **RoundModeCfg** | **StochasticRoundMode**: 0-2, **StochasticRoundIntegerBits**: 4-8. (Verified via binary) |
+| **0x491C** | `+0x4b4` | **SRSeed0** | **Seed**: 0-31. (Verified via `SetStochasticRoundSeed`) |
+| **0x4920** | `+0x4b8` | **SRSeed1** | **Seed**: 0-31. |
+| **0x4924** | `+0x4bc` | **SRSeed2** | **Seed**: 0-31. |
+| **0x4928** | `+0x4c0` | **SRSeed3** | **Seed**: 0-31. |
 | **0x492C** | `+0x4c4` | **QuantZeroPoint** | **ZeroPoint**: 0-7. |
 
 ### TileDMA Destination (0x5100 block, Object `+0x4d0`)

@@ -90,9 +90,9 @@ const char *get_m4_reg_name(uint32_t addr) {
       "L2_Res24",          "L2_ResultWrapCfg",  "L2_Res26",
       "L2_Res27",          "L2_Res28",          "L2_ResultWrapIdxOff",
       "L2_Res30",          "L2_Result2Base",    "L2_Result2CStride",
-      "L2_Result2RStride", "L2_Result2DStride", "L2_Result2GStride",
+      "L2_Result2RStride", "L2_Result2DStride", "PEIndexCfg",
       "L2_Res36",          "L2_Res37",          "L2_Res38",
-      "L2_ResultWrapAddr", "L2_Res40"};
+      "L2_ResultWrapAddr", "L2_CropTex"};
   static const char *pe_names[] = {
       "PE_Config",    "PE_Bias",       "PE_Scale",     "PE_FinalScaleEpsilon",
       "PE_PreScale",  "PE_FinalScale", "PE_LUT1",      "PE_LUT2",
@@ -761,45 +761,68 @@ void print_l2_h16(const hwx_state_t *state) {
   }
   if (state->valid[(H16_L2_START + 0x04) / 4]) {
     printf("        Src1Cfg  : Type=%d Dep=%d Alias(C=%d, R=%d) Fmt=%d "
-           "Intrlv=%d Comp=%d\n",
+           "Intrlv=%d Comp=%d Planar(S=%d, R=%d)\n",
            l2.src1_cfg.src_type, l2.src1_cfg.dependent,
            l2.src1_cfg.alias_conv_src, l2.src1_cfg.alias_conv_rslt,
            l2.src1_cfg.dma_fmt, l2.src1_cfg.interleave,
-           l2.src1_cfg.compression);
+           l2.src1_cfg.compression, l2.src1_cfg.alias_planar_src,
+           l2.src1_cfg.alias_planar_rslt);
   }
   if (state->valid[(H16_L2_START + 0x08) / 4]) {
     printf("        Src2Cfg  : Type=%d Dep=%d Alias(C=%d, R=%d) Fmt=%d "
-           "Intrlv=%d Comp=%d\n",
+           "Intrlv=%d Comp=%d Planar(S=%d, R=%d)\n",
            l2.src2_cfg.src_type, l2.src2_cfg.dependent,
            l2.src2_cfg.alias_conv_src, l2.src2_cfg.alias_conv_rslt,
            l2.src2_cfg.dma_fmt, l2.src2_cfg.interleave,
-           l2.src2_cfg.compression);
+           l2.src2_cfg.compression, l2.src2_cfg.alias_planar_src,
+           l2.src2_cfg.alias_planar_rslt);
   }
   if (state->valid[(H16_L2_START + 0x0c) / 4]) {
     printf(
-        "        SrcIdxCfg: Type=%d Dep=%d Alias(C=%d, R=%d) Fmt=%d B27=%d\n",
+        "        SrcIdxCfg: Type=%d Dep=%d Alias(C=%d, R=%d, PS=%d, PR=%d) Fmt=%d B27=%d\n",
         l2.srcidx_cfg.src_type, l2.srcidx_cfg.dependent,
         l2.srcidx_cfg.alias_conv_src, l2.srcidx_cfg.alias_conv_rslt,
+        l2.srcidx_cfg.alias_planar_src, l2.srcidx_cfg.alias_planar_rslt,
         l2.srcidx_cfg.dma_fmt, l2.srcidx_cfg.bit27);
   }
-  if (state->valid[(H16_L2_START + 0x10) / 4]) {
-    printf("        Src1  : BaseAddr=0x%05x CStride=0x%05x "
-           "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
-           l2.src1.base, l2.src1.channel_stride, l2.src1.row_stride,
-           l2.src1.depth_stride, l2.src1.group_stride);
+
+  // --- Src1 Block ---
+  if (state->valid[(H16_L2_START + 0x10) / 4] || state->valid[(H16_L2_START + 0x14) / 4] ||
+      state->valid[(H16_L2_START + 0x18) / 4] || state->valid[(H16_L2_START + 0x1c) / 4] ||
+      state->valid[(H16_L2_START + 0x20) / 4]) {
+    printf("        Src1     :");
+    if (state->valid[(H16_L2_START + 0x10) / 4]) printf(" Base=0x%05x", l2.src1.base);
+    if (state->valid[(H16_L2_START + 0x14) / 4]) printf(" CS=0x%05x", l2.src1.channel_stride);
+    if (state->valid[(H16_L2_START + 0x18) / 4]) printf(" RS=0x%05x", l2.src1.row_stride);
+    if (state->valid[(H16_L2_START + 0x1c) / 4]) printf(" DS=0x%05x", l2.src1.depth_stride);
+    if (state->valid[(H16_L2_START + 0x20) / 4]) printf(" GS=0x%05x", l2.src1.group_stride);
+    printf("\n");
   }
-  if (state->valid[(H16_L2_START + 0x24) / 4]) {
-    printf("        Src2  : BaseAddr=0x%05x CStride=0x%05x "
-           "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
-           l2.src2.base, l2.src2.channel_stride, l2.src2.row_stride,
-           l2.src2.depth_stride, l2.src2.group_stride);
+
+  // --- Src2 Block ---
+  if (state->valid[(H16_L2_START + 0x24) / 4] || state->valid[(H16_L2_START + 0x28) / 4] ||
+      state->valid[(H16_L2_START + 0x2c) / 4] || state->valid[(H16_L2_START + 0x30) / 4] ||
+      state->valid[(H16_L2_START + 0x34) / 4]) {
+    printf("        Src2     :");
+    if (state->valid[(H16_L2_START + 0x24) / 4]) printf(" Base=0x%05x", l2.src2.base);
+    if (state->valid[(H16_L2_START + 0x28) / 4]) printf(" CS=0x%05x", l2.src2.channel_stride);
+    if (state->valid[(H16_L2_START + 0x2c) / 4]) printf(" RS=0x%05x", l2.src2.row_stride);
+    if (state->valid[(H16_L2_START + 0x30) / 4]) printf(" DS=0x%05x", l2.src2.depth_stride);
+    if (state->valid[(H16_L2_START + 0x34) / 4]) printf(" GS=0x%05x", l2.src2.group_stride);
+    printf("\n");
   }
-  if (state->valid[(H16_L2_START + 0x38) / 4]) {
-    printf("        SrcIdx: BaseAddr=0x%05x CStride=0x%05x "
-           "DStride=0x%05x GStride=0x%05x\n",
-           l2.srcidx.base, l2.srcidx.channel_stride, l2.srcidx.depth_stride,
-           l2.srcidx.group_stride);
+
+  // --- SrcIdx Block ---
+  if (state->valid[(H16_L2_START + 0x38) / 4] || state->valid[(H16_L2_START + 0x3c) / 4] ||
+      state->valid[(H16_L2_START + 0x40) / 4] || state->valid[(H16_L2_START + 0x44) / 4]) {
+    printf("        SrcIdx   :");
+    if (state->valid[(H16_L2_START + 0x38) / 4]) printf(" Base=0x%05x", l2.srcidx.base);
+    if (state->valid[(H16_L2_START + 0x3c) / 4]) printf(" CS=0x%05x", l2.srcidx.channel_stride);
+    if (state->valid[(H16_L2_START + 0x40) / 4]) printf(" DS=0x%05x", l2.srcidx.depth_stride);
+    if (state->valid[(H16_L2_START + 0x44) / 4]) printf(" GS=0x%05x", l2.srcidx.group_stride);
+    printf("\n");
   }
+
   if (state->valid[(H16_L2_START + 0x48) / 4]) {
     printf("        ResCfg   : Type=%d Bfr=%d Alias(S=%d, R=%d) Fmt=%d "
            "Intrlv=%d Comp=%d\n",
@@ -808,25 +831,69 @@ void print_l2_h16(const hwx_state_t *state) {
            l2.result_cfg.dma_fmt, l2.result_cfg.interleave,
            l2.result_cfg.compression);
   }
-  if (state->valid[(H16_L2_START + 0x4c) / 4]) {
-    printf("        Result: BaseAddr=0x%05x CStride=0x%05x "
-           "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
-           l2.result.base, l2.result.channel_stride, l2.result.row_stride,
-           l2.result.depth_stride, l2.result.group_stride);
+
+  // --- Result Block ---
+  if (state->valid[(H16_L2_START + 0x4c) / 4] || state->valid[(H16_L2_START + 0x50) / 4] ||
+      state->valid[(H16_L2_START + 0x54) / 4] || state->valid[(H16_L2_START + 0x58) / 4] ||
+      state->valid[(H16_L2_START + 0x5c) / 4]) {
+    printf("        Result   :");
+    if (state->valid[(H16_L2_START + 0x4c) / 4]) printf(" Base=0x%05x", l2.result.base);
+    if (state->valid[(H16_L2_START + 0x50) / 4]) printf(" CS=0x%05x", l2.result.channel_stride);
+    if (state->valid[(H16_L2_START + 0x54) / 4]) printf(" RS=0x%05x", l2.result.row_stride);
+    if (state->valid[(H16_L2_START + 0x58) / 4]) printf(" DS=0x%05x", l2.result.depth_stride);
+    if (state->valid[(H16_L2_START + 0x5c) / 4]) printf(" GS=0x%05x", l2.result.group_stride);
+    printf("\n");
   }
-  if (state->valid[(H16_L2_START + 0x7c) / 4]) {
-    printf("        Res2 / L2Wr: BaseAddr=0x%05x CStride=0x%05x "
-           "RStride=0x%05x DStride=0x%05x GStride=0x%05x\n",
-           l2.result2.base, l2.result2.channel_stride, l2.result2.row_stride,
-           l2.result2.depth_stride, l2.result2.group_stride);
+
+  // Dump intermediate "Res" registers if valid
+  if (state->valid[(H16_L2_START + 0x60) / 4])
+     printf("        L2_Res24 : 0x%08x\n", l2.l2_res24);
+  
+  for (int i=0; i<3; i++) {
+    if (state->valid[(H16_L2_START + 0x64 + i*4) / 4]) {
+       printf("        WrapCfg[%d]: Blocks=%d Len=0x%05x\n", i,
+              l2.wrap_cfg[i].wrap_num_blocks, l2.wrap_cfg[i].wrap_len);
+    }
   }
+
+  if (state->valid[(H16_L2_START + 0x70) / 4])
+     printf("        L2_Res28 : 0x%08x\n", l2.l2_res28);
+
   if (state->valid[(H16_L2_START + 0x74) / 4]) {
-    printf("        ResultWrap: Index=0x%x StartOffset=0x%x\n",
-           l2.result_wrap_idx_off.wrap_index,
+    printf("        ResultWrap: Mask=0x%x StartOffset=0x%x\n",
+           l2.result_wrap_idx_off.wrap_index_mask,
            l2.result_wrap_idx_off.wrap_start_offset);
   }
+  
+  if (state->valid[(H16_L2_START + 0x78) / 4])
+     printf("        L2_Res30 : 0x%08x\n", l2.l2_res30);
+
+  // --- Result2 Block ---
+  if (state->valid[(H16_L2_START + 0x7c) / 4] || state->valid[(H16_L2_START + 0x80) / 4] ||
+      state->valid[(H16_L2_START + 0x84) / 4] || state->valid[(H16_L2_START + 0x88) / 4]) {
+    printf("        Result2  :");
+    if (state->valid[(H16_L2_START + 0x7c) / 4]) printf(" Base=0x%05x", l2.result2.base);
+    if (state->valid[(H16_L2_START + 0x80) / 4]) printf(" CS=0x%05x", l2.result2.channel_stride);
+    if (state->valid[(H16_L2_START + 0x84) / 4]) printf(" RS=0x%05x", l2.result2.row_stride);
+    if (state->valid[(H16_L2_START + 0x88) / 4]) printf(" DS=0x%05x", l2.result2.depth_stride);
+    printf("\n");
+  }
+
+  if (state->valid[(H16_L2_START + 0x8c) / 4]) {
+    printf("        PEIndex  : Trans=%d Mode=%d MaxIdx=%d\n",
+           l2.pe_index_cfg.transpose, l2.pe_index_cfg.mode,
+           l2.pe_index_cfg.max_index);
+  }
+
+  if (state->valid[(H16_L2_START + 0x90) / 4])
+     printf("        L2_Res36 : 0x%08x\n", l2.l2_res36);
+  if (state->valid[(H16_L2_START + 0x94) / 4])
+     printf("        L2_Res37 : 0x%08x\n", l2.l2_res37);
+  if (state->valid[(H16_L2_START + 0x98) / 4])
+     printf("        L2_Res38 : 0x%08x\n", l2.l2_res38);
+
   if (state->valid[(H16_L2_START + 0x9c) / 4]) {
-    printf("        ResultWrap: Addr=0x%x\n", l2.wrap_addr);
+    printf("        ResultWrapIdx: Addr=0x%x\n", l2.wrap_addr);
   }
   if (state->valid[(H16_L2_START + 0xa0) / 4]) {
     printf("        CropTex   : S1X=%d S1Y=%d S2X=%d S2Y=%d\n", l2.crop_tex.s1x,

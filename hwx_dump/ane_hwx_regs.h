@@ -150,27 +150,22 @@ typedef struct __attribute__((packed)) {
 
   // Word 10 (0x028)
   struct {
-    uint32_t kw : 6;       // [5:0]
-    uint32_t kh : 6;       // [11:6]
-    uint32_t pad0 : 1;     // [12]
-    uint32_t sx : 2;       // [14:13]
-    uint32_t sy : 2;       // [16:15]
-    uint32_t pad_left : 5; // [21:17]
-    uint32_t pad_top : 5;  // [26:22]
-    uint32_t pad1 : 1;     // [27]
-    uint32_t ox : 2;       // [29:28]
-    uint32_t oy : 2;       // [31:30]
+    uint32_t kw : 6;       // [5:0] (H16: Kw-1)
+    uint32_t kh : 6;       // [11:6] (H16: Kh-1)
+    uint32_t sx : 3;       // [14:12] (H16: Sx-1)
+    uint32_t sy : 3;       // [17:15] (H16: Sy-1)
+    uint32_t pad_left : 5; // [22:18]
+    uint32_t pad_top : 5;  // [27:23]
+    uint32_t pad0 : 4;
   } conv_cfg;
 
   // Word 11 (0x02C)
   struct {
-    uint32_t kd : 5;    // [4:0]
-    uint32_t pad0 : 1;  // [5]
-    uint32_t sz : 2;    // [7:6] (or sz:2?)
-    uint32_t pz : 4;    // [11:8]
-    uint32_t pad1 : 1;  // [12]
-    uint32_t oz : 2;    // [14:13]
-    uint32_t pad2 : 17;
+    uint32_t kd : 5;    // [4:0] (H16: Kd-1)
+    uint32_t sz : 3;    // [7:5] (H16: Sz-1)
+    uint32_t pz : 3;    // [10:8]
+    uint32_t oz : 3;    // [13:11]
+    uint32_t pad0 : 18;
   } conv_cfg_3d;
 
   // Word 12 (0x030)
@@ -516,10 +511,10 @@ typedef struct {
   uint32_t dstbase_lo; // Word 2 (0x5108)
   uint32_t dstbase_hi; // Word 3 (0x510C)
 
-  uint32_t dstrow_stride;   // Word 4 (0x5110)
-  uint32_t dstplane_stride;  // Word 5 (0x5114)
-  uint32_t dstdepth_stride; // Word 6 (0x5118)
-  uint32_t dstgroup_stride; // Word 7 (0x511C)
+  uint32_t dstrow_stride;   // Word 4 (0x5110) - 64B units
+  uint32_t dstplane_stride;  // Word 5 (0x5114) - 64B units
+  uint32_t dstdepth_stride; // Word 6 (0x5118) - 64B units
+  uint32_t dstgroup_stride; // Word 7 (0x511C) - 64B units
 
   uint32_t dstinternalcfg; // Word 8 (0x5120)
   uint32_t pad0;           // Word 9
@@ -708,40 +703,54 @@ typedef struct {
 
   // Dense 17-bit packed tensor blocks (Bits 4:20)
   struct {
+    uint32_t pad0 : 4;
     uint32_t base : 17;
-    uint32_t pad0 : 15;
+    uint32_t pad1 : 11;
+    uint32_t pad2 : 4;
     uint32_t channel_stride : 17;
-    uint32_t pad1 : 15;
+    uint32_t pad3 : 11;
+    uint32_t pad4 : 4;
     uint32_t row_stride : 17;
-    uint32_t pad2 : 15;
+    uint32_t pad5 : 11;
+    uint32_t pad6 : 4;
     uint32_t depth_stride : 17;
-    uint32_t pad3 : 15;
+    uint32_t pad7 : 11;
+    uint32_t pad8 : 4;
     uint32_t group_stride : 17;
-    uint32_t pad4 : 15;
+    uint32_t pad9 : 11;
   } src1; // Words 4-8 (0x4110-0x4120)
 
   struct {
+    uint32_t pad0 : 4;
     uint32_t base : 17;
-    uint32_t pad0 : 15;
+    uint32_t pad1 : 11;
+    uint32_t pad2 : 4;
     uint32_t channel_stride : 17;
-    uint32_t pad1 : 15;
+    uint32_t pad3 : 11;
+    uint32_t pad4 : 4;
     uint32_t row_stride : 17;
-    uint32_t pad2 : 15;
+    uint32_t pad5 : 11;
+    uint32_t pad6 : 4;
     uint32_t depth_stride : 17;
-    uint32_t pad3 : 15;
+    uint32_t pad7 : 11;
+    uint32_t pad8 : 4;
     uint32_t group_stride : 17;
-    uint32_t pad4 : 15;
+    uint32_t pad9 : 11;
   } src2; // Words 9-13
 
   struct {
+    uint32_t pad0 : 4;
     uint32_t base : 17;
-    uint32_t pad0 : 15;
+    uint32_t pad1 : 11;
+    uint32_t pad2 : 4;
     uint32_t channel_stride : 17;
-    uint32_t pad1 : 15;
+    uint32_t pad3 : 11;
+    uint32_t pad4 : 4;
     uint32_t depth_stride : 17;
-    uint32_t pad2 : 15;
+    uint32_t pad5 : 11;
+    uint32_t pad6 : 4;
     uint32_t group_stride : 17;
-    uint32_t pad3 : 15;
+    uint32_t pad7 : 11;
   } srcidx; // Words 14-17
 
   // Word 18 (0x4148)
@@ -758,46 +767,67 @@ typedef struct {
     uint32_t pad2 : 5;           // [31:27]
   } result_cfg;
 
+  // Words 19-23 (0x414c-0x415c)
   struct {
+    uint32_t pad0 : 4;
     uint32_t base : 17;
-    uint32_t pad0 : 15;
+    uint32_t pad1 : 11;
+    uint32_t pad2 : 4;
     uint32_t channel_stride : 17;
-    uint32_t pad1 : 15;
+    uint32_t pad3 : 11;
+    uint32_t pad4 : 4;
     uint32_t row_stride : 17;
-    uint32_t pad2 : 15;
+    uint32_t pad5 : 11;
+    uint32_t pad6 : 4;
     uint32_t depth_stride : 17;
-    uint32_t pad3 : 15;
+    uint32_t pad7 : 11;
+    uint32_t pad8 : 4;
     uint32_t group_stride : 17;
-    uint32_t pad4 : 15;
+    uint32_t pad9 : 11;
   } result; // Words 19-23
 
   uint32_t l2_res24; // 0x4160
-  uint32_t l2_res25; // 0x4164 (WrapCfg)
-  uint32_t l2_res26; // 0x4168
-  uint32_t l2_res27; // 0x416c
+  
+  // Words 25-27 (0x4164-0x416c)
+  struct {
+    uint32_t wrap_num_blocks : 12; // [11:0]
+    uint32_t wrap_len : 20;        // [31:12]
+  } wrap_cfg[3];
+
   uint32_t l2_res28; // 0x4170
 
   // Word 29 (0x4174)
   struct {
-    uint32_t wrap_index : 16;
-    uint32_t wrap_start_offset : 16;
+    uint32_t wrap_index_mask : 4;  // [3:0]
+    uint32_t wrap_start_offset : 12; // [15:4]
+    uint32_t pad : 16;
   } result_wrap_idx_off;
 
   uint32_t l2_res30; // 0x4178
 
-  // Words 31-35 (Secondary Result)
+  // Words 31-34 (0x417c-0x4188)
   struct {
+    uint32_t pad0 : 4;
     uint32_t base : 17;
-    uint32_t pad0 : 15;
+    uint32_t pad1 : 11;
+    uint32_t pad2 : 4;
     uint32_t channel_stride : 17;
-    uint32_t pad1 : 15;
+    uint32_t pad3 : 11;
+    uint32_t pad4 : 4;
     uint32_t row_stride : 17;
-    uint32_t pad2 : 15;
+    uint32_t pad5 : 11;
+    uint32_t pad6 : 4;
     uint32_t depth_stride : 17;
-    uint32_t pad3 : 15;
-    uint32_t group_stride : 17;
-    uint32_t pad4 : 15;
+    uint32_t pad7 : 11;
   } result2; // 0x417c
+
+  // Word 35 (0x418c)
+  struct {
+    uint32_t transpose : 1;  // [0]
+    uint32_t mode : 1;       // [1]
+    uint32_t pad : 14;       // [15:2]
+    uint32_t max_index : 16; // [31:16]
+  } pe_index_cfg;
 
   uint32_t l2_res36; // 0x4190
   uint32_t l2_res37; // 0x4194

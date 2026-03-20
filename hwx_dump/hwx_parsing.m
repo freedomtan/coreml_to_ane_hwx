@@ -553,6 +553,11 @@ void print_common_h16(const hwx_state_t *state) {
   printf("        --- Common (0x0000) ---\n");
   ane_common_h16_t common =
       *(ane_common_h16_t *)&state->values[H16_COMMON_START / 4];
+  if (!state->valid[H16_COMMON_START / 4]) {
+    common.ch_cfg.infmt = 2;     // default to FLOAT16
+    common.ch_cfg.src2infmt = 2; // default to FLOAT16
+    common.ch_cfg.outfmt = 2;    // default to FLOAT16
+  }
 
   if (state->valid[(H16_COMMON_START + 0x04) / 4] ||
       state->valid[(H16_COMMON_START + 0x08) / 4] ||

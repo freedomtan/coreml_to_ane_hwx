@@ -393,21 +393,24 @@ typedef struct {
 typedef struct {
   struct {
     uint32_t en : 1;             // [0]
-    uint32_t pad0 : 7;           // [7:1]
-    uint32_t dataset_id : 8;     // [15:8]
-    uint32_t user_tag : 8;       // [23:16]
-    uint32_t dep_interval : 4;   // [27:24]
-    uint32_t pad1 : 4;
+    uint32_t res1 : 4;           // [1:4]
+    uint32_t cache_hint : 3;     // [5:7]
+    uint32_t dataset_id : 8;     // [8:15]
+    uint32_t user_tag : 8;       // [16:23]
+    uint32_t dep_interval : 4;   // [24:27]
+    uint32_t dep_mode : 2;       // [28:29]
+    uint32_t pad1 : 2;           // [30:31]
   } src1cfg; // Word 0 (0x4D00)
 
   struct {
     uint32_t en : 1;             // [0]
-    uint32_t pad0 : 7;           // [7:1]
-    uint32_t dataset_id : 8;     // [15:8]
-    uint32_t user_tag : 8;       // [23:16]
-    uint32_t pad1 : 4;
-    uint32_t dep_mode : 2;       // [29:28]
-    uint32_t pad2 : 2;
+    uint32_t res1 : 4;           // [1:4]
+    uint32_t cache_hint : 3;     // [5:7]
+    uint32_t dataset_id : 8;     // [8:15]
+    uint32_t user_tag : 8;       // [16:23]
+    uint32_t dep_interval : 4;   // [24:27]
+    uint32_t dep_mode : 2;       // [28:29]
+    uint32_t pad1 : 2;           // [30:31]
   } src2cfg; // Word 1 (0x4D04)
 
   uint32_t src1wrapcfg; // Word 2 (0x4D08)
@@ -436,8 +439,33 @@ typedef struct {
   uint32_t src2meta_lo;   // Word 24 (0x4D60)
   uint32_t src2meta_hi;   // Word 25 (0x4D64)
 
-  uint32_t src1memfmt; // Word 26 (0x4D68)
-  uint32_t src2memfmt; // Word 27 (0x4D6C)
+  struct {
+    uint32_t format_mode : 2;    // [0:1]
+    uint32_t res1 : 2;           // [2:3]
+    uint32_t trunc : 3;          // [4:6]
+    uint32_t res2 : 1;           // [7]
+    uint32_t shift : 4;          // [8:11]
+    uint32_t mem_fmt : 2;        // [12:13]
+    uint32_t res3 : 2;           // [14:15]
+    uint32_t offset_ch : 3;      // [16:18]
+    uint32_t res4 : 5;           // [19:23]
+    uint32_t interleave : 4;     // [24:27]
+    uint32_t cmp_vec : 4;        // [28:31]
+  } src1fmt; // Word 26 (0x4D68)
+
+  struct {
+    uint32_t format_mode : 2;    // [0:1]
+    uint32_t res1 : 2;           // [2:3]
+    uint32_t trunc : 3;          // [4:6]
+    uint32_t res2 : 1;           // [7]
+    uint32_t shift : 4;          // [8:11]
+    uint32_t mem_fmt : 2;        // [12:13]
+    uint32_t res3 : 2;           // [14:15]
+    uint32_t offset_ch : 3;      // [16:18]
+    uint32_t res4 : 5;           // [19:23]
+    uint32_t interleave : 4;     // [24:27]
+    uint32_t cmp_vec : 4;        // [28:31]
+  } src2fmt; // Word 27 (0x4D6C)
 
   uint32_t res_4d70_74[2]; // Word 28-29 (0x4D70-0x4D74)
 
@@ -521,10 +549,31 @@ typedef struct {
 
   uint32_t dstmeta_lo; // Word 10 (0x5128)
   uint32_t dstmeta_hi; // Word 11 (0x512C)
-  uint32_t dstfmtmode; // Word 12 (0x5130)
+  struct {
+    uint32_t format_mode : 2;   // [1:0]
+    uint32_t pad0 : 5;
+    uint32_t metadata_size : 25; // [31:7]
+  } dstfmtmode; // Word 12 (0x5130)
+
   uint32_t pad1;       // Word 13
 
-  uint32_t dstfmtctrl; // Word 14 (0x5138)
+  struct {
+    uint32_t mode : 2;           // [1:0]
+    uint32_t pad0 : 2;
+    uint32_t trunc : 3;          // [6:4]
+    uint32_t pad1 : 1;
+    uint32_t shift : 3;          // [10:8]
+    uint32_t pad2 : 1;
+    uint32_t mem_fmt : 2;        // [13:12]
+    uint32_t pad3 : 2;
+    uint32_t offset_ch : 3;      // [18:16]
+    uint32_t pad4 : 1;
+    uint32_t zero_pad_first : 1; // [20]
+    uint32_t zero_pad_last : 1;  // [21]
+    uint32_t pad5 : 2;
+    uint32_t interleave : 4;     // [27:24]
+    uint32_t cmp_vec : 4;        // [31:28]
+  } dstfmt; // Word 14 (0x5138)
   uint32_t pad2;          // Word 15
   
   struct {

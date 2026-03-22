@@ -180,8 +180,8 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 
 | HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4D00** | `+0x25c` | **Src1DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **DependencyInterval**: 24-27. |
-| **0x4D04** | `+0x260` | **Src2DMAConfig** | **Enable**: 0, **DataSetId**: 8-15, **UserTag**: 16-23, **DependencyInterval**: 24-27. |
+| **0x4D00** | `+0x25c` | **Src1DMAConfig** | **Enable**: 0, **CacheHint**: 5-7, **DataSetId**: 8-15, **UserTag**: 16-23, **DependencyInterval**: 24-27, **DependencyMode**: 28-29. |
+| **0x4D04** | `+0x260` | **Src2DMAConfig** | **Enable**: 0, **CacheHint**: 5-7, **DataSetId**: 8-15, **UserTag**: 16-23, **DependencyInterval**: 24-27, **DependencyMode**: 28-29. |
 | **0x4D08** | `+0x264` | **Src1WrapCfg** | **CacheHint**: 0-7 (strb), **WrapCfg**: 8-10, **WrapStatic**: 16-31. |
 | **0x4D0C** | `+0x268` | **Src2WrapCfg** | **CacheHint**: 0-7, **WrapCfg**: 8-10, **WrapStatic**: 16-31. |
 | **0x4D10** | `+0x26c` | **Src1BaseAddrLo** | **AddrLo**: 0-31. |
@@ -206,8 +206,8 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x4D5C** | `+0x2b8` | **Src2MetaDataConfig** | **Config0**: 7-31 (shifted). |
 | **0x4D60** | `+0x2bc` | **Src2MetaUnknown1** | **Config1**: 7-31 (shifted). |
 | **0x4D64** | `+0x2c0` | **Src2MetaDataSize** | **Size**: 7-31. |
-| **0x4D68** | `+0x2c4` | **Src1FmtMode** | **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. |
-| **0x4D6C** | `+0x2c8` | **Src2FmtMode** | **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. |
+| **0x4D68** | `+0x2c4` | **Src1Fmt** | **FormatMode**: 0-1, **Trunc**: 4-6, **Shift**: 8, **MemFmt**: 12-13, **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. |
+| **0x4D6C** | `+0x2c8` | **Src2Fmt** | **FormatMode**: 0-1, **Trunc**: 4-6, **Shift**: 8, **MemFmt**: 12-13, **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. |
 | **0x4D70** | `+0x2cc` | **TileDmaSrcReserved** |  |
 | **0x4D74** | `+0x2d0` | **TileDmaSrcReserved** |  |
 | **0x4D78** | `+0x2d4` | **Src1CompressedInfo** | **CompressedEnable**: 0, **MacroblockSize**: 2, **PackingFormatTableIdx**: 4-9, **LossyEnable**: 13, **MdUserTag**: 24-31. (Verified via binary) |
@@ -261,6 +261,22 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x4E38** | `+0x394` | **TileDmaSrcReserved** |  |
 | **0x4E3C** | `+0x398` | **TileDmaSrcReserved** |  |
 | **0x4E40** | `+0x39c` | **TileDmaSrcReserved** |  |
+
+#### M4 (v17) Format Bitfield Enumeration
+Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
+
+| Format | Inlined Mask | Mode [1:0] | MemFmt [13:12] | Trunc [6:4] | Shift [8] |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **FLOAT32** | **`0x3103`** | 3 | 3 | 0 | 1 |
+| **FLOAT16** | **`0x2031`** | 1 | 2 | 3 | 0 |
+| **INT8** | **`0x1000`** | 0 | 1 | 0 | 0 |
+| **UINT8** | **`0x0000`** | 0 | 0 | 0 | 0 |
+| **RAW12** | **`0x2011`** | 1 | 2 | 1 | 0 |
+| **Y12**   | **`0x0111`** | 1 | 0 | 1 | 1 |
+| **Packed10** | **`0x0102`** | 2 | 0 | 0 | 1 |
+| **INT16** | **`0x3002`** | 2 | 3 | 0 | 0 |
+| **RAW10** | **`0x131` / `0x2131`** | 1 | 0 / 2 | 3 | 0 |
+| **Y10** | **`0x1131` / `0x2131`**| 1 | 1 / 2 | 3 | 0 |
 
 ### L2 Cache / Buffer (0x4100 block, Object `+0x3a8`)
 - **Count**: 41 registers (`0x29` words, `0xA4` bytes).
@@ -371,7 +387,7 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x512C** | `+0x4fc` | **DstMetaDataAddrHi**| **AddrHi**: 0-31. |
 | **0x5130** | `+0x500` | **DstFormatMode** | **FormatMode**: 0-1, **MetaDataSize**: 7-31. |
 | **0x5134** | `+0x504` | **DstReserved2** | Reserved. |
-| **0x5138** | `+0x508` | **DstFmtCtrl** | **ZeroPadLast**: 0, **ZeroPadFirst**: 1, **OffsetCh**: 8-11, **CmpVec**: 12-15, **Interleave**: 24-27. (Verified via binary) |
+| **0x5138** | `+0x508` | **DstFmt** | **Mode**: 0-1, **Trunc**: 4-6, **Shift**: 8, **MemFmt**: 12-13, **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. (Verified via x86 disassembly) |
 | **0x513C** | `+0x50C` | **DstReserved3** | Reserved. |
 | **0x5140** | `+0x510` | **DstCompressedInfo**| **CompressedEnable**: 0, **MacroblockSize**: 2, **PackingFormatTableIdx**: 4-9, **LossyEnable**: 13. (Verified via binary) |
 | **0x5144** | `+0x514` | **DstReserved4** | Reserved. |

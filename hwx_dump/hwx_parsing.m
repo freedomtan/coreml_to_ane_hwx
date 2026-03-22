@@ -94,14 +94,14 @@ const char *get_m4_reg_name(uint32_t addr) {
       "L2_Res36",          "L2_Res37",          "L2_Res38",
       "L2_ResultWrapAddr", "L2_CropTex"};
   static const char *pe_names[] = {
-      "PE_Config",    "PE_Bias",       "PE_Scale",     "PE_FinalScaleEpsilon",
-      "PE_PreScale",  "PE_FinalScale", "PE_LUT1",      "PE_LUT2",
-      "PE_LUT3",      "PE_LUT4",       "PE_LUT5",      "PE_LUT6",
-      "PE_LUT7",      "PE_LUT8",       "PE_Quant"};
+      "PE_Config",   "PE_Bias",       "PE_Scale", "PE_FinalScaleEpsilon",
+      "PE_PreScale", "PE_FinalScale", "PE_LUT1",  "PE_LUT2",
+      "PE_LUT3",     "PE_LUT4",       "PE_LUT5",  "PE_LUT6",
+      "PE_LUT7",     "PE_LUT8",       "PE_Quant"};
   static const char *ne_names[] = {
-      "KernelCfg",   "MacCfg",      "MatrixVectorBias", "NEBias",
-      "PostScale",   "RcasConfig", "RoundModeCfg",     "SRSeed[0]",
-      "SRSeed[1]",   "SRSeed[2]",  "SRSeed[3]",        "QuantZeroPoint"};
+      "KernelCfg", "MacCfg",     "MatrixVectorBias", "NEBias",
+      "PostScale", "RcasConfig", "RoundModeCfg",     "SRSeed[0]",
+      "SRSeed[1]", "SRSeed[2]",  "SRSeed[3]",        "QuantZeroPoint"};
   static const char *cdma_names[] = {
       "CacheDMAControl",  "CacheDMAPre0",      "CacheDMAPre1",
       "CacheDMAPad3",     "CacheDMAPad4",      "CacheDMAPad5",
@@ -134,7 +134,7 @@ const char *get_m4_reg_name(uint32_t addr) {
                                            "Src2MetaDataConfig",
                                            "Src2MetaDataAddrLo",
                                            "Src2MetaDataAddrHi",
-                                           "Src1FmtMode",
+                                           "Src1Fmt",
                                            "Src2FmtMode",
                                            "Reserved_0x4D70",
                                            "Reserved_0x4D74",
@@ -197,7 +197,7 @@ const char *get_m4_reg_name(uint32_t addr) {
       "DstInternalCfg",    "pad1",
       "DstMetaDataAddrLo", "DstMetaDataAddrHi",
       "DstFmtMode",        "pad2",
-      "DstFmtCtrl",        "pad3",
+      "DstFmt",        "pad3",
       "DstCompressedInfo", "pad4",
       "DstCompSizeLo",     "DstCompSizeHi",
       "DstPixelOffset"};
@@ -367,6 +367,24 @@ static float decode_f19(uint32_t val) {
   return *(float *)&bits;
 }
 
+const char *get_hw_tensor_format_name_v17(uint32_t mode, uint32_t mem_fmt,
+                                          uint32_t trunc, uint32_t shift) {
+  if (mode == 3 && mem_fmt == 3 && shift == 1) return "FLOAT32";
+  if (mode == 1 && mem_fmt == 2 && trunc == 3) return "FLOAT16";
+  if (mode == 0 && mem_fmt == 1) return "INT8";
+  if (mode == 0 && mem_fmt == 0 && shift == 0 && trunc == 0) return "UINT8";
+  if (mode == 1 && mem_fmt == 2 && trunc == 1 && shift == 0) return "RAW12";
+  if (mode == 1 && mem_fmt == 0 && trunc == 1 && shift == 1) return "Y12";
+  if (mode == 2 && mem_fmt == 3) return "INT16";
+  if (mode == 2 && mem_fmt == 0 && shift == 1) return "Packed10 (Deprecated?)";
+  if (mode == 1 && trunc == 3 && shift == 1) {
+    if (mem_fmt == 0) return "RAW10";
+    if (mem_fmt == 1) return "Y10";
+    if (mem_fmt == 2) return "RAW10/Y10 (Shared)";
+  }
+  return "UNKNOWN";
+}
+
 const char *get_ch_fmt_name(uint32_t fmt) {
   switch (fmt) {
   case 0:
@@ -384,15 +402,24 @@ const char *get_ch_fmt_name(uint32_t fmt) {
 
 const char *get_ne_op_mode_name(uint32_t mode) {
   switch (mode) {
-  case 0: return "Conv";
-  case 1: return "ElemWise";
-  case 2: return "unknown";
-  case 3: return "EWSqr";
-  case 4: return "EWMult";
-  case 5: return "RCAS";
-  case 6: return "Bypass";
-  case 7: return "TransposedConv";
-  default: return "Invalid";
+  case 0:
+    return "Conv";
+  case 1:
+    return "ElemWise";
+  case 2:
+    return "unknown";
+  case 3:
+    return "EWSqr";
+  case 4:
+    return "EWMult";
+  case 5:
+    return "RCAS";
+  case 6:
+    return "Bypass";
+  case 7:
+    return "TransposedConv";
+  default:
+    return "Invalid";
   }
 }
 
@@ -669,12 +696,11 @@ void print_ne_h16(const hwx_state_t *state) {
            "ArgOutputSelect=%d "
            "DoubleInt8En=%d\n",
            get_ne_op_mode_name(ne.mac_cfg.op_mode), ne.mac_cfg.kernel_mode,
-           ne.mac_cfg.ne_bias_en,
-           ne.mac_cfg.passthrough_en, ne.mac_cfg.matrix_bias_en,
-           ne.mac_cfg.binary_point, ne.mac_cfg.post_scale_en,
-           ne.mac_cfg.non_linear_mode, ne.mac_cfg.padding_mode,
-           ne.mac_cfg.max_pool_mode, ne.mac_cfg.arg_output_select,
-           ne.mac_cfg.double_int8_en);
+           ne.mac_cfg.ne_bias_en, ne.mac_cfg.passthrough_en,
+           ne.mac_cfg.matrix_bias_en, ne.mac_cfg.binary_point,
+           ne.mac_cfg.post_scale_en, ne.mac_cfg.non_linear_mode,
+           ne.mac_cfg.padding_mode, ne.mac_cfg.max_pool_mode,
+           ne.mac_cfg.arg_output_select, ne.mac_cfg.double_int8_en);
   }
 
   if (state->valid[(H16_NE_START + 0x8) / 4])
@@ -711,12 +737,14 @@ void print_pe_h16(const hwx_state_t *state) {
   printf("        --- Planar Engine (0x4500) ---\n");
 
   if (state->valid[H16_PE_START / 4]) {
-    static const char *pe_op_names[] = {"None", "Add", "Mul", "Min", "Max",
-                                        "5?",   "6?",  "7?"};
-    printf("        PE Config : Pool=%u Op=%u(%s) LutEn=%u Cond=%u RedIdx=%u RedKeep=%u NLMode=%u Src1=%u Src2=%u\n",
+    static const char *pe_op_names[] = {"None", "Add", "Mul", "Min",
+                                        "Max",  "5?",  "6?",  "7?"};
+    printf("        PE Config : Pool=%u Op=%u(%s) LutEn=%u Cond=%u RedIdx=%u "
+           "RedKeep=%u NLMode=%u Src1=%u Src2=%u\n",
            pe.pe_cfg.pool_mode, pe.pe_cfg.op, pe_op_names[pe.pe_cfg.op & 7],
            pe.pe_cfg.lut_en, pe.pe_cfg.cond, pe.pe_cfg.red_idx,
-           pe.pe_cfg.red_keep, pe.pe_cfg.nl_mode, pe.pe_cfg.src1, pe.pe_cfg.src2);
+           pe.pe_cfg.red_keep, pe.pe_cfg.nl_mode, pe.pe_cfg.src1,
+           pe.pe_cfg.src2);
   }
   if (state->valid[(H16_PE_START + 0x4) / 4])
     printf("        PE Bias   : 0x%05x (%f)\n", pe.bias & 0x7FFFF,
@@ -726,7 +754,8 @@ void print_pe_h16(const hwx_state_t *state) {
            decode_f19(pe.scale));
   if (state->valid[(H16_PE_START + 0x0c) / 4])
     printf("        PE Final Scale Epsilon : 0x%05x (%f)\n",
-           pe.final_scale_epsilon & 0x7FFFF, decode_f19(pe.final_scale_epsilon));
+           pe.final_scale_epsilon & 0x7FFFF,
+           decode_f19(pe.final_scale_epsilon));
   if (state->valid[(H16_PE_START + 0x10) / 4])
     printf("        PE PreScale  : 0x%05x (%f)\n", pe.pre_scale & 0x7FFFF,
            decode_f19(pe.pre_scale));
@@ -769,62 +798,80 @@ void print_l2_h16(const hwx_state_t *state) {
            "Intrlv=%d Comp=%d Planar(S=%d, R=%d)\n",
            l2.src1_cfg.src_type, l2.src1_cfg.dependent,
            l2.src1_cfg.alias_conv_src, l2.src1_cfg.alias_conv_rslt,
-           l2.src1_cfg.dma_fmt, l2.src1_cfg.interleave,
-           l2.src1_cfg.compression, l2.src1_cfg.alias_planar_src,
-           l2.src1_cfg.alias_planar_rslt);
+           l2.src1_cfg.dma_fmt, l2.src1_cfg.interleave, l2.src1_cfg.compression,
+           l2.src1_cfg.alias_planar_src, l2.src1_cfg.alias_planar_rslt);
   }
   if (state->valid[(H16_L2_START + 0x08) / 4]) {
     printf("        Src2Cfg  : Type=%d Dep=%d Alias(C=%d, R=%d) Fmt=%d "
            "Intrlv=%d Comp=%d Planar(S=%d, R=%d)\n",
            l2.src2_cfg.src_type, l2.src2_cfg.dependent,
            l2.src2_cfg.alias_conv_src, l2.src2_cfg.alias_conv_rslt,
-           l2.src2_cfg.dma_fmt, l2.src2_cfg.interleave,
-           l2.src2_cfg.compression, l2.src2_cfg.alias_planar_src,
-           l2.src2_cfg.alias_planar_rslt);
+           l2.src2_cfg.dma_fmt, l2.src2_cfg.interleave, l2.src2_cfg.compression,
+           l2.src2_cfg.alias_planar_src, l2.src2_cfg.alias_planar_rslt);
   }
   if (state->valid[(H16_L2_START + 0x0c) / 4]) {
-    printf(
-        "        SrcIdxCfg: Type=%d Dep=%d Alias(C=%d, R=%d, PS=%d, PR=%d) Fmt=%d B27=%d\n",
-        l2.srcidx_cfg.src_type, l2.srcidx_cfg.dependent,
-        l2.srcidx_cfg.alias_conv_src, l2.srcidx_cfg.alias_conv_rslt,
-        l2.srcidx_cfg.alias_planar_src, l2.srcidx_cfg.alias_planar_rslt,
-        l2.srcidx_cfg.dma_fmt, l2.srcidx_cfg.bit27);
+    printf("        SrcIdxCfg: Type=%d Dep=%d Alias(C=%d, R=%d, PS=%d, PR=%d) "
+           "Fmt=%d B27=%d\n",
+           l2.srcidx_cfg.src_type, l2.srcidx_cfg.dependent,
+           l2.srcidx_cfg.alias_conv_src, l2.srcidx_cfg.alias_conv_rslt,
+           l2.srcidx_cfg.alias_planar_src, l2.srcidx_cfg.alias_planar_rslt,
+           l2.srcidx_cfg.dma_fmt, l2.srcidx_cfg.bit27);
   }
 
   // --- Src1 Block ---
-  if (state->valid[(H16_L2_START + 0x10) / 4] || state->valid[(H16_L2_START + 0x14) / 4] ||
-      state->valid[(H16_L2_START + 0x18) / 4] || state->valid[(H16_L2_START + 0x1c) / 4] ||
+  if (state->valid[(H16_L2_START + 0x10) / 4] ||
+      state->valid[(H16_L2_START + 0x14) / 4] ||
+      state->valid[(H16_L2_START + 0x18) / 4] ||
+      state->valid[(H16_L2_START + 0x1c) / 4] ||
       state->valid[(H16_L2_START + 0x20) / 4]) {
     printf("        Src1     :");
-    if (state->valid[(H16_L2_START + 0x10) / 4]) printf(" Base=0x%05x", l2.src1.base);
-    if (state->valid[(H16_L2_START + 0x14) / 4]) printf(" CS=0x%05x", l2.src1.channel_stride);
-    if (state->valid[(H16_L2_START + 0x18) / 4]) printf(" RS=0x%05x", l2.src1.row_stride);
-    if (state->valid[(H16_L2_START + 0x1c) / 4]) printf(" DS=0x%05x", l2.src1.depth_stride);
-    if (state->valid[(H16_L2_START + 0x20) / 4]) printf(" GS=0x%05x", l2.src1.group_stride);
+    if (state->valid[(H16_L2_START + 0x10) / 4])
+      printf(" Base=0x%05x", l2.src1.base);
+    if (state->valid[(H16_L2_START + 0x14) / 4])
+      printf(" CS=0x%05x", l2.src1.channel_stride);
+    if (state->valid[(H16_L2_START + 0x18) / 4])
+      printf(" RS=0x%05x", l2.src1.row_stride);
+    if (state->valid[(H16_L2_START + 0x1c) / 4])
+      printf(" DS=0x%05x", l2.src1.depth_stride);
+    if (state->valid[(H16_L2_START + 0x20) / 4])
+      printf(" GS=0x%05x", l2.src1.group_stride);
     printf("\n");
   }
 
   // --- Src2 Block ---
-  if (state->valid[(H16_L2_START + 0x24) / 4] || state->valid[(H16_L2_START + 0x28) / 4] ||
-      state->valid[(H16_L2_START + 0x2c) / 4] || state->valid[(H16_L2_START + 0x30) / 4] ||
+  if (state->valid[(H16_L2_START + 0x24) / 4] ||
+      state->valid[(H16_L2_START + 0x28) / 4] ||
+      state->valid[(H16_L2_START + 0x2c) / 4] ||
+      state->valid[(H16_L2_START + 0x30) / 4] ||
       state->valid[(H16_L2_START + 0x34) / 4]) {
     printf("        Src2     :");
-    if (state->valid[(H16_L2_START + 0x24) / 4]) printf(" Base=0x%05x", l2.src2.base);
-    if (state->valid[(H16_L2_START + 0x28) / 4]) printf(" CS=0x%05x", l2.src2.channel_stride);
-    if (state->valid[(H16_L2_START + 0x2c) / 4]) printf(" RS=0x%05x", l2.src2.row_stride);
-    if (state->valid[(H16_L2_START + 0x30) / 4]) printf(" DS=0x%05x", l2.src2.depth_stride);
-    if (state->valid[(H16_L2_START + 0x34) / 4]) printf(" GS=0x%05x", l2.src2.group_stride);
+    if (state->valid[(H16_L2_START + 0x24) / 4])
+      printf(" Base=0x%05x", l2.src2.base);
+    if (state->valid[(H16_L2_START + 0x28) / 4])
+      printf(" CS=0x%05x", l2.src2.channel_stride);
+    if (state->valid[(H16_L2_START + 0x2c) / 4])
+      printf(" RS=0x%05x", l2.src2.row_stride);
+    if (state->valid[(H16_L2_START + 0x30) / 4])
+      printf(" DS=0x%05x", l2.src2.depth_stride);
+    if (state->valid[(H16_L2_START + 0x34) / 4])
+      printf(" GS=0x%05x", l2.src2.group_stride);
     printf("\n");
   }
 
   // --- SrcIdx Block ---
-  if (state->valid[(H16_L2_START + 0x38) / 4] || state->valid[(H16_L2_START + 0x3c) / 4] ||
-      state->valid[(H16_L2_START + 0x40) / 4] || state->valid[(H16_L2_START + 0x44) / 4]) {
+  if (state->valid[(H16_L2_START + 0x38) / 4] ||
+      state->valid[(H16_L2_START + 0x3c) / 4] ||
+      state->valid[(H16_L2_START + 0x40) / 4] ||
+      state->valid[(H16_L2_START + 0x44) / 4]) {
     printf("        SrcIdx   :");
-    if (state->valid[(H16_L2_START + 0x38) / 4]) printf(" Base=0x%05x", l2.srcidx.base);
-    if (state->valid[(H16_L2_START + 0x3c) / 4]) printf(" CS=0x%05x", l2.srcidx.channel_stride);
-    if (state->valid[(H16_L2_START + 0x40) / 4]) printf(" DS=0x%05x", l2.srcidx.depth_stride);
-    if (state->valid[(H16_L2_START + 0x44) / 4]) printf(" GS=0x%05x", l2.srcidx.group_stride);
+    if (state->valid[(H16_L2_START + 0x38) / 4])
+      printf(" Base=0x%05x", l2.srcidx.base);
+    if (state->valid[(H16_L2_START + 0x3c) / 4])
+      printf(" CS=0x%05x", l2.srcidx.channel_stride);
+    if (state->valid[(H16_L2_START + 0x40) / 4])
+      printf(" DS=0x%05x", l2.srcidx.depth_stride);
+    if (state->valid[(H16_L2_START + 0x44) / 4])
+      printf(" GS=0x%05x", l2.srcidx.group_stride);
     printf("\n");
   }
 
@@ -838,49 +885,62 @@ void print_l2_h16(const hwx_state_t *state) {
   }
 
   // --- Result Block ---
-  if (state->valid[(H16_L2_START + 0x4c) / 4] || state->valid[(H16_L2_START + 0x50) / 4] ||
-      state->valid[(H16_L2_START + 0x54) / 4] || state->valid[(H16_L2_START + 0x58) / 4] ||
+  if (state->valid[(H16_L2_START + 0x4c) / 4] ||
+      state->valid[(H16_L2_START + 0x50) / 4] ||
+      state->valid[(H16_L2_START + 0x54) / 4] ||
+      state->valid[(H16_L2_START + 0x58) / 4] ||
       state->valid[(H16_L2_START + 0x5c) / 4]) {
     printf("        Result   :");
-    if (state->valid[(H16_L2_START + 0x4c) / 4]) printf(" Base=0x%05x", l2.result.base);
-    if (state->valid[(H16_L2_START + 0x50) / 4]) printf(" CS=0x%05x", l2.result.channel_stride);
-    if (state->valid[(H16_L2_START + 0x54) / 4]) printf(" RS=0x%05x", l2.result.row_stride);
-    if (state->valid[(H16_L2_START + 0x58) / 4]) printf(" DS=0x%05x", l2.result.depth_stride);
-    if (state->valid[(H16_L2_START + 0x5c) / 4]) printf(" GS=0x%05x", l2.result.group_stride);
+    if (state->valid[(H16_L2_START + 0x4c) / 4])
+      printf(" Base=0x%05x", l2.result.base);
+    if (state->valid[(H16_L2_START + 0x50) / 4])
+      printf(" CS=0x%05x", l2.result.channel_stride);
+    if (state->valid[(H16_L2_START + 0x54) / 4])
+      printf(" RS=0x%05x", l2.result.row_stride);
+    if (state->valid[(H16_L2_START + 0x58) / 4])
+      printf(" DS=0x%05x", l2.result.depth_stride);
+    if (state->valid[(H16_L2_START + 0x5c) / 4])
+      printf(" GS=0x%05x", l2.result.group_stride);
     printf("\n");
   }
 
   // Dump intermediate "Res" registers if valid
   if (state->valid[(H16_L2_START + 0x60) / 4])
-     printf("        L2_Res24 : 0x%08x\n", l2.l2_res24);
-  
-  for (int i=0; i<3; i++) {
-    if (state->valid[(H16_L2_START + 0x64 + i*4) / 4]) {
-       printf("        WrapCfg[%d]: Blocks=%d Len=0x%05x\n", i,
-              l2.wrap_cfg[i].wrap_num_blocks, l2.wrap_cfg[i].wrap_len);
+    printf("        L2_Res24 : 0x%08x\n", l2.l2_res24);
+
+  for (int i = 0; i < 3; i++) {
+    if (state->valid[(H16_L2_START + 0x64 + i * 4) / 4]) {
+      printf("        WrapCfg[%d]: Blocks=%d Len=0x%05x\n", i,
+             l2.wrap_cfg[i].wrap_num_blocks, l2.wrap_cfg[i].wrap_len);
     }
   }
 
   if (state->valid[(H16_L2_START + 0x70) / 4])
-     printf("        L2_Res28 : 0x%08x\n", l2.l2_res28);
+    printf("        L2_Res28 : 0x%08x\n", l2.l2_res28);
 
   if (state->valid[(H16_L2_START + 0x74) / 4]) {
     printf("        ResultWrap: Mask=0x%x StartOffset=0x%x\n",
            l2.result_wrap_idx_off.wrap_index_mask,
            l2.result_wrap_idx_off.wrap_start_offset);
   }
-  
+
   if (state->valid[(H16_L2_START + 0x78) / 4])
-     printf("        L2_Res30 : 0x%08x\n", l2.l2_res30);
+    printf("        L2_Res30 : 0x%08x\n", l2.l2_res30);
 
   // --- Result2 Block ---
-  if (state->valid[(H16_L2_START + 0x7c) / 4] || state->valid[(H16_L2_START + 0x80) / 4] ||
-      state->valid[(H16_L2_START + 0x84) / 4] || state->valid[(H16_L2_START + 0x88) / 4]) {
+  if (state->valid[(H16_L2_START + 0x7c) / 4] ||
+      state->valid[(H16_L2_START + 0x80) / 4] ||
+      state->valid[(H16_L2_START + 0x84) / 4] ||
+      state->valid[(H16_L2_START + 0x88) / 4]) {
     printf("        Result2  :");
-    if (state->valid[(H16_L2_START + 0x7c) / 4]) printf(" Base=0x%05x", l2.result2.base);
-    if (state->valid[(H16_L2_START + 0x80) / 4]) printf(" CS=0x%05x", l2.result2.channel_stride);
-    if (state->valid[(H16_L2_START + 0x84) / 4]) printf(" RS=0x%05x", l2.result2.row_stride);
-    if (state->valid[(H16_L2_START + 0x88) / 4]) printf(" DS=0x%05x", l2.result2.depth_stride);
+    if (state->valid[(H16_L2_START + 0x7c) / 4])
+      printf(" Base=0x%05x", l2.result2.base);
+    if (state->valid[(H16_L2_START + 0x80) / 4])
+      printf(" CS=0x%05x", l2.result2.channel_stride);
+    if (state->valid[(H16_L2_START + 0x84) / 4])
+      printf(" RS=0x%05x", l2.result2.row_stride);
+    if (state->valid[(H16_L2_START + 0x88) / 4])
+      printf(" DS=0x%05x", l2.result2.depth_stride);
     printf("\n");
   }
 
@@ -891,11 +951,11 @@ void print_l2_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_L2_START + 0x90) / 4])
-     printf("        L2_Res36 : 0x%08x\n", l2.l2_res36);
+    printf("        L2_Res36 : 0x%08x\n", l2.l2_res36);
   if (state->valid[(H16_L2_START + 0x94) / 4])
-     printf("        L2_Res37 : 0x%08x\n", l2.l2_res37);
+    printf("        L2_Res37 : 0x%08x\n", l2.l2_res37);
   if (state->valid[(H16_L2_START + 0x98) / 4])
-     printf("        L2_Res38 : 0x%08x\n", l2.l2_res38);
+    printf("        L2_Res38 : 0x%08x\n", l2.l2_res38);
 
   if (state->valid[(H16_L2_START + 0x9c) / 4]) {
     printf("        ResultWrapIdx: Addr=0x%x\n", l2.wrap_addr);
@@ -911,14 +971,14 @@ void print_tiledmasrc_h16(const hwx_state_t *state) {
       (const ane_tiledmasrc_h16_t *)&state->values[H16_TILEDMA_SRC_START / 4];
   printf("        --- TileDMASrc (0x4D00) ---\n");
   if (state->valid[H16_TILEDMA_SRC_START / 4]) {
-    printf("        Src1DMAConfig: En=%d DSID=%u Tag=%u DepInt=%u\n",
+    printf("        Src1DMAConfig: En=%d DSID=%u Tag=%u Cache=%u DepInt=%u DepMode=%u\n",
            src->src1cfg.en, src->src1cfg.dataset_id, src->src1cfg.user_tag,
-           src->src1cfg.dep_interval);
+           src->src1cfg.cache_hint, src->src1cfg.dep_interval, src->src1cfg.dep_mode);
   }
   if (state->valid[(H16_TILEDMA_SRC_START + 0x04) / 4]) {
-    printf("        Src2DMAConfig: En=%d DSID=%u Tag=%u DepMode=%u\n",
+    printf("        Src2DMAConfig: En=%d DSID=%u Tag=%u Cache=%u DepInt=%u DepMode=%u\n",
            src->src2cfg.en, src->src2cfg.dataset_id, src->src2cfg.user_tag,
-           src->src2cfg.dep_mode);
+           src->src2cfg.cache_hint, src->src2cfg.dep_interval, src->src2cfg.dep_mode);
   }
   if (state->valid[(H16_TILEDMA_SRC_START + 0x18) / 4]) {
     printf("        Src1Strides: Row=0x%x Plane=0x%x Depth=0x%x Group=0x%x\n",
@@ -945,25 +1005,43 @@ void print_tiledmasrc_h16(const hwx_state_t *state) {
            src->src2meta_lo);
   }
   if (state->valid[(H16_TILEDMA_SRC_START + 0x68) / 4]) {
-    printf("        Src1Fmt: 0x%08x, Src2Fmt: 0x%08x\n", src->src1memfmt,
-           src->src2memfmt);
+    printf("        Src1Fmt: Mode=%u MemFmt=%u Trunc=%u Shift=%u -> %s\n",
+           src->src1fmt.format_mode, src->src1fmt.mem_fmt,
+           src->src1fmt.trunc, src->src1fmt.shift,
+           get_hw_tensor_format_name_v17(src->src1fmt.format_mode,
+                                         src->src1fmt.mem_fmt,
+                                         src->src1fmt.trunc,
+                                         src->src1fmt.shift));
+    printf("                 Intrlv=%u OffCh=%d CmpVec=%d\n",
+           src->src1fmt.interleave, src->src1fmt.offset_ch,
+           src->src1fmt.cmp_vec);
+  }
+  if (state->valid[(H16_TILEDMA_SRC_START + 0x6c) / 4]) {
+    printf("        Src2Fmt: Mode=%u MemFmt=%u Trunc=%u Shift=%u -> %s\n",
+           src->src2fmt.format_mode, src->src2fmt.mem_fmt,
+           src->src2fmt.trunc, src->src2fmt.shift,
+           get_hw_tensor_format_name_v17(src->src2fmt.format_mode,
+                                         src->src2fmt.mem_fmt,
+                                         src->src2fmt.trunc,
+                                         src->src2fmt.shift));
+    printf("                 Intrlv=%u OffCh=%d CmpVec=%d\n",
+           src->src2fmt.interleave, src->src2fmt.offset_ch,
+           src->src2fmt.cmp_vec);
   }
   if (state->valid[(H16_TILEDMA_SRC_START + 0x78) / 4]) {
-    printf("        Src1Comp: En=%d MBS=%d PF=%d Lossy=%d MdTag=0x%02x Size=0x%x%08x Crop=0x%x\n",
+    printf("        Src1Comp: En=%d MBS=%d PF=%d Lossy=%d MdTag=0x%02x "
+           "Size=0x%x%08x Crop=0x%x\n",
            src->src1compinfo.compressed_enable,
-           src->src1compinfo.macroblock_size,
-           src->src1compinfo.packing_format,
-           src->src1compinfo.lossy_mode,
-           src->src1compinfo.md_user_tag,
+           src->src1compinfo.macroblock_size, src->src1compinfo.packing_format,
+           src->src1compinfo.lossy_mode, src->src1compinfo.md_user_tag,
            src->src1compsize_hi, src->src1compsize_lo, src->src1cropoffset);
   }
   if (state->valid[(H16_TILEDMA_SRC_START + 0x88) / 4]) {
-    printf("        Src2Comp: En=%d MBS=%d PF=%d Lossy=%d MdTag=0x%02x Size=0x%x%08x Crop=0x%x\n",
+    printf("        Src2Comp: En=%d MBS=%d PF=%d Lossy=%d MdTag=0x%02x "
+           "Size=0x%x%08x Crop=0x%x\n",
            src->src2compinfo.compressed_enable,
-           src->src2compinfo.macroblock_size,
-           src->src2compinfo.packing_format,
-           src->src2compinfo.lossy_mode,
-           src->src2compinfo.md_user_tag,
+           src->src2compinfo.macroblock_size, src->src2compinfo.packing_format,
+           src->src2compinfo.lossy_mode, src->src2compinfo.md_user_tag,
            src->src2compsize_hi, src->src2compsize_lo, src->src2cropoffset);
   }
   if (state->valid[(H16_TILEDMA_SRC_START + 0xf8) / 4]) {
@@ -989,14 +1067,21 @@ void print_tiledmadst_h16(const hwx_state_t *state) {
            dst->dstgroup_stride);
   }
   if (state->valid[(H16_TILEDMA_DST_START + 0x28) / 4]) {
-    printf("        DstMeta   : Addr=0x%x%08x Mode=0x%x\n", dst->dstmeta_hi,
-           dst->dstmeta_lo, dst->dstfmtmode);
+    printf("        DstMeta   : Addr=0x%x%08x FmtMode=%u Size=0x%x\n",
+           dst->dstmeta_hi, dst->dstmeta_lo, dst->dstfmtmode.format_mode,
+           dst->dstfmtmode.metadata_size);
   }
   if (state->valid[(H16_TILEDMA_DST_START + 0x38) / 4]) {
-    printf("        DstFmtCtrl: ZeroPad(L=%d,F=%d) OffCh=%d CmpVec=%d Intrlv=%d\n",
-           dst->dstfmtctrl & 1, (dst->dstfmtctrl >> 1) & 1,
-           (dst->dstfmtctrl >> 8) & 0xF, (dst->dstfmtctrl >> 12) & 0xF,
-           (dst->dstfmtctrl >> 24) & 0xF);
+    printf("        DstFmt: Mode=%u MemFmt=%u Trunc=%u Shift=%u -> %s\n",
+           dst->dstfmt.mode, dst->dstfmt.mem_fmt, dst->dstfmt.trunc,
+           dst->dstfmt.shift,
+           get_hw_tensor_format_name_v17(dst->dstfmt.mode, dst->dstfmt.mem_fmt,
+                                         dst->dstfmt.trunc,
+                                         dst->dstfmt.shift));
+    printf("                OffCh=%u ZeroPad(F=%u,L=%u) Intrlv=%u CmpVec=%u\n",
+           dst->dstfmt.offset_ch, dst->dstfmt.zero_pad_first,
+           dst->dstfmt.zero_pad_last, dst->dstfmt.interleave,
+           dst->dstfmt.cmp_vec);
   }
   if (state->valid[(H16_TILEDMA_DST_START + 0x40) / 4]) {
     printf("        DstComp: En=%d Packing=%d MBSize=%d Lossy=%d\n",
@@ -1023,14 +1108,15 @@ void print_kerneldmasrc_h16(const hwx_state_t *state) {
     printf("        Prefetch : Rate=%u Early=%d\n", k->prefetch.prefetch_rate,
            k->prefetch.early_term_en);
   if (state->valid[(H16_KERNELDMA_START + 0x18) / 4])
-    printf("        KernelGroupStride: %u\n", k->kernel_group_stride & 0x3ffffff);
+    printf("        KernelGroupStride: %u\n",
+           k->kernel_group_stride & 0x3ffffff);
   if (state->valid[(H16_KERNELDMA_START + 0x1c) / 4])
     printf("        KernelOCGStride  : %u\n", k->kernel_ocg_stride & 0x3ffffff);
 
   for (int i = 0; i < 16; i++) {
     if (state->valid[(H16_KERNELDMA_START + 0x20) / 4 + i]) {
-      printf("        CoeffCfg[%d] : En=%d DSID=%u Tag=%u\n",
-             i, k->coeff_cfg[i].en, k->coeff_cfg[i].dataset_id,
+      printf("        CoeffCfg[%d] : En=%d DSID=%u Tag=%u\n", i,
+             k->coeff_cfg[i].en, k->coeff_cfg[i].dataset_id,
              k->coeff_cfg[i].user_tag);
     }
   }
@@ -1041,7 +1127,8 @@ void print_kerneldmasrc_h16(const hwx_state_t *state) {
   }
   for (int i = 0; i < 16; i++) {
     if (state->valid[(H16_KERNELDMA_START + 0xa0) / 4 + i]) {
-      printf("        CoeffSize[%d]: 0x%08x\n", i, k->coeff_size[i] & 0x3ffffff);
+      printf("        CoeffSize[%d]: 0x%08x\n", i,
+             k->coeff_size[i] & 0x3ffffff);
     }
   }
   if (state->valid[(H16_KERNELDMA_START + 0xe0) / 4])

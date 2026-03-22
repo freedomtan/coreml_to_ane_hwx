@@ -6,6 +6,8 @@
 
 #import "ane_hwx_regs.h"
 
+const char *get_l2_dma_fmt_name(uint32_t val);
+
 static const char *lookup_reg_name(uint32_t addr, const hwx_reg_range_t *ranges,
                                    int range_count) {
   for (int i = 0; i < range_count; i++) {
@@ -400,6 +402,15 @@ const char *get_ch_fmt_name(uint32_t fmt) {
   }
 }
 
+const char *get_l2_dma_fmt_name(uint32_t fmt) {
+  switch (fmt) {
+  case 0: return "8b";
+  case 1: return "16b";
+  case 3: return "32b";
+  default: return "??";
+  }
+}
+
 const char *get_ne_op_mode_name(uint32_t mode) {
   switch (mode) {
   case 0:
@@ -469,18 +480,18 @@ void print_l2_h13(const hwx_state_t *state) {
       (const ane_l2_h13_t *)&state->values[H13_L2_START / 4];
   printf("        L2Cfg: InputReLU=%d PaddingMode=%u\n", l2->l2cfg.input_relu,
          l2->l2cfg.padding_mode);
-  printf("        L2 SourceCfg: Type=%u Dep=%u Fmt=%u Intrlv=%u CmpV=%u "
+  printf("        L2 SourceCfg: Type=%u Dep=%u DMAFmt=%s Intrlv=%u CmpV=%u "
          "OffCh=%u\n",
-         l2->scfg.type, l2->scfg.dep, l2->scfg.fmt, l2->scfg.interleave,
-         l2->scfg.cmpv, l2->scfg.offch);
+         l2->scfg.type, l2->scfg.dep, get_l2_dma_fmt_name(l2->scfg.fmt),
+         l2->scfg.interleave, l2->scfg.cmpv, l2->scfg.offch);
   printf("        L2 Src1: Base=0x%05x ChanStride=0x%05x RowStride=0x%05x\n",
          l2->srcbase.addr, l2->src_chan_stride.stride,
          l2->src_row_stride.stride);
 
-  printf("        L2 ResultCfg: Type=%u Bfr=%u Fmt=%u Intrlv=%u CmpV=%u "
+  printf("        L2 ResultCfg: Type=%u Bfr=%u DMAFmt=%s Intrlv=%u CmpV=%u "
          "OffCh=%u\n",
-         l2->rcfg.type, l2->rcfg.bfrmode, l2->rcfg.fmt, l2->rcfg.interleave,
-         l2->rcfg.cmpv, l2->rcfg.offch);
+         l2->rcfg.type, l2->rcfg.bfrmode, get_l2_dma_fmt_name(l2->rcfg.fmt),
+         l2->rcfg.interleave, l2->rcfg.cmpv, l2->rcfg.offch);
 }
 
 void print_ne_h13(const hwx_state_t *state) {
@@ -794,28 +805,30 @@ void print_l2_h16(const hwx_state_t *state) {
            l2.l2_control.barrier);
   }
   if (state->valid[(H16_L2_START + 0x04) / 4]) {
-    printf("        Src1Cfg  : Type=%d Dep=%d Alias(C=%d, R=%d) Fmt=%d "
-           "Intrlv=%d Comp=%d Planar(S=%d, R=%d)\n",
+    printf("        Src1Cfg  : Type=%u Dep=%u Alias(C=%d, R=%d) DMAFmt=%s "
+           "Intrlv=%u Comp=%u Planar(S=%d, R=%d)\n",
            l2.src1_cfg.src_type, l2.src1_cfg.dependent,
            l2.src1_cfg.alias_conv_src, l2.src1_cfg.alias_conv_rslt,
-           l2.src1_cfg.dma_fmt, l2.src1_cfg.interleave, l2.src1_cfg.compression,
-           l2.src1_cfg.alias_planar_src, l2.src1_cfg.alias_planar_rslt);
+           get_l2_dma_fmt_name(l2.src1_cfg.dma_fmt), l2.src1_cfg.interleave,
+           l2.src1_cfg.compression, l2.src1_cfg.alias_planar_src,
+           l2.src1_cfg.alias_planar_rslt);
   }
   if (state->valid[(H16_L2_START + 0x08) / 4]) {
-    printf("        Src2Cfg  : Type=%d Dep=%d Alias(C=%d, R=%d) Fmt=%d "
-           "Intrlv=%d Comp=%d Planar(S=%d, R=%d)\n",
+    printf("        Src2Cfg  : Type=%u Dep=%u Alias(C=%d, R=%d) DMAFmt=%s "
+           "Intrlv=%u Comp=%u Planar(S=%d, R=%d)\n",
            l2.src2_cfg.src_type, l2.src2_cfg.dependent,
            l2.src2_cfg.alias_conv_src, l2.src2_cfg.alias_conv_rslt,
-           l2.src2_cfg.dma_fmt, l2.src2_cfg.interleave, l2.src2_cfg.compression,
-           l2.src2_cfg.alias_planar_src, l2.src2_cfg.alias_planar_rslt);
+           get_l2_dma_fmt_name(l2.src2_cfg.dma_fmt), l2.src2_cfg.interleave,
+           l2.src2_cfg.compression, l2.src2_cfg.alias_planar_src,
+           l2.src2_cfg.alias_planar_rslt);
   }
   if (state->valid[(H16_L2_START + 0x0c) / 4]) {
-    printf("        SrcIdxCfg: Type=%d Dep=%d Alias(C=%d, R=%d, PS=%d, PR=%d) "
-           "Fmt=%d B27=%d\n",
+    printf("        SrcIdxCfg: Type=%u Dep=%u Alias(C=%d,R=%d,PS=%d,PR=%d) "
+           "DMAFmt=%s B27=%d\n",
            l2.srcidx_cfg.src_type, l2.srcidx_cfg.dependent,
            l2.srcidx_cfg.alias_conv_src, l2.srcidx_cfg.alias_conv_rslt,
            l2.srcidx_cfg.alias_planar_src, l2.srcidx_cfg.alias_planar_rslt,
-           l2.srcidx_cfg.dma_fmt, l2.srcidx_cfg.bit27);
+           get_l2_dma_fmt_name(l2.srcidx_cfg.dma_fmt), l2.srcidx_cfg.bit27);
   }
 
   // --- Src1 Block ---
@@ -876,11 +889,11 @@ void print_l2_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_L2_START + 0x48) / 4]) {
-    printf("        ResCfg   : Type=%d Bfr=%d Alias(S=%d, R=%d) Fmt=%d "
-           "Intrlv=%d Comp=%d\n",
+    printf("        ResCfg   : Type=%u Bfr=%u Alias(S=%d,R=%d) DMAFmt=%s "
+           "Intrlv=%u Comp=%u\n",
            l2.result_cfg.res_type, l2.result_cfg.bfr_mode,
            l2.result_cfg.src_alias, l2.result_cfg.result_alias,
-           l2.result_cfg.dma_fmt, l2.result_cfg.interleave,
+           get_l2_dma_fmt_name(l2.result_cfg.dma_fmt), l2.result_cfg.interleave,
            l2.result_cfg.compression);
   }
 

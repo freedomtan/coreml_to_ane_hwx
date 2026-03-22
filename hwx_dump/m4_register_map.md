@@ -285,9 +285,9 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
 | **0x4100** | `+0x3a8` | **Control** | **Src1ReLU**: 0, **PaddingMode**: 2-3, **Src2ReLU**: 4, **Barrier**: 16. |
-| **0x4104** | `+0x3ac` | **Src1Cfg** | **Type**: 0-1, **Dependent**: 2-3, **AliasConvSrc**: 4, **AliasConvRslt**: 5, **Format**: 6-7, **Interleave**: 8-11, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22, **Compression**: 25-26. |
-| **0x4108** | `+0x3b0` | **Src2Cfg** | **Type**: 0-1, **Dependent**: 2-3, **AliasConvSrc**: 4, **AliasConvRslt**: 5, **Format**: 6-7, **Interleave**: 8-11, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22, **Compression**: 25-26. |
-| **0x410C** | `+0x3b4` | **SrcIdxCfg** | **Type**: 0-1, **Dependent**: 2-3, **AliasConvSrc**: 4, **AliasConvRslt**: 5, **Format**: 6-7, **Interleave**: 8-11, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22, **Bit27**: 27. |
+| **0x4104** | `+0x3ac` | **Src1Cfg** | **Type**: 0-1, **Dependent**: 2-3, **DMAFmt**: 6-7 (0=8b, 1=16b, 3=32b), **Interleave**: 8-11, **AliasConvSrc**: 4, **AliasConvRslt**: 5, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22, **Compression**: 25-26. |
+| **0x4108** | `+0x3b0` | **Src2Cfg** | **Type**: 0-1, **Dependent**: 2-3, **DMAFmt**: 6-7 (0=8b, 1=16b, 3=32b), **Interleave**: 8-11, **AliasConvSrc**: 4, **AliasConvRslt**: 5, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22, **Compression**: 25-26. |
+| **0x410C** | `+0x3b4` | **SrcIdxCfg** | **Type**: 0-1, **Dependent**: 2-3, **DMAFmt**: 6-7 (0=8b, 1=16b, 3=32b), **AliasConvSrc**: 4, **AliasConvRslt**: 5, **AliasPlanarSrc**: 20, **AliasPlanarRslt**: 22, **Bit27**: 27. |
 | **0x4110** | `+0x3b8` | **Src1Base** | **Addr**: 4-20 (16B units). |
 | **0x4114** | `+0x3bc` | **Src1ChannelStride**| **Stride**: 4-20 (16B units). |
 | **0x4118** | `+0x3c0` | **Src1RowStride** | **Stride**: 4-20 (16B units). |
@@ -302,7 +302,7 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 | **0x413C** | `+0x3e4` | **SrcIdxChannelStride**| **Stride**: 4-20 (16B units). |
 | **0x4140** | `+0x3e8` | **SrcIdxDepthStride** | **Stride**: 4-20 (16B units). |
 | **0x4144** | `+0x3ec` | **SrcIdxGroupStride** | **Stride**: 4-20 (16B units). |
-| **0x4148** | `+0x3f0` | **ResultCfg** | **Type**: 0-1, **Format**: 6-7, **Interleave**: 8-11, **Compression**: 25-26. |
+| **0x4148** | `+0x3f0` | **ResultCfg** | **Type**: 0-1, **DMAFmt**: 6-7 (0=8b, 1=16b, 3=32b), **Interleave**: 8-11, **Compression**: 25-26. |
 | **0x414C** | `+0x3f4` | **ResultBase** | **Addr**: 4-20 (16B units). |
 | **0x4150** | `+0x3f8` | **ResultChannelStride**| **Stride**: 4-20 (16B units). |
 | **0x4154** | `+0x3fc` | **ResultRowStride** | **Stride**: 4-20 (16B units). |

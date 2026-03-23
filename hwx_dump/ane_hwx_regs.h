@@ -392,52 +392,43 @@ typedef struct {
 // [0x4D00] TileDMA Source Block
 typedef struct {
   struct {
-    uint32_t en : 1;             // [0]
-    uint32_t res1 : 4;           // [1:4]
-    uint32_t cache_hint : 3;     // [5:7]
-    uint32_t dataset_id : 8;     // [8:15]
-    uint32_t user_tag : 8;       // [16:23]
-    uint32_t dep_interval : 4;   // [24:27]
-    uint32_t dep_mode : 2;       // [28:29]
-    uint32_t pad1 : 2;           // [30:31]
-  } src1cfg; // Word 0 (0x4D00)
+    uint32_t enable : 1;             // [0]
+    uint32_t res1 : 4;               // [1:4]
+    uint32_t dsid_cache_hint : 3;    // [5:7] (dataset_id/cache_hint)
+    uint32_t dataset_id : 8;         // [8:15]
+    uint32_t user_tag : 8;           // [16:23]
+    uint32_t dependency_interval : 4; // [24:27]
+    uint32_t dependency_mode : 2;     // [28:29]
+    uint32_t pad1 : 2;               // [30:31]
+  } dmacfg[2]; // Words 0, 1 (Src1, Src2)
 
   struct {
-    uint32_t en : 1;             // [0]
-    uint32_t res1 : 4;           // [1:4]
-    uint32_t cache_hint : 3;     // [5:7]
-    uint32_t dataset_id : 8;     // [8:15]
-    uint32_t user_tag : 8;       // [16:23]
-    uint32_t dep_interval : 4;   // [24:27]
-    uint32_t dep_mode : 2;       // [28:29]
-    uint32_t pad1 : 2;           // [30:31]
-  } src2cfg; // Word 1 (0x4D04)
+    uint32_t cache_hint : 8; // (strb hint?)
+    uint32_t wrap_cfg_dim : 3;
+    uint32_t pad0 : 5;
+    uint32_t wrap_static : 16;
+  } wrapcfg[2]; // Words 2, 3 (Src1, Src2)
 
-  uint32_t src1wrapcfg; // Word 2 (0x4D08)
-  uint32_t src2wrapcfg; // Word 3 (0x4D0C)
+  struct {
+    uint32_t base_lo;
+    uint32_t base_hi;
+    uint32_t row_stride;
+    uint32_t plane_stride;
+    uint32_t depth_stride;
+    uint32_t group_stride;
+  } strides[2]; // Words 4-9 (Src1), 10-15 (Src2)
 
-  uint32_t src1base_lo;     // Word 4 (0x4D10)
-  uint32_t src1base_hi;     // Word 5 (0x4D14)
-  uint32_t src1row_stride;  // Word 6 (0x4D18)
-  uint32_t src1plane_stride; // Word 7 (0x4D1C)
-  uint32_t src2base_lo;     // Word 8 (0x4D20)
-  uint32_t src1group_stride; // Word 9 (0x4D24)
-  uint32_t src2base_hi;     // Word 10 (0x4D28)
-  uint32_t src2row_stride;   // Word 11 (0x4D2C)
-  uint32_t src2plane_stride;  // Word 12 (0x4D30)
-  uint32_t src2group_stride; // Word 13 (0x4D34)
-
-  uint32_t pad0[2]; // Word 14-15 (0x4D38-0x4D3C)
-
-  uint32_t src1metadataconfig; // Word 16 (0x4D40)
-  uint32_t pad1[3];            // Word 17-19 (0x4D44-0x4D4C)
-
-  uint32_t src1meta_lo;   // Word 20 (0x4D50)
-  uint32_t src1meta_hi;   // Word 21 (0x4D54)
-  uint32_t src1meta_size; // Word 22 (0x4D58)
-  uint32_t src2metadataconfig; // Word 23 (0x4D5C)
-  uint32_t src2meta_lo;   // Word 24 (0x4D60)
-  uint32_t src2meta_hi;   // Word 25 (0x4D64)
+  // Flatter structure for metadata (Words 16-25)
+  uint32_t src1_meta_addr_lo; // Word 16
+  uint32_t src1_meta_addr_hi; // Word 17
+  uint32_t src2_meta_addr_lo; // Word 18
+  uint32_t src2_meta_addr_hi; // Word 19
+  uint32_t src1_meta_cfg;     // Word 20
+  uint32_t src1_meta_unk1;    // Word 21
+  uint32_t src1_meta_size;    // Word 22
+  uint32_t src2_meta_cfg;     // Word 23
+  uint32_t src2_meta_unk1;    // Word 24
+  uint32_t src2_meta_size;    // Word 25
 
   struct {
     uint32_t format_mode : 2;    // [0:1]
@@ -451,23 +442,9 @@ typedef struct {
     uint32_t res4 : 5;           // [19:23]
     uint32_t interleave : 4;     // [24:27]
     uint32_t cmp_vec : 4;        // [28:31]
-  } src1fmt; // Word 26 (0x4D68)
+  } fmt[2]; // Words 26, 27 (Src1, Src2)
 
-  struct {
-    uint32_t format_mode : 2;    // [0:1]
-    uint32_t res1 : 2;           // [2:3]
-    uint32_t trunc : 3;          // [4:6]
-    uint32_t res2 : 1;           // [7]
-    uint32_t shift : 4;          // [8:11]
-    uint32_t mem_fmt : 2;        // [12:13]
-    uint32_t res3 : 2;           // [14:15]
-    uint32_t offset_ch : 3;      // [16:18]
-    uint32_t res4 : 5;           // [19:23]
-    uint32_t interleave : 4;     // [24:27]
-    uint32_t cmp_vec : 4;        // [28:31]
-  } src2fmt; // Word 27 (0x4D6C)
-
-  uint32_t res_4d70_74[2]; // Word 28-29 (0x4D70-0x4D74)
+  uint32_t res_4d70_74[2]; // Words 28-29
 
   struct {
     uint32_t compressed_enable : 1; // [0]
@@ -479,49 +456,36 @@ typedef struct {
     uint32_t lossy_mode : 1;        // [13]
     uint32_t pad3 : 10;
     uint32_t md_user_tag : 8;       // [31:24]
-  } src1compinfo;    // Word 30 (0x4D78)
-  uint32_t src1compsize_lo; // Word 31 (0x4D7C)
-  uint32_t src1compsize_hi; // Word 32 (0x4D80)
-  uint32_t src1cropoffset;  // Word 33 (0x4D84)
-  struct {
-    uint32_t compressed_enable : 1; // [0]
-    uint32_t pad0 : 1;
-    uint32_t macroblock_size : 1;   // [2]
-    uint32_t pad1 : 1;
-    uint32_t packing_format : 6;    // [9:4]
-    uint32_t pad2 : 3;
-    uint32_t lossy_mode : 1;        // [13]
-    uint32_t pad3 : 10;
-    uint32_t md_user_tag : 8;       // [31:24]
-  } src2compinfo;    // Word 34 (0x4D88)
-  uint32_t src2compsize_lo; // Word 35 (0x4D8C)
-  uint32_t src2compsize_hi; // Word 36 (0x4D90)
-  uint32_t src2cropoffset;  // Word 37 (0x4D94)
+  } compinfo[2];    // Words 30 (Src1), 34 (Src2)
+  
+  uint32_t compsize_lo[2]; // Word 31, 35
+  uint32_t compsize_hi[2]; // Word 32, 36
+  uint32_t cropoffset[2];  // Word 33, 37
 
-  uint32_t res_4d98_b4[8];  // Word 38-45 (0x4D98-0x4DB4)
+  uint32_t res_4d98_b4[8]; // Words 38-45
 
-  uint32_t src1wrapdynamic; // Word 46 (0x4DB8)
-  uint32_t src2wrapdynamic; // Word 47 (0x4DBC)
-  uint32_t src1dependencyoffset; // Word 48 (0x4DC0)
-  uint32_t src2dependencyoffset; // Word 49 (0x4DC4)
+  uint32_t wrapdynamic[2];      // Words 46, 47
+  uint32_t dependencyoffset[2]; // Words 48, 49
 
-  uint32_t texture_config;      // Word 50 (0x4DC8)
-  uint32_t texture_idx_permute; // Word 51 (0x4DCC)
-  uint32_t texture_src_permute; // Word 52 (0x4DD0)
-  uint32_t texture_background_val; // Word 53 (0x4DD4)
-  uint32_t texture_ext_max_dim1;   // Word 54 (0x4DD8)
-  uint32_t texture_ext_max_dim2;   // Word 55 (0x4DCC) - Wait, 0x4DDC
-  uint32_t texture_ext_max_dim3;   // Word 56 (0x4DE0)
-  uint32_t texture_crop_batch_split_dim1; // Word 57 (0x4DE4)
-  uint32_t texture_crop_depth_dim1;       // Word 58 (0x4DE8)
-  uint32_t texture_crop_batch_split_dim2; // Word 59 (0x4DEC)
+  uint32_t texture_config;      // Word 50
+  uint32_t texture_idx_permute; // Word 51
+  uint32_t texture_src_permute; // Word 52
+  uint32_t texture_background_val; // Word 53
 
-  uint32_t res_4df0_f4[2]; // Word 60-61 (0x4DF0-0x4DF4)
-  uint32_t src1ephemeral;  // Word 62 (0x4DF8) - bits [0]: enable
-  uint32_t res_4dfc_e00[2]; // Word 63-64 (0x4DFC-0x4E00)
-  uint32_t texture_crop_coeff_val; // Word 65 (0x4E04)
+  uint32_t texture_ext_max_dim1;   // Word 54
+  uint32_t texture_ext_max_dim2;   // Word 55
+  uint32_t texture_ext_max_dim3;   // Word 56
+  
+  uint32_t texture_crop_batch_split_dim1; // Word 57
+  uint32_t texture_crop_depth_dim1;       // Word 58
+  uint32_t texture_crop_batch_split_dim2; // Word 59
 
-  uint32_t pad3[15]; // Word 66-80 (Size 81)
+  uint32_t res_4df0_f4[2]; // Word 60-61
+  uint32_t src1ephemeral;  // Word 62 (bits [0]: enable)
+  uint32_t res_4dfc_e00[2]; // Word 63-64
+  uint32_t texture_crop_coeff_val; // Word 65
+  
+  uint32_t pad3[15]; // Word 66-80
 } __attribute__((packed)) ane_tiledmasrc_h16_t;
 
 // [0x5100] TileDma Destination Block

@@ -983,85 +983,89 @@ void print_tiledmasrc_h16(const hwx_state_t *state) {
   const ane_tiledmasrc_h16_t *src =
       (const ane_tiledmasrc_h16_t *)&state->values[H16_TILEDMA_SRC_START / 4];
   printf("        --- TileDMASrc (0x4D00) ---\n");
-  if (state->valid[H16_TILEDMA_SRC_START / 4]) {
-    printf("        Src1DMAConfig: En=%d DSID=%u Tag=%u Cache=%u DepInt=%u DepMode=%u\n",
-           src->src1cfg.en, src->src1cfg.dataset_id, src->src1cfg.user_tag,
-           src->src1cfg.cache_hint, src->src1cfg.dep_interval, src->src1cfg.dep_mode);
+
+  const char *src_names[] = {"Src1", "Src2"};
+
+  for (int i = 0; i < 2; i++) {
+    uint32_t base_word = (H16_TILEDMA_SRC_START / 4) + i;
+    if (!state->valid[base_word])
+      continue;
+
+    printf("        %sDMAConfig : En=%u DSID/Hint=%u Tag=%u DepInt=%u DepMode=%u\n",
+           src_names[i], src->dmacfg[i].enable, src->dmacfg[i].dsid_cache_hint,
+           src->dmacfg[i].user_tag, src->dmacfg[i].dependency_interval,
+           src->dmacfg[i].dependency_mode);
+
+    // Wrap Config
+    if (state->valid[(H16_TILEDMA_SRC_START + 0x08 + (i * 4)) / 4]) {
+      printf("        %sWrapCfg    : Dim=%u Static=0x%x\n", src_names[i],
+             src->wrapcfg[i].wrap_cfg_dim, src->wrapcfg[i].wrap_static);
+    }
+
+    // Base and Strides
+    if (state->valid[(H16_TILEDMA_SRC_START + 0x10 + (i * 0x18)) / 4]) {
+      printf("        %sBase       : 0x%08x%08x\n", src_names[i],
+             src->strides[i].base_hi, src->strides[i].base_lo);
+      printf("        %sStrides    : Row=0x%x Chan=0x%x Depth=0x%x Group=0x%x\n",
+             src_names[i], src->strides[i].row_stride,
+             src->strides[i].plane_stride, src->strides[i].depth_stride,
+             src->strides[i].group_stride);
+    }
+
+    // Metadata
+    uint32_t meta_valid_word = (H16_TILEDMA_SRC_START + (i == 0 ? 0x50 : 0x5C)) / 4;
+    if (state->valid[meta_valid_word]) {
+        printf("        %sMetaCfg    : 0x%08x\n", src_names[i],
+               i == 0 ? src->src1_meta_cfg : src->src2_meta_cfg);
+    }
+    uint32_t meta_addr_word = (H16_TILEDMA_SRC_START + (i == 0 ? 0x40 : 0x48)) / 4;
+    if (state->valid[meta_addr_word]) {
+        printf("        %sMetaData   : Addr=0x%08x%08x\n", src_names[i],
+               i == 0 ? src->src1_meta_addr_hi : src->src2_meta_addr_hi,
+               i == 0 ? src->src1_meta_addr_lo : src->src2_meta_addr_lo);
+    }
+
+    // Format Info
+    if (state->valid[(H16_TILEDMA_SRC_START + 0x68 + (i * 4)) / 4]) {
+      printf("        %sFmt     : Mode=%u MemFmt=%u Trunc=%u Shift=%u -> %s\n",
+             src_names[i], src->fmt[i].format_mode, src->fmt[i].mem_fmt,
+             src->fmt[i].trunc, src->fmt[i].shift,
+             get_hw_tensor_format_name_v17(src->fmt[i].format_mode,
+                                           src->fmt[i].mem_fmt,
+                                           src->fmt[i].trunc,
+                                           src->fmt[i].shift));
+      printf("                 Intrlv=%u OffCh=%d CmpVec=%d\n",
+             src->fmt[i].interleave, src->fmt[i].offset_ch, src->fmt[i].cmp_vec);
+    }
+
+    // Compressed Info
+    if (state->valid[(H16_TILEDMA_SRC_START + 0x78 + (i * 0x10)) / 4]) {
+      printf("        %sComp       : En=%u PF=%u MBS=%u Lossy=%u MdTag=0x%x\n",
+             src_names[i], src->compinfo[i].compressed_enable,
+             src->compinfo[i].packing_format, src->compinfo[i].macroblock_size,
+             src->compinfo[i].lossy_mode, src->compinfo[i].md_user_tag);
+      printf("        %sCompSize   : 0x%08x%08x\n", src_names[i],
+             src->compsize_hi[i], src->compsize_lo[i]);
+      printf("        %sCropOffset : 0x%08x\n", src_names[i], src->cropoffset[i]);
+    }
+    
+    // Wrap Dynamic / Dependency Offset
+    if (state->valid[(H16_TILEDMA_SRC_START + 0xB8 + (i * 4)) / 4]) {
+        printf("        %sWrapDyn    : 0x%08x\n", src_names[i], src->wrapdynamic[i]);
+    }
+    if (state->valid[(H16_TILEDMA_SRC_START + 0xC0 + (i * 4)) / 4]) {
+        printf("        %sDepOff     : 0x%08x\n", src_names[i], src->dependencyoffset[i]);
+    }
   }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x04) / 4]) {
-    printf("        Src2DMAConfig: En=%d DSID=%u Tag=%u Cache=%u DepInt=%u DepMode=%u\n",
-           src->src2cfg.en, src->src2cfg.dataset_id, src->src2cfg.user_tag,
-           src->src2cfg.cache_hint, src->src2cfg.dep_interval, src->src2cfg.dep_mode);
+
+  // Texture Config (at 0x4DC8)
+  if (state->valid[(H16_TILEDMA_SRC_START + 0xC8) / 4]) {
+    printf("        TextureCfg    : 0x%08x\n", src->texture_config);
   }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x18) / 4]) {
-    printf("        Src1Strides: Row=0x%x Plane=0x%x Depth=0x%x Group=0x%x\n",
-           src->src1row_stride, src->src1plane_stride, 0,
-           src->src1group_stride);
-  }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x2C) / 4]) {
-    printf("        Src2Strides: Row=0x%x Plane=0x%x Depth=0x%x Group=0x%x\n",
-           src->src2row_stride, src->src2plane_stride, 0,
-           src->src2group_stride);
-  }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x40) / 4]) {
-    printf("        Src1MetaCfg: 0x%08x\n", src->src1metadataconfig);
-  }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x50) / 4]) {
-    printf("        Src1MetaData: Addr=0x%08x%08x Size=0x%x\n",
-           src->src1meta_hi, src->src1meta_lo, src->src1meta_size);
-  }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x5C) / 4]) {
-    printf("        Src2MetaCfg: 0x%08x\n", src->src2metadataconfig);
-  }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x60) / 4]) {
-    printf("        Src2MetaData: Addr=0x%08x%08x\n", src->src2meta_hi,
-           src->src2meta_lo);
-  }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x68) / 4]) {
-    printf("        Src1Fmt: Mode=%u MemFmt=%u Trunc=%u Shift=%u -> %s\n",
-           src->src1fmt.format_mode, src->src1fmt.mem_fmt,
-           src->src1fmt.trunc, src->src1fmt.shift,
-           get_hw_tensor_format_name_v17(src->src1fmt.format_mode,
-                                         src->src1fmt.mem_fmt,
-                                         src->src1fmt.trunc,
-                                         src->src1fmt.shift));
-    printf("                 Intrlv=%u OffCh=%d CmpVec=%d\n",
-           src->src1fmt.interleave, src->src1fmt.offset_ch,
-           src->src1fmt.cmp_vec);
-  }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x6c) / 4]) {
-    printf("        Src2Fmt: Mode=%u MemFmt=%u Trunc=%u Shift=%u -> %s\n",
-           src->src2fmt.format_mode, src->src2fmt.mem_fmt,
-           src->src2fmt.trunc, src->src2fmt.shift,
-           get_hw_tensor_format_name_v17(src->src2fmt.format_mode,
-                                         src->src2fmt.mem_fmt,
-                                         src->src2fmt.trunc,
-                                         src->src2fmt.shift));
-    printf("                 Intrlv=%u OffCh=%d CmpVec=%d\n",
-           src->src2fmt.interleave, src->src2fmt.offset_ch,
-           src->src2fmt.cmp_vec);
-  }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x78) / 4]) {
-    printf("        Src1Comp: En=%d MBS=%d PF=%d Lossy=%d MdTag=0x%02x "
-           "Size=0x%x%08x Crop=0x%x\n",
-           src->src1compinfo.compressed_enable,
-           src->src1compinfo.macroblock_size, src->src1compinfo.packing_format,
-           src->src1compinfo.lossy_mode, src->src1compinfo.md_user_tag,
-           src->src1compsize_hi, src->src1compsize_lo, src->src1cropoffset);
-  }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0x88) / 4]) {
-    printf("        Src2Comp: En=%d MBS=%d PF=%d Lossy=%d MdTag=0x%02x "
-           "Size=0x%x%08x Crop=0x%x\n",
-           src->src2compinfo.compressed_enable,
-           src->src2compinfo.macroblock_size, src->src2compinfo.packing_format,
-           src->src2compinfo.lossy_mode, src->src2compinfo.md_user_tag,
-           src->src2compsize_hi, src->src2compsize_lo, src->src2cropoffset);
-  }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0xf8) / 4]) {
-    printf("        Src1Ephemeral: En=%d\n", src->src1ephemeral & 1);
-  }
-  if (state->valid[(H16_TILEDMA_SRC_START + 0xc8) / 4]) {
-    printf("        TextureCfg: 0x%08x\n", src->texture_config);
+
+  // Ephemeral (0x4DF8)
+  if (state->valid[(H16_TILEDMA_SRC_START + 0xF8) / 4]) {
+    printf("        Src1Ephemeral : En=%u\n", src->src1ephemeral & 1);
   }
 }
 
@@ -1396,8 +1400,9 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
       uint32_t size_bytes = m4h->task_size * 4;
       printf("      [ANE Task %d @ 0x%x] (Size: 0x%x bytes)\n", task_idx++,
              offset, size_bytes);
-      printf("        TID: 0x%04x ExeCycles: %u ENE: %u DTID: 0x%04x\n",
-             m4h->tid, m4h->exe_cycles, m4h->ctrl_flags.ene, m4h->dtid);
+      printf("        TID: 0x%04x TaskSize: 0x%x ExeCycles: %u ENE: %u DTID: 0x%04x\n",
+             m4h->tid, m4h->task_size, m4h->exe_cycles, m4h->ctrl_flags.ene,
+             m4h->dtid);
       printf("        LogEvents: 0x%06x Exceptions: 0x%06x\n", m4h->log_events,
              m4h->exceptions);
       printf("        LiveOuts: 0x%08x TSR: %d TDE: %d\n", m4h->live_outs,

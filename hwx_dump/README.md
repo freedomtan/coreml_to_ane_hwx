@@ -108,7 +108,7 @@ typedef struct {
 Immediately following the header (at offset `0x28`) is the register stream. Each command block consists of a 32-bit header followed by a variable number of data words.
 
 - **Header Word**:
-    - `bits [25:0]`: Word Address (Hardware address >> 2).
+    - `bits [25:0]`: **Base Address** (e.g., `0x4800`).
     - `bits [31:26]`: Count (Number of 32-bit values following - 1).
 - **Data Words**:
     - The next `count + 1` words are written sequentially starting at the target word address.
@@ -139,13 +139,13 @@ Tasks are 16-byte aligned. If `task_size` is 0, the parser skips to the next ali
 The payload consists of command headers that specify sequential (Burst) or masked (Scatter) register writes.
 
 **Mode A: Sequential / Burst (Bit 31 = 0)**
-- `bits [14:0]`: Base word address.
+- `bits [14:0]`: **Base Address** (Value << 2).
 - `bits [20:15]`: Count (burst length).
 - `bits [30:21]`: Reserved.
 - **Action**: Read `count + 1` data words and write them to `address ... address + count`.
 
 **Mode B: Masked / Scatter (Bit 31 = 1)**
-- `bits [14:0]`: Base word address.
+- `bits [14:0]`: **Base Address** (Value << 2).
 - `bits [30:15]`: 16-bit population mask.
 - **Action**:
     1. The first word following the header is ALWAYS written to `base_address`.

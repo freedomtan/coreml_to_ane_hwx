@@ -798,7 +798,14 @@ void print_l2_h16(const hwx_state_t *state) {
       (const ane_l2_h16_t *)&state->values[H16_L2_START / 4];
   printf("        --- L2 Cache Control (0x4100) ---\n");
   if (state->valid[H16_L2_START / 4]) {
-    printf("        L2_Control: 0x%08x\n", *(uint32_t *)&l2->l2_control);
+    uint32_t val = state->values[H16_L2_START / 4];
+    printf("        L2_Control: 0x%08x (src1_relu: %d, padding: %d, src2_relu: %d, barrier_en: %d, barrier_idx: %d)\n",
+               val,
+               val & 1,
+               (val >> 2) & 3,
+               (val >> 4) & 1,
+               (val >> 16) & 1,
+               (val >> 17) & 0x7f);
   }
 
   if (state->valid[(H16_L2_START + 0x04) / 4]) {
@@ -922,9 +929,9 @@ void print_l2_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_L2_START + 0x8c) / 4]) {
-    printf("        PEIndex  : Trans=%d Mode=%d MaxIdx=%d\n",
+    printf("        PEIndex  : Trans=%d Mode=%d Broadcast=%d MaxIdx=%d\n",
            l2->pe_index_cfg.transpose, l2->pe_index_cfg.mode,
-           l2->pe_index_cfg.max_index);
+           l2->pe_index_cfg.broadcast, l2->pe_index_cfg.max_index);
   }
 
   if (state->valid[(H16_L2_START + 0x90) / 4])

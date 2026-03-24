@@ -15,6 +15,11 @@ The `ZinAneTd<17u>` object maps internal offsets to hardware register blocks as 
 
 Before registers, there are some header words.
 
+*Note on ZinAneTd<17u> Initialization*: The exact block offset mapping is structurally enforced during memory initialization. `InitializeTdToDefaults` directly populates the array at `+0x3a8` for the 41 registers of the L2 Cache block:
+```cpp
+SetDefaultValuesToRegisters((uint *)(this + 0x3a8), 0x29, 0x4100, puVar2);
+```
+
 | Source Offset (`this`) | Name | Description | Note |
 | :--- | :--- | :--- | :--- |
 | `+0x008` | `TID / TaskSize` | **TID**: 0-15, **TaskSize**: 16-26. | Headers[0] |
@@ -319,7 +324,7 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 | **0x4180** | `+0x428` | **MiscField0x4180** |  |
 | **0x4184** | `+0x42c` | **MiscField0x4184** |  |
 | **0x4188** | `+0x430` | **MiscField0x4188** |  |
-| **0x418C** | `+0x434` | **PEIndexCfg** | **Transpose**: 0, **Mode**: 1, **MaxIndex**: 16-31. |
+| **0x418C** | `+0x434` | **PEIndexCfg** | **MaxIndex**: 0-15, **Mode**: 16-18, **Broadcast**: 24-25, **Transpose**: 26. |
 | **0x4190** | `+0x438` | **Src1AddrWrap** |  |
 | **0x4194** | `+0x43c` | **Src2AddrWrap** |  |
 | **0x4198** | `+0x440` | **L2Reserved** |  |

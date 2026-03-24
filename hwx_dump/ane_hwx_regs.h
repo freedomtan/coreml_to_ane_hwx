@@ -652,15 +652,14 @@ typedef struct {
 typedef struct {
   // Word 0 (0x4100)
   struct {
-    uint32_t src1_relu : 1;    // [0]
-    uint32_t pad0 : 1;         // [1]
-    uint32_t padding_mode : 2; // [3:2]
-    uint32_t src2_relu : 1;    // [4]
-    uint32_t pad1 : 1;
-    uint32_t src1_double : 1; // [6]
-    uint32_t pad2 : 9;
-    uint32_t barrier : 1; // [16]
-    uint32_t pad3 : 15;
+    uint32_t src1_relu: 1;      // Bit 0: Enable ReLU for Source 1
+    uint32_t reserved1: 1;      // Bit 1: Reserved
+    uint32_t padding_mode: 2;   // Bits 2-3: 0: Clamp, 1: Zero, 2: Mirror, 3: Constant
+    uint32_t src2_relu: 1;      // Bit 4: Enable ReLU for Source 2
+    uint32_t reserved2: 11;     // Bits 5-15: Reserved
+    uint32_t barrier_enable: 1; // Bit 16: Enable hardware barrier sync
+    uint32_t barrier_idx: 7;    // Bits 17-23: Hardware barrier index
+    uint32_t reserved3: 8;      // Bits 24-31: Reserved
   } l2_control;
 
   // Word 1 (0x4104)
@@ -836,10 +835,12 @@ typedef struct {
 
   // Word 35 (0x418c)
   struct {
-    uint32_t transpose : 1;  // [0]
-    uint32_t mode : 1;       // [1]
-    uint32_t pad : 14;       // [15:2]
-    uint32_t max_index : 16; // [31:16]
+    uint32_t max_index : 16;  // [15:0]
+    uint32_t mode : 3;        // [18:16]
+    uint32_t pad1 : 5;        // [23:19]
+    uint32_t broadcast : 2;   // [25:24]
+    uint32_t transpose : 1;   // [26]
+    uint32_t pad2 : 5;        // [31:27]
   } pe_index_cfg;
 
   uint32_t l2_res36; // 0x4190

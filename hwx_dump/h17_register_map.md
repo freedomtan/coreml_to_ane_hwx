@@ -44,14 +44,15 @@ Before registers, there are some header words.
 | ... | ... | ... | ... |
 | **0x55A0** | `+0x0d4` | **CoeffBfrSize0** | **Size**: 6-31. |
 | ... | ... | ... | ... |
-| **0x55E0** | `+0x114` | **BiasDMAConfig** |  |
-| **0x55E4** | `+0x118` | **BiasBaseAddr** |  |
-| **0x55F0** | `+0x124` | **PostScaleDMAConfig** |  |
-| **0x55F4** | `+0x128` | **PostScaleBaseAddr** |  |
-| **0x5600** | `+0x134` | **PaletteDMAConfig** |  |
-| **0x5604** | `+0x138` | **PaletteBaseAddr** |  |
-| **0x5610** | `+0x144` | **NLutDMAConfig** |  |
-| **0x5614** | `+0x148` | **NLutBaseAddr** |  |
+| **0x55E0** | `+0x114` | **BiasDMAConfig** | **CacheHint**: 4-7. |
+| **0x55E4** | `+0x118` | **BiasBaseAddr** | **Addr**: 6-31. |
+| **0x55F0** | `+0x124` | **PostScaleDMAConfig** | **CacheHint**: 4-7. |
+| **0x55F4** | `+0x128` | **PostScaleBaseAddr** | **Addr**: 6-31. |
+| **0x5600** | `+0x134` | **PaletteDMAConfig** | **CacheHint**: 4-7, **UserTag**: 16-23. |
+| **0x5604** | `+0x138` | **PaletteBaseAddr** | **Addr**: 6-31. |
+| **0x5610** | `+0x144` | **NLutDMAConfig** | **CacheHint**: 4-7, **UserTag**: 16-23. |
+| **0x5614** | `+0x148` | **NLutBaseAddr** | **Addr**: 6-31. |
+
 | **0x5620** | `+0x154` | **NewField0x5620** | New in H17. |
 | **0x5624** | `+0x158` | **NewField0x5624** | New in H17. |
 
@@ -104,27 +105,50 @@ Before registers, there are some header words.
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4100** | `+0x3bc` | **Control** |  |
-| ... | ... | ... | ... |
-| **0x41A4** | `+0x460` | **NewField0x41A4** | New in H17. |
+| **0x4100** | `+0x3bc` | **Control** | **Barrier**: 23. (Verified via `SetL2Barrier`) |
+| **0x4104** | `+0x3c0` | **Src1Cfg** | **SrcType**: 0-1. (Verified via `SetL2Src1SourceType`) |
+| **0x4108** | `+0x3c4` | **Src2Cfg** | **SrcType**: 0-1. |
+| **0x4148** | `+0x404` | **ResultCfg** | **ResType**: 0-1. (Verified via `SetL2ResultType`) |
+| **0x414C** | `+0x408` | **ResultBaseAddr** | **Base**: 0-31. |
+| **0x4150** | `+0x40c` | **ResultChannelStride** | **Stride**: 0-31. |
+| **0x4154** | `+0x410` | **ResultRowStride** | **Stride**: 0-31. (Verified Word 21) |
+| **0x4164** | `+0x420` | **ResultWrapCfg** | (Verified Word 25) |
+
 
 ### Planar Engine (PE) (0x4500 block, Object `+0x46c`)
 - **Count**: 16 registers (`0x10` words, `0x40` bytes).
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4500** | `+0x46c` | **Config** |  |
+| **0x4500** | `+0x46c` | **PE_Config** | **Pool**: 0-1, **Op**: 2-4, **LutEn**: 5, **Cond**: 6-8, **RedIdx**: 9-10, **RedKeep**: 11, **NLMode**: 12, **CtoW**: 13, **MaxIdx**: 14-28. |
+| **0x4504** | `+0x470` | **PE_Bias** | Float32 bias value. |
+| **0x4508** | `+0x474` | **PE_Scale** | Float32 scale value. |
+| **0x450C** | `+0x478` | **PE_Epsilon** | Float32 epsilon value. |
+| **0x4510** | `+0x47c` | **PE_PreScale** | Float32 pre-scale value. |
+| **0x4514** | `+0x480` | **PE_FinalScale** | Float32 final scale value. |
+| **0x4518** | `+0x484` | **PE_Src1Cfg** | **Relu**: 1, **Transpose**: 3, **Src1Idx**: 12-15. |
+| **0x451C** | `+0x488` | **Reserved** |  |
+| **0x4520** | `+0x48c` | **PE_Src2Cfg** | **Relu**: 1, **Transpose**: 3, **Src2Idx**: 12-15. |
 | ... | ... | ... | ... |
-| **0x453C** | `+0x4ac` | **NewField0x453C** | New in H17? (M4 padding). |
 
 ### Neural Engine (NE) (0x4900 block, Object `+0x4b4`)
 - **Count**: 13 registers (`0x0d` words, `0x34` bytes).
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4900** | `+0x4b4` | **KernelCfg** |  |
-| ... | ... | ... | ... |
-| **0x4930** | `+0x4e4` | **NewField0x4930** | New in H17. |
+| **0x0000** | `+0x4b4` | **KernelCfg** | **KernelFmt**: 0-3. **Sparse**: 6. |
+| **0x0004** | `+0x4b8` | **KernelCfg2** | **OpMode**: 0-5. **KernelMode**: 6-10. |
+| **0x0008** | `+0x4bc` | **InShift** | |
+| **0x000C** | `+0x4c0` | **InShift2** | |
+| **0x0010** | `+0x4c4` | **OutputShift** | |
+| **0x0014** | `+0x4c8` | **BiasCfg** | **RcasMode**: 0-2. |
+| **0x0018** | `+0x4cc` | **PostScaleCfg** | **StochasticRounding**: 0-7. |
+| **0x001C** | `+0x4d0` | **ZQuantCfg** | **StochasticRounding Seed**. |
+| **0x0020** | `+0x4d4` | **ZQuantCfg2** | |
+| **0x0024** | `+0x4d8` | **QuantCfg** | |
+| **0x0028** | `+0x4dc` | **QuantCfg2** | |
+| **0x002C** | `+0x4e0` | **NEFlags** | |
+| **0x0030** | `+0x4e4` | **NEFlags2** | |
 
 ### TileDMA Destination (0x5100 block, Object `+0x4f0`)
 - **Count**: 23 registers (`0x17` words, `0x5c` bytes).

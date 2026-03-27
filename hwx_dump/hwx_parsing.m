@@ -797,6 +797,14 @@ void print_l2_h16(const hwx_state_t *state) {
   const ane_l2_h16_t *l2 =
       (const ane_l2_h16_t *)&state->values[H16_L2_START / 4];
   printf("        --- L2 Cache Control (0x4100) ---\n");
+  // ZinL2AccessMode hw bits[1:0] → named string
+  // Derived from SetL2Src1SourceType + HasDmaRead/HasL2Read/HasChainRead
+  //   hw=0 (L2Read),  hw=1 (DmaRead2), hw=2 (DmaRead), hw=3 (L2ChainRead)
+  static const char *l2_type_names[] = {
+      "L2Read", "DmaRead2", "DmaRead", "L2ChainRead"
+  };
+  #define L2_TYPE_STR(t) (((t) < 4) ? l2_type_names[(t)] : "Unk")
+
   if (state->valid[H16_L2_START / 4]) {
     uint32_t val = state->values[H16_L2_START / 4];
     printf("        L2_Control: 0x%08x (src1_relu: %d, padding: %d, src2_relu: %d, barrier_en: %d, barrier_idx: %d)\n",
@@ -814,8 +822,9 @@ void print_l2_h16(const hwx_state_t *state) {
     else if (l2->src1_cfg.dma_fmt == 1) fmt_str = "16b";
     else if (l2->src1_cfg.dma_fmt == 3) fmt_str = "32b";
 
-    printf("        L2_Src1Cfg: Type=%u Dep=%u DMAFmt=%u(%s) Intrlv=%u\n",
-           l2->src1_cfg.src_type, l2->src1_cfg.dependent, l2->src1_cfg.dma_fmt,
+    printf("        L2_Src1Cfg: Type=%u(%s) Dep=%u DMAFmt=%u(%s) Intrlv=%u\n",
+           l2->src1_cfg.src_type, L2_TYPE_STR(l2->src1_cfg.src_type),
+           l2->src1_cfg.dependent, l2->src1_cfg.dma_fmt,
            fmt_str, l2->src1_cfg.interleave);
     printf("                    AliasConv(S=%d,R=%d) AliasPlanar(S=%d,R=%d) Cmp=%u\n",
            l2->src1_cfg.alias_conv_src, l2->src1_cfg.alias_conv_rslt,
@@ -829,8 +838,9 @@ void print_l2_h16(const hwx_state_t *state) {
     else if (l2->src2_cfg.dma_fmt == 1) fmt_str = "16b";
     else if (l2->src2_cfg.dma_fmt == 3) fmt_str = "32b";
 
-    printf("        L2_Src2Cfg: Type=%u Dep=%u DMAFmt=%u(%s) Intrlv=%u\n",
-           l2->src2_cfg.src_type, l2->src2_cfg.dependent, l2->src2_cfg.dma_fmt,
+    printf("        L2_Src2Cfg: Type=%u(%s) Dep=%u DMAFmt=%u(%s) Intrlv=%u\n",
+           l2->src2_cfg.src_type, L2_TYPE_STR(l2->src2_cfg.src_type),
+           l2->src2_cfg.dependent, l2->src2_cfg.dma_fmt,
            fmt_str, l2->src2_cfg.interleave);
     printf("                    AliasConv(S=%d,R=%d) AliasPlanar(S=%d,R=%d) Cmp=%u\n",
            l2->src2_cfg.alias_conv_src, l2->src2_cfg.alias_conv_rslt,
@@ -844,8 +854,9 @@ void print_l2_h16(const hwx_state_t *state) {
     else if (l2->srcidx_cfg.dma_fmt == 1) fmt_str = "16b";
     else if (l2->srcidx_cfg.dma_fmt == 3) fmt_str = "32b";
 
-    printf("        L2_SrcIdxCfg: Type=%u Dep=%u DMAFmt=%u(%s) AliasConv(S=%d,R=%d)\n",
-           l2->srcidx_cfg.src_type, l2->srcidx_cfg.dependent, l2->srcidx_cfg.dma_fmt,
+    printf("        L2_SrcIdxCfg: Type=%u(%s) Dep=%u DMAFmt=%u(%s) AliasConv(S=%d,R=%d)\n",
+           l2->srcidx_cfg.src_type, L2_TYPE_STR(l2->srcidx_cfg.src_type),
+           l2->srcidx_cfg.dependent, l2->srcidx_cfg.dma_fmt,
            fmt_str, l2->srcidx_cfg.alias_conv_src, l2->srcidx_cfg.alias_conv_rslt);
     printf("                      AliasPlanar(S=%d,R=%d) Bit27=%u\n",
            l2->srcidx_cfg.alias_planar_src, l2->srcidx_cfg.alias_planar_rslt,
@@ -879,8 +890,9 @@ void print_l2_h16(const hwx_state_t *state) {
     else if (l2->result_cfg.dma_fmt == 1) fmt_str = "16b";
     else if (l2->result_cfg.dma_fmt == 3) fmt_str = "32b";
 
-    printf("        L2_ResultCfg: Type=%u DMAFmt=%u(%s) Intrlv=%u Cmp=%u\n",
-           l2->result_cfg.res_type, l2->result_cfg.dma_fmt, fmt_str,
+    printf("        L2_ResultCfg: Type=%u(%s) DMAFmt=%u(%s) Intrlv=%u Cmp=%u\n",
+           l2->result_cfg.res_type, L2_TYPE_STR(l2->result_cfg.res_type),
+           l2->result_cfg.dma_fmt, fmt_str,
            l2->result_cfg.interleave, l2->result_cfg.compression);
     printf("        L2_ResultBase: 0x%05x0\n", l2->result.base);
     printf("        L2_ResultStrides: C=0x%05x0 R=0x%05x0 D=0x%05x0 G=0x%05x0\n",

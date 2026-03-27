@@ -19,29 +19,29 @@ Exhaustive row-by-row mapping for H18 (A19).
 - **Object Layout**: Starts at `+0x228` of the `ZinAneTd` object.
 | HW Addr | Index | ZinOffset | Name |
 | :--- | :---: | :--- | :--- |
-| **0x0000** | 0 | `+0x228` | **Com_OutWidth_Fmt** |
-| **0x0004** | 1 | `+0x22c` | **Com_InWidth** |
-| **0x0008** | 2 | `+0x230` | **Com_ConvCfgKw** |
-| **0x000C** | 3 | `+0x234` | **Com_TaskType** |
-| **0x0010** | 4 | `+0x238` | **Com_InHeight** |
-| **0x0014** | 5 | `+0x23c` | **Com_InDepth** |
-| **0x0018** | 6 | `+0x240` | **Com_InChannels** |
-| **0x001C** | 7 | `+0x244` | **Com_OutHeight** |
-| **0x0020** | 8 | `+0x248` | **Com_OutDepth** |
-| **0x0024** | 9 | `+0x24c` | **Com_ConvSxSyOxOy** |
-| **0x0028** | 10| `+0x250` | **Com_ConvCfg3D** |
-| **0x002C** | 11| `+0x254` | **Com_ConvCfg3dKd** |
-| **0x0030** | 12| `+0x258` | **Com_UnicastCin** |
-| **0x0034** | 13| `+0x25c` | **Com_TileHeight** |
-| **0x0038** | 14| `+0x260` | **Com_TileOverlap** |
-| **0x003C** | 15| `+0x264` | **Com_Sync_Pads** |
-| **0x0040** | 16| `+0x268` | **Com_Sync_Pads2** |
-| **0x0044** | 17| `+0x26c` | **Com_MacCfg** |
-| **0x0048** | 18| `+0x270` | **Com_NECfg** |
-| **0x004C** | 19| `+0x274` | **Com_PatchCfg** |
-| **0x0050** | 20| `+0x278` | **Com_PECfg** |
-| **0x0054** | 21| `+0x27c` | **Com_NID** |
-| **0x0058** | 22| `+0x280` | **Com_DPE** |
+| **0x0000** | 0 | `+0x228` | **OutWidth_Fmt** |
+| **0x0004** | 1 | `+0x22c` | **InWidth** |
+| **0x0008** | 2 | `+0x230` | **ConvCfgKw** |
+| **0x000C** | 3 | `+0x234` | **TaskType** |
+| **0x0010** | 4 | `+0x238` | **InHeight** |
+| **0x0014** | 5 | `+0x23c` | **InDepth** |
+| **0x0018** | 6 | `+0x240` | **InChannels** |
+| **0x001C** | 7 | `+0x244` | **OutHeight** |
+| **0x0020** | 8 | `+0x248` | **OutDepth** |
+| **0x0024** | 9 | `+0x24c` | **ConvSxSyOxOy** |
+| **0x0028** | 10| `+0x250` | **ConvCfg3D** |
+| **0x002C** | 11| `+0x254` | **ConvCfg3dKd** |
+| **0x0030** | 12| `+0x258` | **UnicastCin** |
+| **0x0034** | 13| `+0x25c` | **TileHeight** |
+| **0x0038** | 14| `+0x260` | **TileOverlap** |
+| **0x003C** | 15| `+0x264` | **Sync_Pads** |
+| **0x0040** | 16| `+0x268` | **Sync_Pads2** |
+| **0x0044** | 17| `+0x26c` | **MacCfg** |
+| **0x0048** | 18| `+0x270` | **NECfg** |
+| **0x004C** | 19| `+0x274` | **PatchCfg** |
+| **0x0050** | 20| `+0x278` | **PECfg** |
+| **0x0054** | 21| `+0x27c` | **NID** |
+| **0x0058** | 22| `+0x280` | **DPE** |
 
 ## L2 Cache (0x4100)
 - **Count**: 43 registers (`0x1b` words, `0x6c` bytes [Wait! 43 words is 0xAC bytes]).

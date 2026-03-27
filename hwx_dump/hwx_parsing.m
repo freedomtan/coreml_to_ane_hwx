@@ -411,26 +411,37 @@ const char *get_l2_dma_fmt_name(uint32_t fmt) {
   }
 }
 
+const char *get_pe_op_mode_name_v17(uint32_t op) {
+  switch (op) {
+  case 0: return "Add";
+  case 1: return "Mul";
+  case 2: return "Max";
+  case 3: return "Min";
+  case 4: return "SumSqr";
+  default: return "??";
+  }
+}
+
+const char *get_pe_pool_mode_name_v17(uint32_t mode) {
+  switch (mode) {
+  case 0: return "Avg/None";
+  case 2: return "Max";
+  case 3: return "Min";
+  default: return "??";
+  }
+}
+
 const char *get_ne_op_mode_name(uint32_t mode) {
   switch (mode) {
-  case 0:
-    return "Conv";
-  case 1:
-    return "ElemWise";
-  case 2:
-    return "unknown";
-  case 3:
-    return "EWSqr";
-  case 4:
-    return "EWMult";
-  case 5:
-    return "RCAS";
-  case 6:
-    return "Bypass";
-  case 7:
-    return "TransposedConv";
-  default:
-    return "Invalid";
+  case 0: return "Conv";
+  case 1: return "ElemWise";
+  case 2: return "unknown";
+  case 3: return "EWSqr";
+  case 4: return "EWMult";
+  case 5: return "RCAS";
+  case 6: return "Bypass";
+  case 7: return "TransposedConv";
+  default: return "Invalid";
   }
 }
 
@@ -748,11 +759,10 @@ void print_pe_h16(const hwx_state_t *state) {
   printf("        --- Planar Engine (0x4500) ---\n");
 
   if (state->valid[H16_PE_START / 4]) {
-    static const char *pe_op_names[] = {"None", "Add", "Mul", "Min",
-                                        "Max",  "5?",  "6?",  "7?"};
-    printf("        PE Config : Pool=%u Op=%u(%s) LutEn=%u Cond=%u RedIdx=%u "
+    printf("        PE Config : Pool=%u (%s) Op=%u (%s) LutEn=%u Cond=%u RedIdx=%u "
            "RedKeep=%u NLMode=%u Src1=%u Src2=%u\n",
-           pe.pe_cfg.pool_mode, pe.pe_cfg.op, pe_op_names[pe.pe_cfg.op & 7],
+           pe.pe_cfg.pool_mode, get_pe_pool_mode_name_v17(pe.pe_cfg.pool_mode),
+           pe.pe_cfg.op, get_pe_op_mode_name_v17(pe.pe_cfg.op),
            pe.pe_cfg.lut_en, pe.pe_cfg.cond, pe.pe_cfg.red_idx,
            pe.pe_cfg.red_keep, pe.pe_cfg.nl_mode, pe.pe_cfg.src1,
            pe.pe_cfg.src2);

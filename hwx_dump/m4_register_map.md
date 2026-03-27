@@ -337,7 +337,7 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4500** | `+0x454` | **Config** | **PoolMode**: 0-1, **Op**: 2-4, **LUTEnable**: 5, **Cond**: 6-8, **ReductionResultIndex**: 9-10, **ReductionKeepDims**: 11, **NonLinearMode**: 12-13, **Src1Selection**: 16, **Src2Selection**: 18-19. |
+| **0x4500** | `+0x454` | **Config** | **PoolMode**: 0-1 (0: Avg/None, 2: Max, 3: Min), **Op**: 2-4 (0: Add, 1: Mul, 2: Max, 3: Min, 4: SumSqr), **LUTEnable**: 5, **Cond**: 6-8, **ReductionResultIndex**: 9-10, **ReductionKeepDims**: 11, **NonLinearMode**: 12-13, **Src1Selection**: 16, **Src2Selection**: 18-19. |
 | **0x4504** | `+0x458` | **Bias** | 19-bit Floating Point (F19) bias value (Bits 0-18). |
 | **0x4508** | `+0x45c` | **Scale** | 19-bit Floating Point (F19) scale value (Bits 0-18). |
 | **0x450c** | `+0x460` | **FinalScaleEpsilon** | 19-bit Floating Point (F19) epsilon value (Bits 0-18). |

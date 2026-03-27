@@ -404,7 +404,7 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 - **Count**: 12 registers (`0x0c` words, `0x30` bytes).
 - **Object Layout**: Starts at `+0x52c` of the `ZinAneTd` object.
 
-| HW Addr | Offset (`this`) | Word | Register Name | Bit-Field Mapping |
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
 | **0x5900** | `+0x52c` | **TelemetryControl** | **Flush**: 0, **Enable**: 1, **TaskSync**: 2-3, **EarlyTerm**: 4-8. |
 | **0x5904** | `+0x530` | **TelemetryPre0** | **BandwidthLimit**, **SieveFiltering**, **ResponseAgeOut**. |
@@ -418,6 +418,7 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 | **0x5924** | `+0x550` | **FlushRegister** | **FlushArg**: 0-15. |
 | **0x5928** | `+0x554` | **EarlyTermArg34** | **Arg3**: 0-7, **Arg4**: 16-23. |
 | **0x592C** | `+0x558` | **BackoffControl** | **Enable**: 0, **Delay**: 4-7, **Min**: 8-15. |
+
 
 ### Cross-Cutting Subsystems: Quantization
 Certain high-level configurations, like Quantization, touch multiple disparate hardware blocks simultaneously to coordinate data scaling and types across the pipeline. As decompiled from `ZinAneTd<17u>::SetQuantization*` methods:

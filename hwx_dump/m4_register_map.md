@@ -394,7 +394,7 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 | **0x512C** | `+0x4fc` | **DstMetaDataAddrHi**| **AddrHi**: 0-31. |
 | **0x5130** | `+0x500` | **DstFormatMode** | **FormatMode**: 0-1, **MetaDataSize**: 7-31. |
 | **0x5134** | `+0x504` | **DstReserved2** | Reserved. |
-| **0x5138** | `+0x508` | **DstFmt** | **Mode**: 0-1, **Trunc**: 4-6, **Shift**: 8, **MemFmt**: 12-13, **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. (Verified via x86 disassembly) |
+| **0x5138** | `+0x508` | **DstFmt** | **Mode**: 0-1, **Trunc**: 4-6, **Shift**: 8-10, **MemFmt**: 12-13, **OffsetCh**: 16-18, **ZeroPadFirst**: 20, **ZeroPadLast**: 21, **Interleave**: 24-27, **CmpVec**: 28-31. (Verified via disassembly) |
 | **0x513C** | `+0x50C` | **DstReserved3** | Reserved. |
 | **0x5140** | `+0x510` | **DstCompressedInfo**| **CompressedEnable**: 0, **MacroblockSize**: 2, **PackingFormatTableIdx**: 4-9, **LossyEnable**: 13. (Verified via binary) |
 | **0x5144** | `+0x514` | **DstReserved4** | Reserved. |

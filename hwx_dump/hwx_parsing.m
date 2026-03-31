@@ -879,34 +879,29 @@ void print_l2_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_L2_START + 0x04) / 4]) {
-    const char *fmt_str = "Unk";
-    if (l2->src1_cfg.dma_fmt == 0) fmt_str = "8b";
-    else if (l2->src1_cfg.dma_fmt == 1) fmt_str = "16b";
-    else if (l2->src1_cfg.dma_fmt == 3) fmt_str = "32b";
-
-    printf("        L2_Src1Cfg: Type=%u (%s) Dep=%u DMAFmt=%u (%s) Intrlv=%u\n",
+    uint32_t dma_fmt = l2->src1_cfg.dma_fmt;
+    const char *fmt_str = (dma_fmt == 0) ? "8b" : (dma_fmt == 1) ? "16b" : (dma_fmt == 3) ? "32b" : "Unk";
+    printf("        Src1Cfg  : Type=%u (%s) Dependent=%u EnRelu=%u (%s) DMAFmt=%u (%s) "
+           "Alias(C=%d,P=%d,CR=%d,PR=%d) Cmp=%u\n",
            l2->src1_cfg.src_type, L2_TYPE_STR(l2->src1_cfg.src_type),
-           l2->src1_cfg.dependent, l2->src1_cfg.dma_fmt,
-           fmt_str, l2->src1_cfg.interleave);
-    printf("                    AliasConv(S=%d,R=%d) AliasPlanar(S=%d,R=%d) Cmp=%u\n",
-           l2->src1_cfg.alias_conv_src, l2->src1_cfg.alias_conv_rslt,
-           l2->src1_cfg.alias_planar_src, l2->src1_cfg.alias_planar_rslt,
+           l2->src1_cfg.dependent, l2->l2_control.src1_relu,
+           l2->l2_control.src1_relu ? "Enabled" : "Disabled",
+           dma_fmt, fmt_str,
+           l2->src1_cfg.alias_conv_src, l2->src1_cfg.alias_planar_src,
+           l2->src1_cfg.alias_conv_rslt, l2->src1_cfg.alias_planar_rslt,
            l2->src1_cfg.compression);
   }
-
   if (state->valid[(H16_L2_START + 0x08) / 4]) {
-    const char *fmt_str = "Unk";
-    if (l2->src2_cfg.dma_fmt == 0) fmt_str = "8b";
-    else if (l2->src2_cfg.dma_fmt == 1) fmt_str = "16b";
-    else if (l2->src2_cfg.dma_fmt == 3) fmt_str = "32b";
-
-    printf("        L2_Src2Cfg: Type=%u (%s) Dep=%u DMAFmt=%u (%s) Intrlv=%u\n",
+    uint32_t dma_fmt = l2->src2_cfg.dma_fmt;
+    const char *fmt_str = (dma_fmt == 0) ? "8b" : (dma_fmt == 1) ? "16b" : (dma_fmt == 3) ? "32b" : "Unk";
+    printf("        Src2Cfg  : Type=%u (%s) Dependent=%u EnRelu=%u (%s) DMAFmt=%u (%s) "
+           "Alias(C=%d,P=%d,CR=%d,PR=%d) Cmp=%u\n",
            l2->src2_cfg.src_type, L2_TYPE_STR(l2->src2_cfg.src_type),
-           l2->src2_cfg.dependent, l2->src2_cfg.dma_fmt,
-           fmt_str, l2->src2_cfg.interleave);
-    printf("                    AliasConv(S=%d,R=%d) AliasPlanar(S=%d,R=%d) Cmp=%u\n",
-           l2->src2_cfg.alias_conv_src, l2->src2_cfg.alias_conv_rslt,
-           l2->src2_cfg.alias_planar_src, l2->src2_cfg.alias_planar_rslt,
+           l2->src2_cfg.dependent, l2->l2_control.src2_relu,
+           l2->l2_control.src2_relu ? "Enabled" : "Disabled",
+           dma_fmt, fmt_str,
+           l2->src2_cfg.alias_conv_src, l2->src2_cfg.alias_planar_src,
+           l2->src2_cfg.alias_conv_rslt, l2->src2_cfg.alias_planar_rslt,
            l2->src2_cfg.compression);
   }
 
@@ -1024,6 +1019,17 @@ void print_l2_h16(const hwx_state_t *state) {
   }
 }
 
+const char *get_texture_mode_name(uint32_t mode) {
+  switch (mode) {
+    case 0: return "Off";
+    case 1: return "Gather";
+    case 2: return "Bilinear";
+    case 3: return "Bicubic";
+    case 4: return "Nearest";
+    default: return "Unknown";
+  }
+}
+
 void print_tiledmasrc_h16(const hwx_state_t *state) {
   const ane_tiledmasrc_h16_t *src =
       (const ane_tiledmasrc_h16_t *)&state->values[H16_TILEDMA_SRC_START / 4];
@@ -1036,8 +1042,10 @@ void print_tiledmasrc_h16(const hwx_state_t *state) {
     if (!state->valid[base_word])
       continue;
 
-    printf("        %sDMAConfig : En=%u DSID/Hint=%u Tag=%u DepInt=%u DepMode=%u\n",
-           src_names[i], src->dmacfg[i].enable, src->dmacfg[i].dsid_cache_hint,
+    printf("        %sDMAConfig : En=%u (%s) DSID/Hint=%u Tag=%u DepInt=%u DepMode=%u\n",
+           src_names[i], src->dmacfg[i].enable, 
+           src->dmacfg[i].enable ? "Enabled" : "Disabled",
+           src->dmacfg[i].dsid_cache_hint,
            src->dmacfg[i].user_tag, src->dmacfg[i].dependency_interval,
            src->dmacfg[i].dependency_mode);
 
@@ -1072,21 +1080,23 @@ void print_tiledmasrc_h16(const hwx_state_t *state) {
 
     // Format Info
     if (state->valid[(H16_TILEDMA_SRC_START + 0x68 + (i * 4)) / 4]) {
+      uint32_t mode = src->fmt[i].format_mode;
+      uint32_t mem_fmt = src->fmt[i].mem_fmt;
+      uint32_t trunc = src->fmt[i].trunc;
+      uint32_t shift = src->fmt[i].shift;
+      
       printf("        %sFmt     : Mode=%u MemFmt=%u Trunc=%u Shift=%u -> %s\n",
-             src_names[i], src->fmt[i].format_mode, src->fmt[i].mem_fmt,
-             src->fmt[i].trunc, src->fmt[i].shift,
-             get_hw_tensor_format_name_v17(src->fmt[i].format_mode,
-                                           src->fmt[i].mem_fmt,
-                                           src->fmt[i].trunc,
-                                           src->fmt[i].shift));
+             src_names[i], mode, mem_fmt, trunc, shift,
+             get_hw_tensor_format_name_v17(mode, mem_fmt, trunc, shift));
       printf("                 Intrlv=%u OffCh=%d CmpVec=%d\n",
              src->fmt[i].interleave, src->fmt[i].offset_ch, src->fmt[i].cmp_vec);
     }
 
     // Compressed Info
     if (state->valid[(H16_TILEDMA_SRC_START + 0x78 + (i * 0x10)) / 4]) {
-      printf("        %sComp       : En=%u PF=%u MBS=%u Lossy=%u MdTag=0x%x\n",
+      printf("        %sComp       : En=%u (%s) PF=%u MBS=%u Lossy=%u MdTag=0x%x\n",
              src_names[i], src->compinfo[i].compressed_enable,
+             src->compinfo[i].compressed_enable ? "Enabled" : "Disabled",
              src->compinfo[i].packing_format, src->compinfo[i].macroblock_size,
              src->compinfo[i].lossy_mode, src->compinfo[i].md_user_tag);
       printf("        %sCompSize   : 0x%08x%08x\n", src_names[i],
@@ -1105,12 +1115,35 @@ void print_tiledmasrc_h16(const hwx_state_t *state) {
 
   // Texture Config (at 0x4DC8)
   if (state->valid[(H16_TILEDMA_SRC_START + 0xC8) / 4]) {
-    printf("        TextureCfg    : 0x%08x\n", src->texture_config);
+    uint32_t val = src->texture_config;
+    uint32_t mode = val & 7;
+    printf("        TextureCfg    : 0x%08x Mode=%u (%s) Norm1=%u Norm2=%u Filter=%u BGEn=%u DepthVal=%u Wrap=%u\n",
+           val, mode, get_texture_mode_name(mode),
+           (val >> 3) & 7, (val >> 6) & 7, (val >> 12) & 7,
+           (val >> 22) & 1, (val >> 23) & 1, (val >> 24) & 0x1F);
+  }
+
+  if (state->valid[(H16_TILEDMA_SRC_START + 0xCC) / 4]) {
+     printf("        TextureIdxPerm: 0x%08x\n", src->texture_idx_permute);
+  }
+  if (state->valid[(H16_TILEDMA_SRC_START + 0xD0) / 4]) {
+     printf("        TextureSrcPerm: 0x%08x\n", src->texture_src_permute);
   }
 
   // Ephemeral (0x4DF8)
   if (state->valid[(H16_TILEDMA_SRC_START + 0xF8) / 4]) {
-    printf("        Src1Ephemeral : En=%u\n", src->src1ephemeral & 1);
+    printf("        Src1Ephemeral : En=%u (%s)\n", 
+           src->src1ephemeral & 1,
+           (src->src1ephemeral & 1) ? "Enabled" : "Disabled");
+  }
+}
+
+const char *get_hw_tensor_format_mode_name(uint32_t mode) {
+  switch (mode) {
+    case 0: return "None";
+    case 1: return "Cmp";
+    case 2: return "Lossy";
+    default: return "Unknown";
   }
 }
 
@@ -1119,7 +1152,8 @@ void print_tiledmadst_h16(const hwx_state_t *state) {
       (const ane_tiledmadst_h16_t *)&state->values[H16_TILEDMA_DST_START / 4];
   printf("        --- TileDMADst (0x5100) ---\n");
   if (state->valid[H16_TILEDMA_DST_START / 4]) {
-    printf("        DstDMAConfig: En=%d DSID=%u Tag=%u\n", dst->dstcfg.en,
+    printf("        DstDMAConfig: En=%d (%s) DSID=%u Tag=%u\n", dst->dstcfg.en,
+           dst->dstcfg.en ? "Enabled" : "Disabled",
            dst->dstcfg.dataset_id, dst->dstcfg.user_tag);
   }
   if (state->valid[(H16_TILEDMA_DST_START + 0x10) / 4]) {
@@ -1129,25 +1163,31 @@ void print_tiledmadst_h16(const hwx_state_t *state) {
            dst->dstgroup_stride);
   }
   if (state->valid[(H16_TILEDMA_DST_START + 0x28) / 4]) {
-    printf("        DstMeta   : Addr=0x%x%08x FmtMode=%u Size=0x%x\n",
-           dst->dstmeta_hi, dst->dstmeta_lo, dst->dstfmtmode.format_mode,
+    uint32_t fmt_mode = dst->dstfmtmode.format_mode;
+    printf("        DstMeta   : Addr=0x%x%08x FmtMode=%u (%s) Size=0x%x\n",
+           dst->dstmeta_hi, dst->dstmeta_lo, fmt_mode,
+           get_hw_tensor_format_mode_name(fmt_mode),
            dst->dstfmtmode.metadata_size);
   }
   if (state->valid[(H16_TILEDMA_DST_START + 0x38) / 4]) {
+    uint32_t mode = dst->dstfmt.mode;
+    uint32_t mem_fmt = dst->dstfmt.mem_fmt;
+    uint32_t trunc = dst->dstfmt.trunc;
+    uint32_t shift = dst->dstfmt.shift;
+    
     printf("        DstFmt: Mode=%u MemFmt=%u Trunc=%u Shift=%u -> %s\n",
-           dst->dstfmt.mode, dst->dstfmt.mem_fmt, dst->dstfmt.trunc,
-           dst->dstfmt.shift,
-           get_hw_tensor_format_name_v17(dst->dstfmt.mode, dst->dstfmt.mem_fmt,
-                                         dst->dstfmt.trunc,
-                                         dst->dstfmt.shift));
-    printf("                OffCh=%u ZeroPad(F=%u,L=%u) Intrlv=%u CmpVec=%u\n",
+           mode, mem_fmt, trunc, shift,
+           get_hw_tensor_format_name_v17(mode, mem_fmt, trunc, shift));
+    printf("                OffCh=%u ZeroPad (F=%u, L=%u) Intrlv=%u CmpVec=%u\n",
            dst->dstfmt.offset_ch, dst->dstfmt.zero_pad_first,
            dst->dstfmt.zero_pad_last, dst->dstfmt.interleave,
            dst->dstfmt.cmp_vec);
   }
   if (state->valid[(H16_TILEDMA_DST_START + 0x40) / 4]) {
-    printf("        DstComp: En=%d Packing=%d MBSize=%d Lossy=%d\n",
-           dst->dstcompinfo.compressed_enable, dst->dstcompinfo.packing_format,
+    printf("        DstComp: En=%d (%s) Packing=%d MBSize=%d Lossy=%d\n",
+           dst->dstcompinfo.compressed_enable, 
+           dst->dstcompinfo.compressed_enable ? "Enabled" : "Disabled",
+           dst->dstcompinfo.packing_format,
            dst->dstcompinfo.macroblock_size, dst->dstcompinfo.lossy_mode);
   }
   if (state->valid[(H16_TILEDMA_DST_START + 0x50) / 4]) {
@@ -1161,8 +1201,10 @@ void print_kerneldmasrc_h16(const hwx_state_t *state) {
       (const ane_kerneldmasrc_h16_t *)&state->values[H16_KERNELDMA_START / 4];
   printf("        --- KernelDMASrc (0x5500) ---\n");
   if (state->valid[H16_KERNELDMA_START / 4])
-    printf("        MasterCfg: En=%d Sparse=%d Reuse=%d\n",
-           k->master_cfg.master_enable, k->master_cfg.kernel_sparse_fmt,
+    printf("        MasterCfg: En=%d (%s) Sparse=%d Reuse=%d\n",
+           k->master_cfg.master_enable, 
+           k->master_cfg.master_enable ? "Enabled" : "Disabled",
+           k->master_cfg.kernel_sparse_fmt,
            k->master_cfg.group_kernel_reuse);
   if (state->valid[(H16_KERNELDMA_START + 0x04) / 4])
     printf("        AlignedCoeffSize: 0x%08x\n", k->aligned_coeff_size_per_ch);
@@ -1177,8 +1219,10 @@ void print_kerneldmasrc_h16(const hwx_state_t *state) {
 
   for (int i = 0; i < 16; i++) {
     if (state->valid[(H16_KERNELDMA_START + 0x20) / 4 + i]) {
-      printf("        CoeffCfg[%d] : En=%d DSID=%u Tag=%u\n", i,
-             k->coeff_cfg[i].en, k->coeff_cfg[i].dataset_id,
+      printf("        CoeffCfg[%d] : En=%d (%s) DSID=%u Tag=%u\n", i,
+             k->coeff_cfg[i].en, 
+             k->coeff_cfg[i].en ? "Enabled" : "Disabled",
+             k->coeff_cfg[i].dataset_id,
              k->coeff_cfg[i].user_tag);
     }
   }
@@ -1209,9 +1253,11 @@ void print_cachedma_h16(const hwx_state_t *state) {
       *(ane_cachedma_h16_t *)&state->values[H16_CACHEDMA_START / 4];
   printf("        --- CacheDMASrc (0x5900) ---\n");
   if (state->valid[H16_CACHEDMA_START / 4]) {
-    printf("        Control: Flush=%d En=%d TaskSync=0x%x ET=0x%x FL=%d "
+    printf("        Control: Flush=%d En=%d (%s) TaskSync=0x%x ET=0x%x FL=%d "
            "Thresh=0x%04x\n",
-           cdma.control.flush, cdma.control.enable, cdma.control.task_sync,
+           cdma.control.flush, cdma.control.enable, 
+           cdma.control.enable ? "Enabled" : "Disabled",
+           cdma.control.task_sync,
            cdma.control.early_term, cdma.control.footprint_limiter,
            cdma.control.footprint_threshold);
   }

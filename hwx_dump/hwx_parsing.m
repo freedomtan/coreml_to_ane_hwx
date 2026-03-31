@@ -436,12 +436,32 @@ const char *get_ne_op_mode_name(uint32_t mode) {
   case 0: return "Conv";
   case 1: return "ElemWise";
   case 2: return "unknown";
-  case 3: return "EWSqr";
-  case 4: return "EWMult";
-  case 5: return "RCAS";
-  case 6: return "Bypass";
-  case 7: return "TransposedConv";
-  default: return "Invalid";
+    return "unknown";
+  case 3:
+    return "EWSqr";
+  case 4:
+    return "EWMult";
+  case 5:
+    return "RCAS";
+  case 6:
+    return "Bypass";
+  case 7:
+    return "TransposedConv";
+  default:
+    return "Invalid";
+  }
+}
+
+const char *get_hw_task_type_name(uint32_t type) {
+  switch (type) {
+    case 1: return "Pooling w/o input ReLU";
+    case 2: return "Pooling w/ input ReLU";
+    case 3: return "EW w/ Reduction w/o ReLU";
+    case 4: return "EW w/ Reduction w/ ReLU";
+    case 5: return "EW w/o Reduction w/o ReLU";
+    case 6: return "EW w/o Reduction w/ ReLU";
+    case 7: return "GOC";
+    default: return "Unknown";
   }
 }
 
@@ -662,11 +682,12 @@ void print_common_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_COMMON_START + 0x3C) / 4]) {
-    printf("        MacCfg    : ActiveNE=%u SmallSrc=%u TaskType=%u "
+    uint32_t tt = common.maccfg.task_type;
+    printf("        MacCfg    : TaskType=%u %s ActiveNE=%u SmallSrc=%u "
            "OutTrans=%d FillLowerNE=%d\n",
+           tt, (tt != 0) ? [[NSString stringWithFormat:@"(%s)", get_hw_task_type_name(tt)] UTF8String] : "((None))",
            common.maccfg.active_ne, common.maccfg.small_src_mode,
-           common.maccfg.task_type, common.maccfg.out_trans,
-           common.maccfg.fill_lower_ne);
+           common.maccfg.out_trans, common.maccfg.fill_lower_ne);
   }
 
   if (state->valid[(H16_COMMON_START + 0x40) / 4]) {
@@ -695,6 +716,13 @@ void print_common_h16(const hwx_state_t *state) {
     printf("        Val21     : 0x%08x\n", common.val_21);
   if (state->valid[(H16_COMMON_START + 0x58) / 4])
     printf("        Val22     : 0x%08x\n", common.val_22);
+
+  if (common.maccfg.task_type == 7) {
+    if (state->valid[(H16_COMMON_START + 0x80) / 4])
+      printf("        GocStrideX: %d\n", state->values[(H16_COMMON_START + 0x80) / 4]);
+    if (state->valid[(H16_COMMON_START + 0x84) / 4])
+      printf("        GocStrideY: %d\n", state->values[(H16_COMMON_START + 0x84) / 4]);
+  }
 }
 
 void print_ne_h16(const hwx_state_t *state) {
@@ -755,16 +783,37 @@ void print_ne_h16(const hwx_state_t *state) {
 }
 
 void print_pe_h16(const hwx_state_t *state) {
+  ane_common_h16_t common = *(ane_common_h16_t *)&state->values[H16_COMMON_START / 4];
+  uint32_t task_type = common.maccfg.task_type;
+
+  if (task_type == 0) {
+    return;
+  }
+
   ane_pe_h16_t pe = *(ane_pe_h16_t *)&state->values[H16_PE_START / 4];
+  
   printf("        --- Planar Engine (0x4500) ---\n");
 
-  if (state->valid[H16_PE_START / 4]) {
-    printf("        PE Config : Pool=%u (%s) Op=%u (%s) LutEn=%u Cond=%u RedIdx=%u "
-           "RedKeep=%u NLMode=%u Src1=%u Src2=%u\n",
-           pe.pe_cfg.pool_mode, get_pe_pool_mode_name_v17(pe.pe_cfg.pool_mode),
-           pe.pe_cfg.op, get_pe_op_mode_name_v17(pe.pe_cfg.op),
-           pe.pe_cfg.lut_en, pe.pe_cfg.cond, pe.pe_cfg.red_idx,
-           pe.pe_cfg.red_keep, pe.pe_cfg.nl_mode, pe.pe_cfg.src1,
+  if (task_type == 7) {
+    // GOC Mode: PE Cluster is bypassed. Look to Common PECfg (+0x240)
+    // Word 16 of common is PECfg (index 16, offset +0x40 in HW, +0x240 in Obj)
+    uint32_t pe_common_cfg = state->values[(H16_COMMON_START + 0x40) / 4];
+    printf("        PE Config (GOC) : Cond=%u CtoW=%u Src1Sel=%u Src2Sel=%u\n",
+           (pe_common_cfg >> 4) & 0x1F, // GOC Condition (bits 4-8)
+           (pe_common_cfg >> 10) & 1,   // CtoW Trigger (bit 10)
+           (pe_common_cfg >> 16) & 3,   // Src1 Selection
+           (pe_common_cfg >> 18) & 3);  // Src2 Selection
+  } else if (state->valid[H16_PE_START / 4]) {
+    // Arithmetic/Pooling Mode: Functional Cluster (0x454) is active
+    const char *pool_str = (task_type == 1 || task_type == 2) ? 
+                           get_pe_pool_mode_name_v17(pe.pe_cfg.pool_mode) : "None";
+    const char *op_str = (task_type >= 3 && task_type <= 6) ? 
+                         get_pe_op_mode_name_v17(pe.pe_cfg.op) : "None";
+                         
+    printf("        PE Config : Pool=%u (%s) Op=%u (%s) LutEn=%u NLMode=%u Src1=%u Src2=%u\n",
+           pe.pe_cfg.pool_mode, pool_str,
+           pe.pe_cfg.op, op_str,
+           pe.pe_cfg.lut_en, pe.pe_cfg.nl_mode, pe.pe_cfg.src1,
            pe.pe_cfg.src2);
   }
   if (state->valid[(H16_PE_START + 0x4) / 4])
@@ -832,7 +881,7 @@ void print_l2_h16(const hwx_state_t *state) {
     else if (l2->src1_cfg.dma_fmt == 1) fmt_str = "16b";
     else if (l2->src1_cfg.dma_fmt == 3) fmt_str = "32b";
 
-    printf("        L2_Src1Cfg: Type=%u(%s) Dep=%u DMAFmt=%u(%s) Intrlv=%u\n",
+    printf("        L2_Src1Cfg: Type=%u (%s) Dep=%u DMAFmt=%u (%s) Intrlv=%u\n",
            l2->src1_cfg.src_type, L2_TYPE_STR(l2->src1_cfg.src_type),
            l2->src1_cfg.dependent, l2->src1_cfg.dma_fmt,
            fmt_str, l2->src1_cfg.interleave);
@@ -848,7 +897,7 @@ void print_l2_h16(const hwx_state_t *state) {
     else if (l2->src2_cfg.dma_fmt == 1) fmt_str = "16b";
     else if (l2->src2_cfg.dma_fmt == 3) fmt_str = "32b";
 
-    printf("        L2_Src2Cfg: Type=%u(%s) Dep=%u DMAFmt=%u(%s) Intrlv=%u\n",
+    printf("        L2_Src2Cfg: Type=%u (%s) Dep=%u DMAFmt=%u (%s) Intrlv=%u\n",
            l2->src2_cfg.src_type, L2_TYPE_STR(l2->src2_cfg.src_type),
            l2->src2_cfg.dependent, l2->src2_cfg.dma_fmt,
            fmt_str, l2->src2_cfg.interleave);
@@ -864,7 +913,7 @@ void print_l2_h16(const hwx_state_t *state) {
     else if (l2->srcidx_cfg.dma_fmt == 1) fmt_str = "16b";
     else if (l2->srcidx_cfg.dma_fmt == 3) fmt_str = "32b";
 
-    printf("        L2_SrcIdxCfg: Type=%u(%s) Dep=%u DMAFmt=%u(%s) AliasConv(S=%d,R=%d)\n",
+    printf("        L2_SrcIdxCfg: Type=%u (%s) Dep=%u DMAFmt=%u (%s) AliasConv(S=%d,R=%d)\n",
            l2->srcidx_cfg.src_type, L2_TYPE_STR(l2->srcidx_cfg.src_type),
            l2->srcidx_cfg.dependent, l2->srcidx_cfg.dma_fmt,
            fmt_str, l2->srcidx_cfg.alias_conv_src, l2->srcidx_cfg.alias_conv_rslt);
@@ -900,7 +949,7 @@ void print_l2_h16(const hwx_state_t *state) {
     else if (l2->result_cfg.dma_fmt == 1) fmt_str = "16b";
     else if (l2->result_cfg.dma_fmt == 3) fmt_str = "32b";
 
-    printf("        L2_ResultCfg: Type=%u(%s) DMAFmt=%u(%s) Intrlv=%u Cmp=%u\n",
+    printf("        L2_ResultCfg: Type=%u (%s) DMAFmt=%u (%s) Intrlv=%u Cmp=%u\n",
            l2->result_cfg.res_type, L2_TYPE_STR(l2->result_cfg.res_type),
            l2->result_cfg.dma_fmt, fmt_str,
            l2->result_cfg.interleave, l2->result_cfg.compression);

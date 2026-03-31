@@ -337,12 +337,12 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4500** | `+0x454` | **Config** | **PoolMode**: 0-1 (0: Avg/None, 2: Max, 3: Min), **Op**: 2-4 (0: Add, 1: Mul, 2: Max, 3: Min, 4: SumSqr), **LUTEnable**: 5, **Cond**: 6-8, **ReductionResultIndex**: 9-10, **ReductionKeepDims**: 11, **NonLinearMode**: 12-13, **Src1Selection**: 16, **Src2Selection**: 18-19. |
-| **0x4504** | `+0x458` | **Bias** | 19-bit Floating Point (F19) bias value (Bits 0-18). |
-| **0x4508** | `+0x45c` | **Scale** | 19-bit Floating Point (F19) scale value (Bits 0-18). |
-| **0x450c** | `+0x460` | **FinalScaleEpsilon** | 19-bit Floating Point (F19) epsilon value (Bits 0-18). |
-| **0x4510** | `+0x464` | **PreScale** | 19-bit Floating Point (F19) pre-scale value (Bits 0-18). |
-| **0x4514** | `+0x468` | **FinalScale** | 19-bit Floating Point (F19) final scale value (Bits 0-18). |
+| **0x4500** | `+0x454` | **Config** | **PoolMode**: 0-1 (0: None, 1: Avg, 2: Max, 3: Min), **Op**: 2-4 (0: Add, 1: Mul, 2: Max, 3: Min, 4: SumSqr), **LUTEnable**: 5, **Cond**: 6-8, **ReductionKeepDims**: 11, **NLMode**: 12-13, **Src1Sel**: 16, **Src2Sel**: 18-19. |
+| **0x4504** | `+0x458` | **Bias** | 19-bit Floating Point (F19) bias value. |
+| **0x4508** | `+0x45c` | **Scale** | 19-bit Floating Point (F19) scale value. |
+| **0x450c** | `+0x460` | **FinalScaleEpsilon** | 19-bit Floating Point (F19) epsilon value. |
+| **0x4510** | `+0x464` | **PreScale** | 19-bit Floating Point (F19) pre-scale value. |
+| **0x4514** | `+0x468` | **FinalScale** | 19-bit Floating Point (F19) final scale value. |
 | **0x4518** | `+0x46c` | **LUT1** | Piecewise Linear LUT Parameter. |
 | **0x451c** | `+0x470` | **LUT2** | Piecewise Linear LUT Parameter. |
 | **0x4520** | `+0x474` | **LUT3** | Piecewise Linear LUT Parameter. |
@@ -351,7 +351,7 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 | **0x452c** | `+0x480` | **LUT6** | Piecewise Linear LUT Parameter. |
 | **0x4530** | `+0x484` | **LUT7** | Piecewise Linear LUT Parameter. |
 | **0x4534** | `+0x488` | **LUT8** | Piecewise Linear LUT Parameter. |
-| **0x4538** | `+0x48c` | **Quant** | **Src1InputOffset**: 0-7, **Src2InputOffset**: 8-15, **OutputZeroPoint**: 16-23. (Verified via binary) |
+| **0x4538** | `+0x48c` | **Quant** | **Src1InputOffset**: 0-7, **Src2InputOffset**: 8-15, **OutputZeroPoint**: 16-23. |
 
 ### Neural Engine (NE) (0x4900 block, Object `+0x498`)
 - **Count**: 12 registers (`0x0c` words, `0x30` bytes).

@@ -361,13 +361,13 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4900** | `+0x498` | **KernelCfg** | **Fmt**: 0-1, **SparseEn**: 8, **AsymQuantEn**: 24. |
-| **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0: Conv, 1: EW, 2: RCAS), **KernelMode**: 3, **BiasEn**: 4, **BinaryPoint**: 8-13, **PostScaleEn**: 14, **NonlinearMode**: 16-17, **DoubleInt8Enable**: 26. |
+| **0x4900** | `+0x498` | **KernelCfg** | **Fmt**: 0-1, **PalettizedEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **Reuse**: 10, **SparseBinary**: 15, **Align**: 16, **BlockSize**: 21-23, **AsymQuantEn**: 24. |
+| **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0:Conv, 1:EW, 2:RCAS, 3:EWSqrt, 4:Bypass, 5:Transconv), **KMode**: 3, **BiasEn**: 4, **PassEn**: 5, **MVBiasEn**: 6, **BinPoint**: 8-13, **PostEn**: 14, **NLMode**: 16-17, **MaxPoolEn**: 19, **ArgSel**: 20-23, **DoubleInt8En**: 26. |
 | **0x4908** | `+0x4a0` | **MatrixVectorBias**| **Bias**: 0-15. |
-| **0x490C** | `+0x4a4` | **NEBias** | **Bias**: 0-20. |
-| **0x4910** | `+0x4a8` | **NEPostScale** | **PostScale**: 0-20. |
+| **0x490C** | `+0x4a4` | **NEBias** | **BiasVal**: 0-15, **ExpIdx**: 16-20. |
+| **0x4910** | `+0x4a8` | **NEPostScale** | **ScaleVal**: 0-15, **ExpIdx**: 16-20 (Negated). |
 | **0x4914** | `+0x4ac` | **RcasConfig** | **KeyMask**: 0-7, **CmpBit**: 8-10, **Axis**: 12-13, **SenseBit**: 16-19, **Mode**: 20. |
-| **0x4918** | `+0x4b0` | **RoundModeCfg** | **Mode**: 0-2, **IntBits**: 4-8. |
+| **0x4918** | `+0x4b0` | **RoundModeCfg** | **Mode**: 0-1, **IntBits**: 4-8. |
 | **0x491C** | `+0x4b4` | **SRSeed0** | **Seed**: 0-31. |
 | **0x4920** | `+0x4b8` | **SRSeed1** | **Seed**: 0-31. |
 | **0x4924** | `+0x4bc" | **SRSeed2** | **Seed**: 0-31. |

@@ -433,22 +433,13 @@ const char *get_pe_pool_mode_name_v17(uint32_t mode) {
 
 const char *get_ne_op_mode_name(uint32_t mode) {
   switch (mode) {
-  case 0: return "Conv";
-  case 1: return "ElemWise";
-  case 2: return "unknown";
-    return "unknown";
-  case 3:
-    return "EWSqr";
-  case 4:
-    return "EWMult";
-  case 5:
-    return "RCAS";
-  case 6:
-    return "Bypass";
-  case 7:
-    return "TransposedConv";
-  default:
-    return "Invalid";
+    case 0: return "Conv";
+    case 1: return "ElemWise";
+    case 2: return "RCAS";
+    case 3: return "EWSqrt";
+    case 4: return "Bypass";
+    case 5: return "TransposedConv";
+    default: return "Unknown";
   }
 }
 
@@ -731,58 +722,71 @@ void print_ne_h16(const hwx_state_t *state) {
 
   if (state->valid[H16_NE_START / 4]) {
     uint32_t fmt = ne.kernel_cfg.kernel_fmt;
-    printf("        KernelCfg: Fmt=%u (%s) Palettized=%d (%dbit) SparseEn=%d "
-           "GroupKernelReuse=%d AlignmentFmt=%u "
-           "AsymQuant=%d\n",
+    printf("        KernelCfg: Fmt=%u (%s) Palettized=%d (%d-bit) Sparse=%d Binary=%d "
+           "Reuse=%d Align=%u BSize=%u AsymQuant=%d\n",
            fmt, get_ch_fmt_name(fmt),
            ne.kernel_cfg.palettized_en, ne.kernel_cfg.palettized_bits,
-           ne.kernel_cfg.sparse_en, ne.kernel_cfg.group_kernel_reuse,
-           ne.kernel_cfg.kernel_align_fmt, ne.kernel_cfg.asym_quant_en);
+           ne.kernel_cfg.sparse_en, ne.kernel_cfg.sparse_binary,
+           ne.kernel_cfg.group_kernel_reuse,
+           ne.kernel_cfg.kernel_align_fmt,
+           ne.kernel_cfg.sparse_block_size,
+           ne.kernel_cfg.asym_quant_en);
   }
 
   if (state->valid[(H16_NE_START + 0x4) / 4]) {
     uint32_t op_mode = ne.mac_cfg.op_mode;
-    printf("        MacCfg: OpMode=%u (%s) KernelMode=%d BiasEn=%d Passthrough=%d "
-           "MVBiasEn=%d BinaryPoint=%u PostScaleEn=%d NonLinear=%d\n"
-           "                PaddingMode=%d MaxPoolMode=%d "
-           "ArgOutputSelect=%d "
-           "DoubleInt8En=%d\n",
-           op_mode, get_ne_op_mode_name(op_mode), 
+    printf("        MacCfg: OpMode=%u (%s) KMode=%d BiasEn=%d PostScaleEn=%d BP=%u "
+           "NonLinear=%u MVBiasEn=%d MaxPoolEn=%d DoubleInt8En=%d\n",
+           op_mode, get_ne_op_mode_name(op_mode),
            ne.mac_cfg.kernel_mode,
-           ne.mac_cfg.ne_bias_en, ne.mac_cfg.passthrough_en,
-           ne.mac_cfg.matrix_bias_en, ne.mac_cfg.binary_point,
-           ne.mac_cfg.post_scale_en, ne.mac_cfg.non_linear_mode,
-           ne.mac_cfg.padding_mode, ne.mac_cfg.max_pool_mode,
-           ne.mac_cfg.arg_output_select, ne.mac_cfg.double_int8_en);
+           ne.mac_cfg.ne_bias_en, ne.mac_cfg.post_scale_en,
+           ne.mac_cfg.binary_point,
+           ne.mac_cfg.non_linear_mode,
+           ne.mac_cfg.matrix_bias_en,
+           ne.mac_cfg.max_pool_mode,
+           ne.mac_cfg.double_int8_en);
+    if (ne.mac_cfg.arg_output_select != 0) {
+      printf("                ArgOutputSelect: 0x%x\n", ne.mac_cfg.arg_output_select);
+    }
   }
 
-  if (state->valid[(H16_NE_START + 0x8) / 4])
+  if (state->valid[(H16_NE_START + 0x8) / 4]) {
     printf("        MatrixBias: 0x%04x\n", ne.matrix_bias.matrix_vector_bias);
-  if (state->valid[(H16_NE_START + 0x0c) / 4])
-    printf("        NEBias: 0x%06x\n", ne.ne_bias.val);
-  if (state->valid[(H16_NE_START + 0x10) / 4])
-    printf("        PostScale: 0x%06x\n", ne.post_scale.val);
+  }
+
+  if (state->valid[(H16_NE_START + 0x0c) / 4]) {
+    uint32_t val = ne.ne_bias.val;
+    printf("        NEBias    : 0x%06x (Exp=%d, Val=0x%04x)\n", 
+           val, (val >> 16) & 0x1F, val & 0xFFFF);
+  }
+
+  if (state->valid[(H16_NE_START + 0x10) / 4]) {
+    uint32_t val = ne.post_scale.val;
+    printf("        PostScale : 0x%06x (Exp=%d, Val=0x%04x)\n", 
+           val, (val >> 16) & 0x1F, val & 0xFFFF);
+  }
 
   if (state->valid[(H16_NE_START + 0x14) / 4]) {
-    printf("        RcasConfig: KeyMask=0x%02x CmpBit=%d SenseAxis=%d "
+    printf("        RCAS Config: KeyMask=0x%02x CmpBit=%d SenseAxis=%d "
            "SenseBit=%d Mode=%d\n",
            ne.rcas_cfg.key_mask, ne.rcas_cfg.cmp_bit, ne.rcas_cfg.sense_axis,
            ne.rcas_cfg.sense_bit, ne.rcas_cfg.mode);
   }
 
   if (state->valid[(H16_NE_START + 0x18) / 4]) {
-    printf("        RoundModeCfg: Mode=%d IntegerBits=%d\n",
+    printf("        RoundMode: Mode=%u IntBits=%u\n",
            ne.st_round_cfg.round_mode, ne.st_round_cfg.integer_bits);
   }
 
   if (state->valid[(H16_NE_START + 0x1c) / 4]) {
-    printf("        SRSeeds: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+    printf("        SRSeeds  : 0x%08x 0x%08x 0x%08x 0x%08x\n",
            ne.st_round_seed[0], ne.st_round_seed[1], ne.st_round_seed[2],
            ne.st_round_seed[3]);
   }
 
-  if (state->valid[(H16_NE_START + 0x2c) / 4])
-    printf("        QuantZeroPoint: %d\n", ne.quant.quant_zero_point);
+  if (state->valid[(H16_NE_START + 0x2c) / 4]) {
+    printf("        QuantZP  : %d\n", ne.quant.quant_zero_point);
+  }
 }
 
 void print_pe_h16(const hwx_state_t *state) {

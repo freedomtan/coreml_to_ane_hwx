@@ -626,8 +626,8 @@ void print_common_h16(const hwx_state_t *state) {
     const char *infmt_name = get_ch_fmt_name(common.ch_cfg.infmt);
     const char *src2fmt_name = get_ch_fmt_name(common.ch_cfg.src2infmt);
     printf("        InDim     : W=%u H=%u C=%u D=%u Type=%s (Src2Type=%s)\n",
-           common.inwidth, common.inheight, common.inchannels, common.indepth,
-           infmt_name, src2fmt_name);
+           common.inwidth, common.inheight, common.inchannels,
+           common.indepth, infmt_name, src2fmt_name);
   }
 
   if (state->valid[(H16_COMMON_START + 0x14) / 4] ||
@@ -635,8 +635,9 @@ void print_common_h16(const hwx_state_t *state) {
       state->valid[(H16_COMMON_START + 0x1C) / 4] ||
       state->valid[(H16_COMMON_START + 0x20) / 4]) {
     const char *outfmt_name = get_ch_fmt_name(common.ch_cfg.outfmt);
-    printf("        OutDim    : W=%u H=%u C=%u D=%u Type=%s\n", common.outwidth,
-           common.outheight, common.outchannels, common.outdepth, outfmt_name);
+    printf("        OutDim    : W=%u H=%u C=%u D=%u Type=%s\n",
+           common.outwidth, common.outheight, common.outchannels,
+           common.outdepth, outfmt_name);
   }
 
   if (state->valid[(H16_COMMON_START + 0x24) / 4]) {
@@ -644,10 +645,10 @@ void print_common_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_COMMON_START + 0x28) / 4]) {
-    printf("        ConvCfg   : K=%ux%u S=%ux%u P(left/top)=%ux%u\n",
+    printf("        ConvCfg   : K=%ux%u S=%ux%u P(left/top)=%ux%u O(x/y)=%ux%u\n",
            common.conv_cfg.kw, common.conv_cfg.kh, common.conv_cfg.sx,
            common.conv_cfg.sy, common.conv_cfg.pad_left,
-           common.conv_cfg.pad_top);
+           common.conv_cfg.pad_top, common.conv_cfg.ox, common.conv_cfg.oy);
   }
 
   if (state->valid[(H16_COMMON_START + 0x2C) / 4]) {
@@ -674,10 +675,10 @@ void print_common_h16(const hwx_state_t *state) {
 
   if (state->valid[(H16_COMMON_START + 0x3C) / 4]) {
     uint32_t tt = common.maccfg.task_type;
-    printf("        MacCfg    : TaskType=%u %s ActiveNE=%u SmallSrc=%u "
+    printf("        MacCfg    : TaskType=%u %s ActiveNE=%u ReluType=%u "
            "OutTrans=%d FillLowerNE=%d\n",
            tt, (tt != 0) ? [[NSString stringWithFormat:@"(%s)", get_hw_task_type_name(tt)] UTF8String] : "((None))",
-           common.maccfg.active_ne, common.maccfg.small_src_mode,
+           common.maccfg.active_ne, common.maccfg.relu_type,
            common.maccfg.out_trans, common.maccfg.fill_lower_ne);
   }
 

@@ -162,13 +162,13 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x0018** | `+0x210` | **OutHeight** | **Hout**: 0-16. |
 | **0x001C** | `+0x214` | **OutChannels** | **Cout**: 0-16. |
 | **0x0020** | `+0x218` | **OutDepth** | **Dout**: 0-16. |
-| **0x0024** | `+0x21c` | **NumGroups** | Batch size / Number of groups. |
+| **0x0024** | `+0x21c` | **NumGroups** | **NumGroups**: 0-16 (17 bits). |
 | **0x0028** | `+0x220` | **ConvCfg** | **KW**: 0-5, **KH**: 6-11, **SX**: 13-14, **SY**: 15-16, **PadLeft**: 17-21, **PadTop**: 22-26, **OX**: 28-29, **OY**: 30-31. |
 | **0x002C** | `+0x224` | **ConvCfg3d** | **3dKd**: 0-4, **3dSz**: 6-7, **3dPz**: 8-11, **3dOz**: 13-14. |
 | **0x0030** | `+0x228` | **UnicastCfg** | **UnicastEn**: 14, **UnicastCin**: 16-31. |
 | **0x0034** | `+0x22c` | **TileHeight** | **TileHeight**: 0-16. |
 | **0x0038** | `+0x230` | **TileOverlap** | **Overlap**: 16-20, **PadTop**: 21-25, **PadBottom**: 26-30. |
-| **0x003C** | `+0x234` | **MacCfg** | **SmallSrcMode**: 2-3, **TaskType**: 4-7 (1-2:Pool, 3-6:EW, 7:GOC; see TaskType table), **ActiveNE**: 19-21, **OutTranspose**: 28, **FillLowerNEFirst**: 29. (Verified via binary) |
+| **0x003C** | `+0x234` | **MacCfg** | **TaskType**: 4-7, **ActiveNE**: 19-21, **ReluType**: 24-27. (Verified via `SetCommonTaskType`, `SetCommonMacCfgActiveNE`, `SetCommonMacCfgReluType`). |
 | **0x0040** | `+0x238` | **NECfg** | **OCGSize**: 0-2 (1=16, 2=32, 4=64), **FatTileEnable**: 3, **WUStackLog2**: 4-5. |
 | **0x0044** | `+0x23c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
 | **0x0048** | `+0x240` | **PECfg** | **S1BR**: 0-3, **S2BR**: 4-7, **S1T**: 8, **S2T**: 9, **OutT**: 10. **GOC Metadata (H16)**: **GocCond**: 4-8, **GocOutputCtoW**: 10. (TaskType 7 context). |

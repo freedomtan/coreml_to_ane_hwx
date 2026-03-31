@@ -2,6 +2,8 @@
 #define ANE_HWX_REGS_H
 
 #import <Foundation/Foundation.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #define HWX_MAGIC 0xbeefface
 #define LC_ANE_MAPPED_REGION 0x40
@@ -136,27 +138,39 @@ typedef struct __attribute__((packed)) {
   } ch_cfg;
 
   // Word 1-8
-  uint32_t inwidth;     // Word 1 (0-16)
-  uint32_t inheight;    // Word 2
-  uint32_t inchannels;  // Word 3
-  uint32_t indepth;     // Word 4
-  uint32_t outwidth;    // Word 5
-  uint32_t outheight;   // Word 6
-  uint32_t outchannels; // Word 7
-  uint32_t outdepth;    // Word 8
+  uint32_t inwidth : 17;     // Word 1
+  uint32_t inwidth_pad : 15;
+  uint32_t inheight : 17;    // Word 2
+  uint32_t inheight_pad : 15;
+  uint32_t inchannels : 17;  // Word 3
+  uint32_t inchannels_pad : 15;
+  uint32_t indepth : 17;     // Word 4
+  uint32_t indepth_pad : 15;
+  uint32_t outwidth : 17;    // Word 5
+  uint32_t outwidth_pad : 15;
+  uint32_t outheight : 17;   // Word 6
+  uint32_t outheight_pad : 15;
+  uint32_t outchannels : 17; // Word 7
+  uint32_t outchannels_pad : 15;
+  uint32_t outdepth : 17;    // Word 8
+  uint32_t outdepth_pad : 15;
 
   // Word 9 (0x024)
-  uint32_t num_groups;
+  uint32_t num_groups : 17;
+  uint32_t num_groups_pad : 15;
 
   // Word 10 (0x028)
   struct {
     uint32_t kw : 6;       // [5:0] (H16: Kw-1)
     uint32_t kh : 6;       // [11:6] (H16: Kh-1)
-    uint32_t sx : 3;       // [14:12] (H16: Sx-1)
-    uint32_t sy : 3;       // [17:15] (H16: Sy-1)
-    uint32_t pad_left : 5; // [22:18]
-    uint32_t pad_top : 5;  // [27:23]
-    uint32_t pad0 : 4;
+    uint32_t pad0 : 1;     // [12]
+    uint32_t sx : 2;       // [14:13] (H16: Sx-1)
+    uint32_t sy : 2;       // [16:15] (H16: Sy-1)
+    uint32_t pad_left : 5; // [21:17]
+    uint32_t pad_top : 5;  // [26:22]
+    uint32_t pad1 : 1;     // [27]
+    uint32_t ox : 2;       // [29:28] (H16: Ox-1)
+    uint32_t oy : 2;       // [31:30] (H16: Oy-1)
   } conv_cfg;
 
   // Word 11 (0x02C)
@@ -177,10 +191,11 @@ typedef struct __attribute__((packed)) {
   } unicast_cfg;
 
   // Word 13 (0x034)
-  uint32_t tile_height;
+  uint32_t tile_height : 17;
+  uint32_t tile_height_pad : 15;
 
   // Word 14 (0x038)
-  struct {
+  struct tile_overlap_h16_s {
     uint32_t pad0 : 16;      // [15:0]
     uint32_t overlap : 5;    // [20:16]
     uint32_t pad_top : 5;    // [25:21]
@@ -189,20 +204,20 @@ typedef struct __attribute__((packed)) {
   } tile_overlap;
 
   // Word 15 (0x03C)
-  struct {
-    uint32_t pad0 : 2;
-    uint32_t small_src_mode : 2; // [3:2]
+  struct maccfg_h16_s {
+    uint32_t pad0 : 4;
     uint32_t task_type : 4;       // [7:4]
     uint32_t pad1 : 11;
     uint32_t active_ne : 3;       // [21:19]
-    uint32_t pad2 : 6;
+    uint32_t pad2 : 2;            // [23:22]
+    uint32_t relu_type : 4;       // [27:24]
     uint32_t out_trans : 1;       // [28] (Verified via binary)
     uint32_t fill_lower_ne : 1;   // [29]
     uint32_t pad4 : 2;
   } maccfg;
 
   // Word 16 (0x40)
-  struct {
+  struct ne_cfg_h16_s {
     uint32_t ocg_size : 3;        // [2:0]
     uint32_t fat_tile_en : 1;     // [3]
     uint32_t wustack_log2 : 2;    // [5:4]
@@ -210,14 +225,14 @@ typedef struct __attribute__((packed)) {
   } ne_cfg;
 
   // Word 17 (0x044)
-  struct {
+  struct patch_cfg_h16_s {
     uint32_t patch_width : 4;
     uint32_t patch_height : 5;
     uint32_t pad0 : 23;
   } patch_cfg;
 
   // Word 18 (0x048)
-  struct {
+  struct pe_cfg_common_h16_s {
     uint32_t src1_br : 4;   // [3:0] (W:0, H:1, D:2, C:3)
     uint32_t src2_br : 4;   // [7:4] (W:4, H:5, D:6, C:7)
     uint32_t src1_trans : 1; // [8]

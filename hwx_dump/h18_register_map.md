@@ -34,7 +34,7 @@ Exhaustive row-by-row mapping for H18 (A19).
 | **0x0030** | 12| `+0x258` | **UnicastCin** | |
 | **0x0034** | 13| `+0x25c` | **TileHeight** | 0-16. |
 | **0x0038** | 14| `+0x260` | **TileOverlap** | **Overlap**: 16-20, **PadTop**: 21-25, **PadBottom**: 26-30, **Reflect**: 31. |
-| **0x003C** | 15| `+0x264` | **Sync_Pads** | |
+| **0x003C** | 15| `+0x264` | **PerfCfg** | |
 | **0x0040** | 16| `+0x268` | **Sync_Pads2** | |
 | **0x0044** | 17| `+0x26c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
 | **0x0048** | 18| `+0x270` | **NECfg** | **TaskType**: 4-7. |
@@ -45,52 +45,74 @@ Exhaustive row-by-row mapping for H18 (A19).
 
 ## L2 Cache (0x4100)
 - **Count**: 43 registers (`0x2b` words, `0xac` bytes).
-- **Object Layout**: Starts at `+0x3d4` of the `ZinAneTd` object.
+- **Object Layout**: Starts at `+0x3d8` of the `ZinAneTd` object.
 | HW Addr | Index | ZinOffset | Name |
 | :--- | :---: | :--- | :--- |
-| **0x4100** | 0 | `+0x3d4` | **Control** |
-| **0x4104** | 1 | `+0x3d8` | **MirrorWord_1** |
-| **0x4108** | 2 | `+0x3dc` | **MirrorWord_2** |
-| **0x410C** | 3 | `+0x3e0` | **MirrorWord_3** |
-| **0x4110** | 4 | `+0x3e4` | **Src1ChannelStride** |
-| **0x4114** | 5 | `+0x3e8` | **Src1RowStride** |
-| **0x4118** | 6 | `+0x3ec` | **Src1DepthStride** |
-| **0x411C** | 7 | `+0x3f0` | **Src1GroupStride** |
-| **0x4120** | 8 | `+0x3f4` | **Src1PlaneStride** |
-| **0x4124** | 9 | `+0x3f8` | **Src2ChannelStride** |
-| **0x4128** | 10| `+0x3fc` | **Src2RowStride** |
-| **0x412C** | 11| `+0x400` | **Src2DepthStride** |
-| **0x4130** | 12| `+0x404` | **Src2GroupStride** |
-| **0x4134** | 13| `+0x408` | **SrcIdxBaseAddr** |
-| **0x413C** | 15| `+0x410` | **SrcIdxChannelStride** |
-| **0x4140** | 16| `+0x414` | **SrcIdxDepthStride** |
-| **0x4144** | 17| `+0x418` | **Config** |
-| **0x414C** | 19| `+0x420` | **ResultBaseAddr** |
-| **0x4150** | 20| `+0x424` | **ResultChannelStride** |
-| **0x4154** | 21| `+0x428` | **ResultRowStride** |
-| **0x4158** | 22| `+0x42c` | **ResultDepthStride** |
+| **0x4100** | 0 | `+0x3d8` | **Control** |
+| **0x4104** | 1 | `+0x3dc` | **MirrorWord_1** |
+| **0x4108** | 2 | `+0x3e0` | **MirrorWord_2** |
+| **0x410C** | 3 | `+0x3e4` | **MirrorWord_3** |
+| **0x4110** | 4 | `+0x3e8` | **Src1ChannelStride** |
+| **0x4114** | 5 | `+0x3ec` | **Src1RowStride** |
+| **0x4118** | 6 | `+0x3f0` | **Src1DepthStride** |
+| **0x411C** | 7 | `+0x3f4` | **Src1BaseAddr** |
+| **0x4120** | 8 | `+0x3f8` | **Src1GroupStride** |
+| **0x4124** | 9 | `+0x3fc` | **Src2ChannelStride** |
+| **0x4128** | 10| `+0x400` | **Src2RowStride** |
+| **0x412C** | 11| `+0x404` | **Src2DepthStride** |
+| **0x4130** | 12| `+0x408` | **Src2GroupStride** |
+| **0x4134** | 13| `+0x40c` | **SrcIdxBaseAddr** |
+| **0x4138** | 14| `+0x410` | **SrcIdxBaseAddrHi?** |
+| **0x413C** | 15| `+0x414` | **SrcIdxChannelStride** |
+| **0x4140** | 16| `+0x418` | **SrcIdxDepthStride** |
+| **0x4144** | 17| `+0x41c` | **Config** |
+| **0x4148** | 18| `+0x420` | **ResultBaseAddr** |
+| **0x414C** | 19| `+0x424` | **ResultChannelStride** |
+| **0x4150** | 20| `+0x428` | **ResultRowStride** |
+| **0x4154** | 21| `+0x42c` | **ResultDepthStride** |
+| **0x4158** | 22| `+0x430` | **ResultGroupStride** |
+| **0x415C** | 23| `+0x434` | **LW_W23_Res** | |
+| **0x4160** | 24| `+0x438` | **LW_W24_Res** | |
+| **0x4164** | 25| `+0x43c` | **LW_W25_Res** | |
+| **0x4168** | 26| `+0x440` | **LW_W26_Res** | |
+| **0x416C** | 27| `+0x444` | **LW_W27_Res** | |
+| **0x4170** | 28| `+0x448` | **LW_W28_Res** | |
+| **0x4174** | 29| `+0x44c` | **LW_W29_Res** | |
+| **0x4178** | 30| `+0x450` | **LW_W30_Res** | |
+| **0x417C** | 31| `+0x454` | **LW_W31_Res** | |
+| **0x4180** | 32| `+0x458` | **LW_W32_Res** | |
+| **0x4184** | 33| `+0x45c` | **LW_W33_Res** | |
+| **0x4188** | 34| `+0x460` | **LW_W34_Res** | |
+| **0x418C** | 35| `+0x464` | **LW_W35_Res** | |
+| **0x4190** | 36| `+0x468` | **LW_W36_Res** | |
+| **0x4194** | 37| `+0x46c` | **LW_W37_Res** | |
+| **0x4198** | 38| `+0x470` | **LW_W38_Res** | |
+| **0x419C** | 39| `+0x474` | **LW_W39_Res** | |
+| **0x41A0** | 40| `+0x478` | **LW_W40_Res** | |
+| **0x41A4** | 41| `+0x47c` | **LW_W41_Res** | |
+| **0x41A8** | 42| `+0x480` | **L2TraceCfg** |
 
 ## Planar Engine (PE) (0x4500)
 - **Count**: 16 registers (`0x10` words, `0x40` bytes).
 - **Object Layout**: Starts at `+0x48c` of the `ZinAneTd` object.
 | HW Addr | Index | ZinOffset | Name | Bits |
 | :--- | :---: | :--- | :--- | :--- |
-| **0x4500** | 0 | `+0x42c` | **Config** | **OpMode**: 2-4, **FirstSource**: 16-18, **SecondSource**: 19-21. |
-| **0x4504** | 1 | `+0x430` | **Bias** | |
-| **0x4508** | 2 | `+0x434` | **Scale** | |
-| **0x450C** | 3 | `+0x438` | **FinalScaleEps** | |
-| **0x4510** | 4 | `+0x43c` | **PreScale** | |
-| **0x4514** | 5 | `+0x440` | **FinalScale** | |
-| **0x4518** | 6 | `+0x444` | **LUT1** | |
-| **0x451C** | 7 | `+0x448` | **LUT2** | |
-| **0x4520** | 8 | `+0x44c` | **LUT3** | |
-| **0x4524** | 9 | `+0x450` | **LUT4** | |
-| **0x4528** | 10| `+0x454` | **LUT5** | |
-| **0x452C** | 11| `+0x458` | **LUT6** | |
-| **0x4530** | 12| `+0x45c` | **LUT7** | |
-| **0x4534** | 13| `+0x460` | **LUT8** | |
-| **0x4538** | 14| `+0x464` | **Quant** | |
-| **0x453C** | 15| `+0x468` | **ExtraCfg** | |
+| **0x4500** | 0 | `+0x48c` | **Config** | **OpMode**: 2-4, **FirstSource**: 16-18, **SecondSource**: 19-21. |
+| **0x4504** | 1 | `+0x490` | **Bias** | |
+| **0x4508** | 2 | `+0x494` | **Scale** | |
+| **0x450C** | 3 | `+0x498` | **FinalScaleEps** | |
+| **0x4510** | 4 | `+0x49c` | **PreScale** | |
+| **0x4514** | 5 | `+0x4a0` | **FinalScale** | |
+| **0x4518** | 6 | `+0x4a4` | **LUT1** | |
+| **0x451C** | 7 | `+0x4a8` | **LUT2** | |
+| **0x4520** | 8 | `+0x4ac` | **LUT3** | |
+| **0x4524** | 9 | `+0x4b0` | **LUT4** | |
+| **0x4528** | 10| `+0x4b4` | **LUT5** | |
+| **0x452C** | 11| `+0x4b8` | **LUT6** | |
+| **0x4530** | 12| `+0x4bc` | **LUT7** | |
+| **0x4534** | 13| `+0x4c0` | **LUT8** | |
+| **0x4538** | 14| `+0x4c4` | **Quant** | |
+| **0x453C** | 15| `+0x4c8` | **PETraceCfg** | |
 
 ## Neural Engine (NE) (0x4900)
 - **Base Offset**: `+0x4d4` (relative to ZinAneTd base).
@@ -110,7 +132,7 @@ Exhaustive row-by-row mapping for H18 (A19).
 | **0x4924** | 9 | `+0x4f8` | **SRSeed2** | |
 | **0x4928** | 10| `+0x4fc` | **SRSeed3** | |
 | **0x492C** | 11| `+0x500` | **QuantZeroPoint** | |
-| **0x4930** | 12| `+0x504` | **ExtraCfg** | |
+| **0x4930** | 12| `+0x504` | **NETraceCfg** | |
 
 ## TileDMA Source (TileDmaSrc) (0x4D00)
 - **Base Offset**: `+0x2ac` (relative to ZinAneTd base).
@@ -187,7 +209,7 @@ Exhaustive row-by-row mapping for H18 (A19).
 | **0x4E08** | 66| `+0x3b4` | **Src2W66_Res** |
 | **0x4E0C** | 67| `+0x3b8` | **Src2W67_Res** |
 | **0x4E10** | 68| `+0x3bc` | **Src2W68_Res** |
-| **0x4E14** | 69| `+0x3c0` | **Src2W69_Res** |
+| **0x4E14** | 69| `+0x3c0` | **TileDmaSrcTraceCfg** |
 | **0x4E18** | 70| `+0x3c4` | **Src2W70_Res** |
 | **0x4E1C** | 71| `+0x3c8` | **Src2W71_Res** |
 | **0x4E20** | 72| `+0x3cc` | **Src2W72_Res** |

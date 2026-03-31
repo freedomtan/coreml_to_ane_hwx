@@ -37,7 +37,7 @@ Exhaustive row-by-row mapping for H17 (A18).
 | **0x003C** | 15| `+0x234` | **TileOverlap** | |
 | **0x0040** | 16| `+0x238` | **MirrorWord_16** | |
 | **0x0044** | 17| `+0x23c` | **MirrorWord_17** | |
-| **0x0048** | 18| `+0x240` | **NECfg** | **TaskType**: 4-7. |
+| **0x0048** | 18| `+0x240` | **NECfg** | **TaskType**: 4-7, **PerfTraceEn**: 22. |
 | **0x004C** | 19| `+0x244` | **MirrorWord_19** | |
 | **0x0050** | 20| `+0x248` | **MirrorWord_20** | |
 | **0x0054** | 21| `+0x24c` | **MirrorWord_21** | |
@@ -89,7 +89,7 @@ Exhaustive row-by-row mapping for H17 (A18).
 | **0x4198** | 38 | `+0x454` | **LW38_Res** | |
 | **0x419C** | 39 | `+0x458` | **LW39_Res** | |
 | **0x41A0** | 40 | `+0x45c` | **LW40_Res** | |
-| **0x41A4** | 41 | `+0x460` | **LW41_Res** | |
+| **0x41A4** | 41 | `+0x460` | **L2TraceCfg** | |
 
 
 ## Planar Engine (PE) (0x4500)
@@ -207,7 +207,7 @@ Exhaustive row-by-row mapping for H17 (A18).
 | **0x4E10** | 68| `+0x3a0` | **Src2W68_Res** |
 | **0x4E14** | 69| `+0x3a4` | **Src2W69_Res** |
 | **0x4E18** | 70| `+0x3a8` | **Src2W70_Res** |
-| **0x4E1C** | 71| `+0x3ac` | **Src2W71_Res** |
+| **0x4E1C** | 71| `+0x3ac` | **TileDmaSrcTraceCfg** |
 | **0x4E20** | 72| `+0x3b0` | **Src2W72_Res** |
 | **0x4E24** | 73| `+0x3b4` | **Src2W73_Res** |
 | **0x4E28** | 74| `+0x3b8` | **Src2W74_Res** |
@@ -386,4 +386,10 @@ The compiler maintains a set of statically defined traits for the H17 architectu
 | ANE_TILE_DMA_SRC_DEPTH_STRIDE2_OFFSET | 0x4D38 | Source 2 | Depth |
 | ANE_TILE_DMA_SRC_GROUP_STRIDE2_OFFSET | 0x4D3C | Source 2 | Group |
 | ANE_TILE_DMA_DST_ROW_STRIDE_OFFSET | 0x5110 | Destination | Row |
+
+## Standalone Performance Tracer Registers
+| HW Addr | Index | ZinOffset | Name | Note |
+| :--- | :---: | :--- | :--- | :--- |
+| **0x5D00** | -- | `+0x4a8` | **PETraceCfg** | Found via HandlesPerfTracerConfig disassembly |
+| **0x5D04** | -- | `+0x4e4` | **NETraceCfg** | Found via HandlesPerfTracerConfig disassembly |
 

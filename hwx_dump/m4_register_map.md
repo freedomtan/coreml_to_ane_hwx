@@ -168,12 +168,14 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x0030** | `+0x228` | **UnicastCfg** | **UnicastEn**: 14, **UnicastCin**: 16-31. |
 | **0x0034** | `+0x22c` | **TileHeight** | **TileHeight**: 0-16. |
 | **0x0038** | `+0x230` | **TileOverlap** | **Overlap**: 16-20, **PadTop**: 21-25, **PadBottom**: 26-30. |
-| **0x003C** | `+0x234` | **MacCfg** | **SmallSrcMode**: 2-3, **TaskType**: 4-7, **ActiveNE**: 19-21, **OutTranspose**: 28, **FillLowerNEFirst**: 29. (Verified via binary) |
+| **0x003C** | `+0x234` | **MacCfg** | **SmallSrcMode**: 2-3, **TaskType**: 4-7 (1-2:Pool, 3-6:EW, 7:GOC; see TaskType table), **ActiveNE**: 19-21, **OutTranspose**: 28, **FillLowerNEFirst**: 29. (Verified via binary) |
 | **0x0040** | `+0x238` | **NECfg** | **OCGSize**: 0-2 (1=16, 2=32, 4=64), **FatTileEnable**: 3, **WUStackLog2**: 4-5. |
 | **0x0044** | `+0x23c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
-| **0x0048** | `+0x240` | **PECfg** | **Src1Broadcast**: 0-3 (W:0, H:1, D:2, C:3), **Src2Broadcast**: 4-7 (W:4, H:5, D:6, C:7), **Src1Transpose**: 8, **Src2Transpose**: 9, **OutputTranspose**: 10. (Verified via binary) |
+| **0x0048** | `+0x240` | **PECfg** | **S1BR**: 0-3, **S2BR**: 4-7, **S1T**: 8, **S2T**: 9, **OutT**: 10. **GOC Metadata (H16)**: **GocCond**: 4-8, **GocOutputCtoW**: 10. (TaskType 7 context). |
 | **0x004C** | `+0x244` | **NID** | Network ID / Layer Trace ID. |
 | **0x0050** | `+0x248` | **DPE** | Distributed Processing Element config. |
+| **0x0080** | `+0x278` | **GocStrideX** | **StrideX**: 0-31. (Relocated in H16). |
+| **0x0084** | `+0x27c` | **GocStrideY** | **StrideY**: 0-31. (Relocated in H16). |
 
 *Note: M4 drops `ChannelDmaLength` and several M1 properties. E4M3Overflow and TextureBypassFilter are explicitly unsupported in the binary.*
 
@@ -337,7 +339,7 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4500** | `+0x454` | **Config** | **PoolMode**: 0-1 (0: None, 1: Avg, 2: Max, 3: Min), **Op**: 2-4 (0: Add, 1: Mul, 2: Max, 3: Min, 4: SumSqr), **LUTEnable**: 5, **Cond**: 6-8, **ReductionKeepDims**: 11, **NLMode**: 12-13, **Src1Sel**: 16, **Src2Sel**: 18-19. |
+| **0x4500** | `+0x454` | **Config** | **PoolMode**: 0-1 (0: None, 1: Avg, 2: Max, 3: Min), **Op**: 4-8 (0: Add, 1: Mul, 2: Max, 3: Min, 4: SumSqr), **LUTEnable**: 2, **NLMode**: 12-13, **Src1Sel**: 16, **Src2Sel**: 18-19. (Note: GOC Cond/CtoW Relocated to 0x240 in H16). |
 | **0x4504** | `+0x458` | **Bias** | 19-bit Floating Point (F19) bias value. |
 | **0x4508** | `+0x45c` | **Scale** | 19-bit Floating Point (F19) scale value. |
 | **0x450c** | `+0x460` | **FinalScaleEpsilon** | 19-bit Floating Point (F19) epsilon value. |
@@ -359,16 +361,16 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4900** | `+0x498` | **KernelCfg** | **KernelFmt**: 0-1, **PalEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **GroupKernelReuse**: 10, **SparseBinary**: 15, **KernelAlignmentFormat**: 16, **SparseBlockSize**: 21-23, **AsymQuantEn**: 24. (Verified via binary) |
-| **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0: Conv, 1: ElemWise, 2: RCAS, 3: unknown, 4: Bypass, 5: TransposedConv), **KernelMode**: 3, **BiasEnable**: 4, **PassthroughEnable**: 5, **MatrixVectorBiasEnable**: 6, **BinaryPoint**: 8-13, **PostScaleEnable**: 14, **NonlinearMode**: 16-17, **MaxPoolMode**: 19, **ArgOutputSelect**: 20-23, **DoubleInt8Enable**: 26. (Verified via binary) |
-| **0x4908** | `+0x4a0` | **MatrixVectorBias**| **Bias**: 0-15. (Verified via `SetNEMatrixVectorBias`) |
-| **0x490C** | `+0x4a4` | **NEBias** | **Bias**: 0-20. (Verified via `SetNEBias`) |
-| **0x4910** | `+0x4a8` | **NEPostScale** | **PostScale**: 0-20. (Verified via `SetNEPostScale`) |
-| **0x4914** | `+0x4ac` | **RcasConfig** | **KeyMask**: 0-7, **CmpBit**: 8-10, **SenseAxis**: 12-13, **SenseBit**: 16-19, **RcasMode**: 20. |
-| **0x4918** | `+0x4b0` | **RoundModeCfg** | **StochasticRoundMode**: 0-2, **StochasticRoundIntegerBits**: 4-8. (Verified via binary) |
-| **0x491C** | `+0x4b4` | **SRSeed0** | **Seed**: 0-31. (Verified via `SetStochasticRoundSeed`) |
+| **0x4900** | `+0x498` | **KernelCfg** | **Fmt**: 0-1, **SparseEn**: 8, **AsymQuantEn**: 24. |
+| **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0: Conv, 1: EW, 2: RCAS), **KernelMode**: 3, **BiasEn**: 4, **BinaryPoint**: 8-13, **PostScaleEn**: 14, **NonlinearMode**: 16-17, **DoubleInt8Enable**: 26. |
+| **0x4908** | `+0x4a0` | **MatrixVectorBias**| **Bias**: 0-15. |
+| **0x490C** | `+0x4a4` | **NEBias** | **Bias**: 0-20. |
+| **0x4910** | `+0x4a8` | **NEPostScale** | **PostScale**: 0-20. |
+| **0x4914** | `+0x4ac` | **RcasConfig** | **KeyMask**: 0-7, **CmpBit**: 8-10, **Axis**: 12-13, **SenseBit**: 16-19, **Mode**: 20. |
+| **0x4918** | `+0x4b0` | **RoundModeCfg** | **Mode**: 0-2, **IntBits**: 4-8. |
+| **0x491C** | `+0x4b4` | **SRSeed0** | **Seed**: 0-31. |
 | **0x4920** | `+0x4b8` | **SRSeed1** | **Seed**: 0-31. |
-| **0x4924** | `+0x4bc` | **SRSeed2** | **Seed**: 0-31. |
+| **0x4924** | `+0x4bc" | **SRSeed2** | **Seed**: 0-31. |
 | **0x4928** | `+0x4c0` | **SRSeed3** | **Seed**: 0-31. |
 | **0x492C** | `+0x4c4` | **QuantZeroPoint** | **ZeroPoint**: 0-7. |
 

@@ -730,22 +730,25 @@ void print_ne_h16(const hwx_state_t *state) {
   printf("        --- Neural Engine (0x4900) ---\n");
 
   if (state->valid[H16_NE_START / 4]) {
-    printf("        KernelCfg: Fmt=%s Palettized=%d (%dbit) SparseEn=%d "
-           "GroupKernelReuse=%d AlignmentFmt=%d "
+    uint32_t fmt = ne.kernel_cfg.kernel_fmt;
+    printf("        KernelCfg: Fmt=%u (%s) Palettized=%d (%dbit) SparseEn=%d "
+           "GroupKernelReuse=%d AlignmentFmt=%u "
            "AsymQuant=%d\n",
-           get_ch_fmt_name(ne.kernel_cfg.kernel_fmt),
+           fmt, get_ch_fmt_name(fmt),
            ne.kernel_cfg.palettized_en, ne.kernel_cfg.palettized_bits,
            ne.kernel_cfg.sparse_en, ne.kernel_cfg.group_kernel_reuse,
            ne.kernel_cfg.kernel_align_fmt, ne.kernel_cfg.asym_quant_en);
   }
 
   if (state->valid[(H16_NE_START + 0x4) / 4]) {
-    printf("        MacCfg: OpMode=%s KernelMode=%d BiasEn=%d Passthrough=%d "
+    uint32_t op_mode = ne.mac_cfg.op_mode;
+    printf("        MacCfg: OpMode=%u (%s) KernelMode=%d BiasEn=%d Passthrough=%d "
            "MVBiasEn=%d BinaryPoint=%u PostScaleEn=%d NonLinear=%d\n"
            "                PaddingMode=%d MaxPoolMode=%d "
            "ArgOutputSelect=%d "
            "DoubleInt8En=%d\n",
-           get_ne_op_mode_name(ne.mac_cfg.op_mode), ne.mac_cfg.kernel_mode,
+           op_mode, get_ne_op_mode_name(op_mode), 
+           ne.mac_cfg.kernel_mode,
            ne.mac_cfg.ne_bias_en, ne.mac_cfg.passthrough_en,
            ne.mac_cfg.matrix_bias_en, ne.mac_cfg.binary_point,
            ne.mac_cfg.post_scale_en, ne.mac_cfg.non_linear_mode,

@@ -171,7 +171,7 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x003C** | `+0x234` | **MacCfg** | **TaskType**: 4-7, **ActiveNE**: 19-21, **ReluType**: 24-27. (Verified via `SetCommonTaskType`, `SetCommonMacCfgActiveNE`, `SetCommonMacCfgReluType`). |
 | **0x0040** | `+0x238` | **NECfg** | **OCGSize**: 0-2 (1=16, 2=32, 4=64), **FatTileEnable**: 3, **WUStackLog2**: 4-5. |
 | **0x0044** | `+0x23c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
-| **0x0048** | `+0x240` | **PECfg** | **S1BR**: 0-3, **S2BR**: 4-7, **S1T**: 8, **S2T**: 9, **OutT**: 10. **GOC Metadata (H16)**: **GocCond**: 4-8, **GocOutputCtoW**: 10. (TaskType 7 context). |
+| **0x0048** | `+0x240` | **PECfg** | **S1BR**: 0-3, **S2BR**: 4-7, **S1T**: 8-9, **S2T**: 10-11, **OutT**: 12-13, **ActiveNE**: 19-21, **PowerGate**: 22-23. (Planar Engine Metadata). |
 | **0x004C** | `+0x244` | **NID** | Network ID / Layer Trace ID. |
 | **0x0050** | `+0x248` | **DPE** | Distributed Processing Element config. |
 | **0x0080** | `+0x278` | **GocStrideX** | **StrideX**: 0-31. (Relocated in H16). |

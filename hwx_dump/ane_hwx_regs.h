@@ -233,12 +233,15 @@ typedef struct __attribute__((packed)) {
 
   // Word 18 (0x048)
   struct pe_cfg_common_h16_s {
-    uint32_t src1_br : 4;   // [3:0] (W:0, H:1, D:2, C:3)
-    uint32_t src2_br : 4;   // [7:4] (W:4, H:5, D:6, C:7)
-    uint32_t src1_trans : 1; // [8]
-    uint32_t src2_trans : 1; // [9]
-    uint32_t out_trans : 1;  // [10] (Verified via binary)
-    uint32_t pad0 : 21;
+    uint32_t s1br : 4;       // [3:0]
+    uint32_t s2br : 4;       // [7:4]
+    uint32_t s1t : 2;        // [9:8] (Source 1 Type)
+    uint32_t s2t : 2;        // [11:10] (Source 2 Type)
+    uint32_t out_t : 2;      // [13:12] (Output Type)
+    uint32_t pad0 : 5;       // [18:14]
+    uint32_t active_ne : 3;  // [21:19] (Planar Cluster ActiveNE)
+    uint32_t power_gate : 2; // [23:22]
+    uint32_t pad1 : 8;       // [31:24]
   } pe_cfg; // Word 18 (0x048)
 
   uint32_t nid;    // 0x04C (Word 19)

@@ -694,10 +694,11 @@ void print_common_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_COMMON_START + 0x48) / 4]) {
-    printf("        PECfg     : S1BR=%d S2BR=%d S1T=%d S2T=%d OutTrans=%d\n",
-           common.pe_cfg.src1_br, common.pe_cfg.src2_br,
-           common.pe_cfg.src1_trans, common.pe_cfg.src2_trans,
-           common.pe_cfg.out_trans);
+    printf("        PECfg     : S1BR=%d S2BR=%d S1T=%d S2T=%d OutT=%d ActiveNE=%d PG=%d\n",
+           common.pe_cfg.s1br, common.pe_cfg.s2br,
+           common.pe_cfg.s1t, common.pe_cfg.s2t,
+           common.pe_cfg.out_t, common.pe_cfg.active_ne,
+           common.pe_cfg.power_gate);
   }
 
   if (state->valid[(H16_COMMON_START + 0x4C) / 4])

@@ -340,12 +340,12 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
 | **0x4500** | `+0x454` | **PE.Config** (`0x4500`)
-  - [0:1] **PoolMode**: 0: None, 1: Avg, 2: Max, 3: Min
-  - [2:4] **Operation**: 0: Add, 1: Mul, 2: Max, 3: Min, 4: SumSqr
-  - [6:8] **Condition**: 0: Always, 1: Le (LessEqual), 2: Lt (LessThan), 3: False, 4: Ge (GreaterEqual), 5: Gt (GreaterThan), 6: Ne (NotEqual), 7: Eq (Equal)
+  - [0:1] **PoolMode**: 0: None, 1: Pool, 2: Max, 3: Avg
+  - [2:4] **Operation**: 0: Addition, 1: Multiplication, 2: Minimum, 3: Maximum, 4: Subtraction
+  - [6:8] **Condition**: 0: Equal, 1: NotEqual, 2: LessThan, 3: LessEqual, 4: GreaterEqual, 5: GreaterThan
   - [12:13] **NLMode**: 0: None, 1: ReLU, 2: Clamp, 3: Abs
-  - [16] **Src1Sel**: 0: Reg, 1: Primary
-  - [18:19] **Src2Sel**: 0: None, 1: L2, 2: Texture, 3: PE/Output |
+  - [16] **Src1Sel**: 0: PrimarySource, 1: TextureSource
+  - [18:19] **Src2Sel**: 0: PrimarySource, 1: TextureSource, 2: L2Source, 3: RegSource |
 | **0x4504** | `+0x458` | **Bias** | 19-bit Floating Point (F19) bias value. |
 | **0x4508** | `+0x45c` | **Scale** | 19-bit Floating Point (F19) scale value. |
 | **0x450c** | `+0x460` | **FinalScaleEpsilon** | 19-bit Floating Point (F19) epsilon value. |

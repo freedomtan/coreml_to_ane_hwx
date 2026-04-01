@@ -413,65 +413,42 @@ const char *get_l2_dma_fmt_name(uint32_t fmt) {
 
 const char *get_pe_op_mode_name_v17(uint32_t op) {
   switch (op) {
-  case 0: return "Add";
-  case 1: return "Mul";
-  case 2: return "Max";
-  case 3: return "Min";
-  case 4: return "SumSqr";
-  default: return "??";
+    case 0: return "Addition";
+    case 1: return "Multiplication";
+    case 2: return "Minimum";
+    case 3: return "Maximum";
+    case 4: return "Subtraction";
+    default: return "Unknown";
   }
 }
 
 const char *get_pe_pool_mode_name_v17(uint32_t mode) {
   switch (mode) {
-  case 0: return "None";
-  case 1: return "Avg";
-  case 2: return "Max";
-  case 3: return "Min";
-  default: return "??";
+    case 0: return "None";
+    case 1: return "Pool";
+    case 2: return "Max";
+    case 3: return "Avg";
+    default: return "Unknown";
   }
 }
 
 const char *get_pe_condition_name_v17(uint32_t cond) {
-  switch (cond) {
-  case 0: return "Always";
-  case 1: return "Le";
-  case 2: return "Lt";
-  case 3: return "False";
-  case 4: return "Ge";
-  case 5: return "Gt";
-  case 6: return "Ne";
-  case 7: return "Eq";
-  default: return "??";
-  }
+  static const char *labels[] = {"Equal", "NotEqual", "LessThan", "LessEqual", "GreaterEqual", "GreaterThan", "Unknown6", "Unknown7"};
+  return (cond < 8) ? labels[cond] : "Unknown";
 }
 
 const char *get_pe_nl_mode_name_v17(uint32_t mode) {
-  switch (mode) {
-  case 0: return "None";
-  case 1: return "ReLU";
-  case 2: return "Clamp";
-  case 3: return "Abs";
-  default: return "??";
-  }
+  static const char *labels[] = {"None", "ReLU", "Clamp", "Abs"};
+  return (mode < 4) ? labels[mode] : "Unknown";
 }
 
 const char *get_pe_src1_name_v17(uint32_t sel) {
-  switch (sel) {
-  case 0: return "Reg";
-  case 1: return "Primary";
-  default: return "??";
-  }
+  return (sel == 0) ? "PrimarySource" : (sel == 1) ? "TextureSource" : "Unknown";
 }
 
 const char *get_pe_src2_name_v17(uint32_t sel) {
-  switch (sel) {
-  case 0: return "None";
-  case 1: return "L2";
-  case 2: return "Texture";
-  case 3: return "PE";
-  default: return "??";
-  }
+  static const char *labels[] = {"PrimarySource", "TextureSource", "L2Source", "RegSource"};
+  return (sel < 4) ? labels[sel] : "Unknown";
 }
 
 const char *get_ne_op_mode_name(uint32_t mode) {
@@ -834,7 +811,6 @@ void print_ne_h16(const hwx_state_t *state) {
     printf("        QuantZP  : %d\n", ne.quant.quant_zero_point);
   }
 }
-
 void print_pe_h16(const hwx_state_t *state) {
   ane_common_h16_t common = *(ane_common_h16_t *)&state->values[H16_COMMON_START / 4];
   uint32_t task_type = common.maccfg.task_type;

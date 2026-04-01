@@ -424,9 +424,52 @@ const char *get_pe_op_mode_name_v17(uint32_t op) {
 
 const char *get_pe_pool_mode_name_v17(uint32_t mode) {
   switch (mode) {
-  case 0: return "Avg/None";
+  case 0: return "None";
+  case 1: return "Avg";
   case 2: return "Max";
   case 3: return "Min";
+  default: return "??";
+  }
+}
+
+const char *get_pe_condition_name_v17(uint32_t cond) {
+  switch (cond) {
+  case 0: return "Always";
+  case 1: return "Le";
+  case 2: return "Lt";
+  case 3: return "False";
+  case 4: return "Ge";
+  case 5: return "Gt";
+  case 6: return "Ne";
+  case 7: return "Eq";
+  default: return "??";
+  }
+}
+
+const char *get_pe_nl_mode_name_v17(uint32_t mode) {
+  switch (mode) {
+  case 0: return "None";
+  case 1: return "ReLU";
+  case 2: return "Clamp";
+  case 3: return "Abs";
+  default: return "??";
+  }
+}
+
+const char *get_pe_src1_name_v17(uint32_t sel) {
+  switch (sel) {
+  case 0: return "Reg";
+  case 1: return "Primary";
+  default: return "??";
+  }
+}
+
+const char *get_pe_src2_name_v17(uint32_t sel) {
+  switch (sel) {
+  case 0: return "None";
+  case 1: return "L2";
+  case 2: return "Texture";
+  case 3: return "PE";
   default: return "??";
   }
 }
@@ -694,11 +737,12 @@ void print_common_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_COMMON_START + 0x48) / 4]) {
-    printf("        PECfg     : S1BR=%d S2BR=%d S1T=%d S2T=%d OutT=%d ActiveNE=%d PG=%d\n",
-           common.pe_cfg.s1br, common.pe_cfg.s2br,
-           common.pe_cfg.s1t, common.pe_cfg.s2t,
-           common.pe_cfg.out_t, common.pe_cfg.active_ne,
-           common.pe_cfg.power_gate);
+    printf("        PECfg     : Src1Br=%d Src2Br=%d Src1T=%d Src2T=%d OutT=%d Tr=%d Br=%d PSrc=%d ActiveNE=%d\n",
+           common.pe_cfg.src1_broadcast, common.pe_cfg.src2_broadcast,
+           common.pe_cfg.src1_transpose, common.pe_cfg.src2_transpose,
+           common.pe_cfg.output_transpose, common.pe_cfg.idx_transpose,
+           common.pe_cfg.idx_broadcast, common.pe_cfg.primary_source,
+           common.pe_cfg.active_ne);
   }
 
   if (state->valid[(H16_COMMON_START + 0x4C) / 4])
@@ -795,13 +839,15 @@ void print_pe_h16(const hwx_state_t *state) {
   ane_common_h16_t common = *(ane_common_h16_t *)&state->values[H16_COMMON_START / 4];
   uint32_t task_type = common.maccfg.task_type;
 
-  if (task_type == 0) {
+  if (state->valid[(H16_COMMON_START + 0x3c) / 4] && task_type == 0) {
     return;
   }
 
   ane_pe_h16_t pe = *(ane_pe_h16_t *)&state->values[H16_PE_START / 4];
   
-  printf("        --- Planar Engine (0x4500) ---\n");
+  if (state->valid[H16_PE_START / 4]) {
+    printf("        --- Planar Engine (0x4500) ---\n");
+  }
 
   if (task_type == 7) {
     // GOC Mode: PE Cluster is bypassed. Look to Common PECfg (+0x240)
@@ -814,16 +860,21 @@ void print_pe_h16(const hwx_state_t *state) {
            (pe_common_cfg >> 18) & 3);  // Src2 Selection
   } else if (state->valid[H16_PE_START / 4]) {
     // Arithmetic/Pooling Mode: Functional Cluster (0x454) is active
-    const char *pool_str = (task_type == 1 || task_type == 2) ? 
-                           get_pe_pool_mode_name_v17(pe.pe_cfg.pool_mode) : "None";
-    const char *op_str = (task_type >= 3 && task_type <= 6) ? 
-                         get_pe_op_mode_name_v17(pe.pe_cfg.op) : "None";
+    const char *pool_str = get_pe_pool_mode_name_v17(pe.pe_cfg.pool_mode);
+    const char *op_str = get_pe_op_mode_name_v17(pe.pe_cfg.op);
+    const char *cond_str = get_pe_condition_name_v17(pe.pe_cfg.cond);
+    const char *nl_str = get_pe_nl_mode_name_v17(pe.pe_cfg.nl_mode);
+    const char *src1_str = get_pe_src1_name_v17(pe.pe_cfg.src1);
+    const char *src2_str = get_pe_src2_name_v17(pe.pe_cfg.src2);
                          
-    printf("        PE Config : Pool=%u (%s) Op=%u (%s) LutEn=%u NLMode=%u Src1=%u Src2=%u\n",
+    printf("        PE Config : Pool=%u (%s) Op=%u (%s) LutEn=%u NLMode=%u (%s) Cond=%u (%s) Src1=%u (%s) Src2=%u (%s)\n",
            pe.pe_cfg.pool_mode, pool_str,
            pe.pe_cfg.op, op_str,
-           pe.pe_cfg.lut_en, pe.pe_cfg.nl_mode, pe.pe_cfg.src1,
-           pe.pe_cfg.src2);
+           pe.pe_cfg.lut_en, 
+           pe.pe_cfg.nl_mode, nl_str,
+           pe.pe_cfg.cond, cond_str,
+           pe.pe_cfg.src1, src1_str,
+           pe.pe_cfg.src2, src2_str);
   }
   if (state->valid[(H16_PE_START + 0x4) / 4])
     printf("        PE Bias   : 0x%05x (%f)\n", pe.bias & 0x7FFFF,

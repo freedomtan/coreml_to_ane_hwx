@@ -171,7 +171,7 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x003C** | `+0x234` | **MacCfg** | **TaskType**: 4-7, **ActiveNE**: 19-21, **ReluType**: 24-27. (Verified via `SetCommonTaskType`, `SetCommonMacCfgActiveNE`, `SetCommonMacCfgReluType`). |
 | **0x0040** | `+0x238` | **NECfg** | **OCGSize**: 0-2 (1=16, 2=32, 4=64), **FatTileEnable**: 3, **WUStackLog2**: 4-5. |
 | **0x0044** | `+0x23c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
-| **0x0048** | `+0x240` | **PECfg** | **S1BR**: 0-3, **S2BR**: 4-7, **S1T**: 8-9, **S2T**: 10-11, **OutT**: 12-13, **ActiveNE**: 19-21, **PowerGate**: 22-23. (Planar Engine Metadata). |
+| **0x0048** | `+0x240` | **PECfg** | **Src1Broadcast**: 0-3, **Src2Broadcast**: 4-7, **Src1Transpose**: 8, **Src2Transpose**: 9, **OutputTranspose**: 10, **IdxTranspose**: 14, **IdxBroadcast**: 15, **PEPrimarySource**: 16-18, **ActiveNE**: 19-21. |
 | **0x004C** | `+0x244` | **NID** | Network ID / Layer Trace ID. |
 | **0x0050** | `+0x248` | **DPE** | Distributed Processing Element config. |
 | **0x0080** | `+0x278` | **GocStrideX** | **StrideX**: 0-31. (Relocated in H16). |
@@ -339,7 +339,13 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4500** | `+0x454` | **Config** | **PoolMode**: 0-1 (0: None, 1: Avg, 2: Max, 3: Min), **Op**: 4-8 (0: Add, 1: Mul, 2: Max, 3: Min, 4: SumSqr), **LUTEnable**: 2, **NLMode**: 12-13, **Src1Sel**: 16, **Src2Sel**: 18-19. (Note: GOC Cond/CtoW Relocated to 0x240 in H16). |
+| **0x4500** | `+0x454` | **PE.Config** (`0x4500`)
+  - [0:1] **PoolMode**: 0: None, 1: Avg, 2: Max, 3: Min
+  - [2:4] **Operation**: 0: Add, 1: Mul, 2: Max, 3: Min, 4: SumSqr
+  - [6:8] **Condition**: 0: Always, 1: Le (LessEqual), 2: Lt (LessThan), 3: False, 4: Ge (GreaterEqual), 5: Gt (GreaterThan), 6: Ne (NotEqual), 7: Eq (Equal)
+  - [12:13] **NLMode**: 0: None, 1: ReLU, 2: Clamp, 3: Abs
+  - [16] **Src1Sel**: 0: Reg, 1: Primary
+  - [18:19] **Src2Sel**: 0: None, 1: L2, 2: Texture, 3: PE/Output |
 | **0x4504** | `+0x458` | **Bias** | 19-bit Floating Point (F19) bias value. |
 | **0x4508** | `+0x45c` | **Scale** | 19-bit Floating Point (F19) scale value. |
 | **0x450c** | `+0x460` | **FinalScaleEpsilon** | 19-bit Floating Point (F19) epsilon value. |

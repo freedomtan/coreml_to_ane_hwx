@@ -920,19 +920,19 @@ typedef struct {
 typedef struct {
   // Word 0 (0x4500)
   struct {
-    uint32_t pool_mode : 2; // [1:0]
-    uint32_t op : 3;        // [4:2]
+    uint32_t pool_mode : 2; // [1:0] 0:None, 1:Avg, 2:Max, 3:Min
+    uint32_t op : 3;        // [4:2] 0:Add, 1:Mul, 2:Max, 3:Min, 4:SumSqr
     uint32_t lut_en : 1;    // [5]
-    uint32_t cond : 3;      // [8:6]
-    uint32_t red_idx : 2;   // [10:9]
-    uint32_t red_keep : 1;  // [11]
-    uint32_t nl_mode : 2;   // [13:12]
-    uint32_t pad0 : 2;      // [15:14]
-    uint32_t src1 : 1;      // [16]
+    uint32_t cond : 4;      // [9:6] 0:None, 1:Abs, 2:Equal, 3:Greater, 4:GreaterEqual, 5:LessEqual, 6:Less, 7:NotEqual
+    uint32_t red_idx : 2;   // [11:10]
+    uint32_t red_keep : 1;  // [12]
+    uint32_t nl_mode : 2;   // [14:13] 0:None, 1:ReLU, 2:Clamp, 3:Abs
+    uint32_t pad0 : 1;      // [15]
+    uint32_t src1 : 1;      // [16] 0:Primary, 1:Texture
     uint32_t pad1 : 1;      // [17]
-    uint32_t src2 : 2;      // [19:18]
+    uint32_t src2 : 2;      // [19:18] 0:Primary, 1:Texture, 2:L2, 3:RegSource
     uint32_t pad2 : 12;     // [31:20]
-  } pe_cfg;
+  } cfg;
 
   uint32_t bias;        // Word 1 (0x4504) - F19
   uint32_t scale;       // Word 2 (0x4508) - F19

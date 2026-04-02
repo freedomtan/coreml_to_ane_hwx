@@ -413,11 +413,11 @@ const char *get_l2_dma_fmt_name(uint32_t fmt) {
 
 const char *get_pe_op_mode_name_v17(uint32_t op) {
   switch (op) {
-    case 0: return "Addition";
-    case 1: return "Multiplication";
-    case 2: return "Minimum";
-    case 3: return "Maximum";
-    case 4: return "Subtraction";
+    case 0: return "Add";
+    case 1: return "Mul";
+    case 2: return "Max";
+    case 3: return "Min";
+    case 4: return "SumSqr";
     default: return "Unknown";
   }
 }
@@ -425,15 +425,15 @@ const char *get_pe_op_mode_name_v17(uint32_t op) {
 const char *get_pe_pool_mode_name_v17(uint32_t mode) {
   switch (mode) {
     case 0: return "None";
-    case 1: return "Pool";
+    case 1: return "Avg";
     case 2: return "Max";
-    case 3: return "Avg";
+    case 3: return "Min";
     default: return "Unknown";
   }
 }
 
 const char *get_pe_condition_name_v17(uint32_t cond) {
-  static const char *labels[] = {"Equal", "NotEqual", "LessThan", "LessEqual", "GreaterEqual", "GreaterThan", "Unknown6", "Unknown7"};
+  static const char *labels[] = {"None", "Abs", "Equal", "Greater", "GreaterEqual", "LessEqual", "Less", "NotEqual"};
   return (cond < 8) ? labels[cond] : "Unknown";
 }
 
@@ -836,21 +836,21 @@ void print_pe_h16(const hwx_state_t *state) {
            (pe_common_cfg >> 18) & 3);  // Src2 Selection
   } else if (state->valid[H16_PE_START / 4]) {
     // Arithmetic/Pooling Mode: Functional Cluster (0x454) is active
-    const char *pool_str = get_pe_pool_mode_name_v17(pe.pe_cfg.pool_mode);
-    const char *op_str = get_pe_op_mode_name_v17(pe.pe_cfg.op);
-    const char *cond_str = get_pe_condition_name_v17(pe.pe_cfg.cond);
-    const char *nl_str = get_pe_nl_mode_name_v17(pe.pe_cfg.nl_mode);
-    const char *src1_str = get_pe_src1_name_v17(pe.pe_cfg.src1);
-    const char *src2_str = get_pe_src2_name_v17(pe.pe_cfg.src2);
+    const char *pool_str = get_pe_pool_mode_name_v17(pe.cfg.pool_mode);
+    const char *op_str = get_pe_op_mode_name_v17(pe.cfg.op);
+    const char *cond_str = get_pe_condition_name_v17(pe.cfg.cond);
+    const char *nl_str = get_pe_nl_mode_name_v17(pe.cfg.nl_mode);
+    const char *src1_str = get_pe_src1_name_v17(pe.cfg.src1);
+    const char *src2_str = get_pe_src2_name_v17(pe.cfg.src2);
                          
-    printf("        PE Config : Pool=%u (%s) Op=%u (%s) LutEn=%u NLMode=%u (%s) Cond=%u (%s) Src1=%u (%s) Src2=%u (%s)\n",
-           pe.pe_cfg.pool_mode, pool_str,
-           pe.pe_cfg.op, op_str,
-           pe.pe_cfg.lut_en, 
-           pe.pe_cfg.nl_mode, nl_str,
-           pe.pe_cfg.cond, cond_str,
-           pe.pe_cfg.src1, src1_str,
-           pe.pe_cfg.src2, src2_str);
+    printf("        Config    : Pool=%u (%s) Op=%u (%s) LutEn=%u NLMode=%u (%s) Cond=%u (%s) Src1=%u (%s) Src2=%u (%s)\n",
+           pe.cfg.pool_mode, pool_str,
+           pe.cfg.op, op_str,
+           pe.cfg.lut_en, 
+           pe.cfg.nl_mode, nl_str,
+           pe.cfg.cond, cond_str,
+           pe.cfg.src1, src1_str,
+           pe.cfg.src2, src2_str);
   }
   if (state->valid[(H16_PE_START + 0x4) / 4])
     printf("        PE Bias   : 0x%05x (%f)\n", pe.bias & 0x7FFFF,

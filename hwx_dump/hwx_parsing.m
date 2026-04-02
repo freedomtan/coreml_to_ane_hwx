@@ -367,6 +367,14 @@ uint32_t get_instruction_set_version(uint32_t subtype) {
 static float decode_f19(uint32_t val) {
   uint32_t bits = (val & 0x7FFFF) << 13;
   return *(float *)&bits;
+
+  uint32_t sign     = (val >> 18) & 0x1;
+  uint32_t exponent = (val >> 10) & 0xFF; // Preserved 8-bit dynamic range
+  uint32_t mantissa = (val & 0x3FF) << 13; // Padding to 23-bit precision
+
+  uint32_t f32_bits = (sign << 31) | (exponent << 23) | mantissa;
+
+  return (float)(f32_bits);
 }
 
 const char *get_hw_tensor_format_name_v17(uint32_t mode, uint32_t mem_fmt,

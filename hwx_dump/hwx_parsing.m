@@ -3,6 +3,7 @@
 #import <mach-o/nlist.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 #import "ane_hwx_regs.h"
 
@@ -79,7 +80,7 @@ const char *get_m4_reg_name(uint32_t addr) {
       "OutWidth",   "OutHeight", "OutChannels", "OutDepth",   "NumGroups",
       "ConvCfg",    "ConvCfg3d", "UnicastCfg",  "TileHeight", "TileOverlap",
       "MacCfg",     "NECfg",     "PatchCfg",    "PECfg",      "NID",
-      "DPE",        "Val21",     "Val22"};
+      "DPE",        "DPE0",      "DPE1"};
   static const char *l2_names[] = {
       "L2_Control",        "L2_Src1Cfg",        "L2_Src2Cfg",
       "L2_SrcIdxCfg",      "L2_Src1Base",       "L2_Src1CStride",
@@ -290,6 +291,216 @@ const char *get_m4_reg_name(uint32_t addr) {
 
   return lookup_reg_name(addr, m4_ranges, 9);
 }
+
+const char *get_h17_reg_name(uint32_t addr) {
+  // Common names same as M4
+  static const char *common_names[] = {
+      "ChannelCfg", "InWidth",   "InHeight",    "InChannels", "InDepth",
+      "OutWidth",   "OutHeight", "OutChannels", "OutDepth",   "NumGroups",
+      "ConvCfg",    "ConvCfg3d", "UnicastCfg",  "TileHeight", "TileOverlap",
+      "MacCfg",     "NECfg",     "PatchCfg",    "PECfg",      "NID",
+      "DPE",        "DPE0",      "DPE1"};
+  // L2 names same as M4 + 1
+  static const char *l2_names[] = {
+      "L2_Control",        "L2_Src1Cfg",        "L2_Src2Cfg",
+      "L2_SrcIdxCfg",      "L2_Src1Base",       "L2_Src1CStride",
+      "L2_Src1RStride",    "L2_Src1DStride",    "L2_Src1GStride",
+      "L2_Src2Base",       "L2_Src2CStride",    "L2_Src2RStride",
+      "L2_Src2DStride",    "L2_Src2GStride",    "L2_SrcIdxBase",
+      "L2_SrcIdxCStride",  "L2_SrcIdxDStride",  "L2_SrcIdxGStride",
+      "L2_ResultCfg",      "L2_ResultBase",     "L2_ResultCStride",
+      "L2_ResultRStride",  "L2_ResultDStride",  "L2_ResultGStride",
+      "L2_Res24",          "L2_ResultWrapCfg",  "L2_Res26",
+      "L2_Res27",          "L2_Res28",          "L2_ResultWrapIdxOff",
+      "L2_Res30",          "L2_Result2Base",    "L2_Result2CStride",
+      "L2_Result2RStride", "L2_Result2DStride", "L2_Result2GStride",
+      "L2_Res36",          "L2_Res37",          "L2_Res38",
+      "L2_ResultWrapAddr", "L2_CropTex",          "L2_Res41"};
+  static const char *pe_names[] = {
+      "PE_Config",    "PE_Bias",       "PE_Scale",     "PE_FinalScaleEpsilon",
+      "PE_PreScale",  "PE_FinalScale", "PE_LUT1",      "PE_LUT2",
+      "PE_LUT3",      "PE_LUT4",       "PE_LUT5",      "PE_LUT6",
+      "PE_LUT7",      "PE_LUT8",       "PE_Quant",     "PE_Res15"};
+  static const char *ne_names[] = {
+      "KernelCfg",   "MacCfg",      "MatrixVectorBias", "NEBias",
+      "PostScale",   "RcasConfig", "RoundModeCfg",     "SRSeed[0]",
+      "SRSeed[1]",   "SRSeed[2]",  "SRSeed[3]",        "QuantZeroPoint",
+      "NE_Res12"};
+  static const char *cdma_names[] = {
+      "CacheDMAControl",  "CacheDMAPre0",      "CacheDMAPre1",
+      "CacheDMAPad3",     "CacheDMAPad4",      "CacheDMAPad5",
+      "CacheDMADsid",     "CacheDMAFootprint", "EarlyTermArg12",
+      "CacheDMAFlushArg", "EarlyTermArg34",    "TelemetryBackOff",
+      "CDMA_Res12",       "CDMA_Res13"};
+  
+  // Need to define expanded arrays for TileDMA and KernelDMA in H17
+  static const char *tdma_src_names[83] = {
+      "Src1DMAConfig", "Src2DMAConfig", "Src1WrapCfg", "Src2WrapCfg",
+      "Src1BaseAddrLo", "Src1BaseAddrHi", "Src1RowStride", "Src1PlaneStride",
+      "Src2BaseAddrLo", "Src1GroupStride", "Src2BaseAddrHi", "Src2RowStride",
+      "Src2PlaneStride", "Src2GroupStride", "pad_38", "pad_3C",
+      "Src1MetaDataConfig", "pad_44", "pad_48", "pad_4C",
+      "Src1MetaDataAddrLo", "Src1MetaDataAddrHi", "Src1MetaDataSize", "Src2MetaDataConfig",
+      "Src2MetaDataAddrLo", "Src2MetaDataAddrHi", "Src1FmtMode", "Src2FmtMode",
+      "Res_70", "Res_74", "Src1CompressedInfo", "Src1CompressedSizeLo",
+      "Src1CompressedSizeHi", "Src1CropOffset", "Src2CompressedInfo", "Src2CompressedSizeLo",
+      "Src2CompressedSizeHi", "Src2CropOffset", "Res_98", "Res_9C",
+      "Res_A0", "Res_A4", "Res_A8", "Res_AC", "Res_B0", "Res_B4",
+      "Src1WrapDynamic", "Src2WrapDynamic", "Src1DependencyOffset", "Src2DependencyOffset",
+      "TextureConfig", "TextureIdxPermute", "TextureSrcPermute", "TextureBackgroundVal",
+      "TextureExtMaxDim1", "TextureExtMaxDim2", "TextureExtMaxDim3", "TextureCropBatchSplitDim1",
+      "TextureCropDepthDim1", "TextureCropBatchSplitDim2", "Res_F0", "Res_F4",
+      "Res_F8", "Res_FC", "Res_100", "TextureCropCoeffVal", "Res_108", "Res_10C",
+      "Res_110", "Res_114", "Res_118", "Res_11C", "Res_120", "Res_124",
+      "Res_128", "Res_12C", "Res_130", "Res_134", "Res_138", "Res_13C",
+      "Res_140", "TS_Res81", "TS_Res82"};
+
+  static const char *tdma_dst_names[23] = {
+      "DstDMAConfig", "pad0", "DstBaseAddrLo", "DstBaseAddrHi",
+      "DstRowStride", "DstPlaneStride", "DstDepthStride", "DstGroupStride",
+      "DstInternalCfg", "pad1", "DstMetaDataAddrLo", "DstMetaDataAddrHi",
+      "DstFmtMode", "pad2", "DstFmtCtrl", "pad3",
+      "DstCompressedInfo", "pad4", "DstCompSizeLo", "DstCompSizeHi",
+      "DstPixelOffset", "TD_Res21", "TD_Res22"};
+
+  static const char *kdma_names[74] = {
+      "MasterCfg", "AlignedCoeffSize", "Prefetch", "Res_0", "Res_1", "Res_2",
+      "KernelGroupStride", "KernelOCGStride", "CoeffDMAConfig[0]", "CoeffDMAConfig[1]",
+      "CoeffDMAConfig[2]", "CoeffDMAConfig[3]", "CoeffDMAConfig[4]", "CoeffDMAConfig[5]",
+      "CoeffDMAConfig[6]", "CoeffDMAConfig[7]", "CoeffDMAConfig[8]", "CoeffDMAConfig[9]",
+      "CoeffDMAConfig[10]", "CoeffDMAConfig[11]", "CoeffDMAConfig[12]", "CoeffDMAConfig[13]",
+      "CoeffDMAConfig[14]", "CoeffDMAConfig[15]", "CoeffBaseAddr[0]", "CoeffBaseAddr[1]",
+      "CoeffBaseAddr[2]", "CoeffBaseAddr[3]", "CoeffBaseAddr[4]", "CoeffBaseAddr[5]",
+      "CoeffBaseAddr[6]", "CoeffBaseAddr[7]", "CoeffBaseAddr[8]", "CoeffBaseAddr[9]",
+      "CoeffBaseAddr[10]", "CoeffBaseAddr[11]", "CoeffBaseAddr[12]", "CoeffBaseAddr[13]",
+      "CoeffBaseAddr[14]", "CoeffBaseAddr[15]", "CoeffBfrSize[0]", "CoeffBfrSize[1]",
+      "CoeffBfrSize[2]", "CoeffBfrSize[3]", "CoeffBfrSize[4]", "CoeffBfrSize[5]",
+      "CoeffBfrSize[6]", "CoeffBfrSize[7]", "CoeffBfrSize[8]", "CoeffBfrSize[9]",
+      "CoeffBfrSize[10]", "CoeffBfrSize[11]", "CoeffBfrSize[12]", "CoeffBfrSize[13]",
+      "CoeffBfrSize[14]", "CoeffBfrSize[15]", "BiasDMAConfig", "BiasBaseAddr", "Res_Bias0",
+      "Res_Bias1", "PostScaleDMAConfig", "PostScaleBaseAddr", "Res_PS0", "Res_PS1",
+      "PaletteDMAConfig", "PaletteBaseAddr", "Res_Pal0", "Res_Pal1", "NLutDMAConfig",
+      "NLutBaseAddr", "Res_NL0", "Res_NL1", "KDMA_Res72", "KDMA_Res73"};
+
+  static const hwx_reg_range_t h17_ranges[] = {
+      {H16_COMMON_START, H17_COMMON_COUNT, common_names},
+      {H16_L2_START, H17_L2_COUNT, l2_names},
+      {H16_PE_START, H17_PE_COUNT, pe_names},
+      {H16_NE_START, H17_NE_COUNT, ne_names},
+      {H16_TILEDMA_SRC_START, H17_TILEDMA_SRC_COUNT, tdma_src_names},
+      {H16_TILEDMA_DST_START, H17_TILEDMA_DST_COUNT, tdma_dst_names},
+      {H16_KERNELDMA_START, H17_KERNELDMA_COUNT, kdma_names},
+      {H16_CACHEDMA_START, H17_CACHEDMA_COUNT, cdma_names},
+  };
+
+  return lookup_reg_name(addr, h17_ranges, 8);
+}
+
+const char *get_h18_reg_name(uint32_t addr) {
+  // Similar to H17 but with H18 counts
+  static const char *common_names[] = {
+      "ChannelCfg", "InWidth",   "InHeight",    "InChannels", "InDepth",
+      "OutWidth",   "OutHeight", "OutChannels", "OutDepth",   "NumGroups",
+      "ConvCfg",    "ConvCfg3d", "UnicastCfg",  "TileHeight", "TileOverlap",
+      "MacCfg",     "NECfg",     "PatchCfg",    "PECfg",      "NID",
+      "DPE",        "DPE0",      "DPE1"};
+  static const char *l2_names[] = {
+      "L2_Control",        "L2_Src1Cfg",        "L2_Src2Cfg",
+      "L2_SrcIdxCfg",      "L2_Src1Base",       "L2_Src1CStride",
+      "L2_Src1RStride",    "L2_Src1DStride",    "L2_Src1GStride",
+      "L2_Src2Base",       "L2_Src2CStride",    "L2_Src2RStride",
+      "L2_Src2DStride",    "L2_Src2GStride",    "L2_SrcIdxBase",
+      "L2_SrcIdxCStride",  "L2_SrcIdxDStride",  "L2_SrcIdxGStride",
+      "L2_ResultCfg",      "L2_ResultBase",     "L2_ResultCStride",
+      "L2_ResultRStride",  "L2_ResultDStride",  "L2_ResultGStride",
+      "L2_Res24",          "L2_ResultWrapCfg",  "L2_Res26",
+      "L2_Res27",          "L2_Res28",          "L2_ResultWrapIdxOff",
+      "L2_Res30",          "L2_Result2Base",    "L2_Result2CStride",
+      "L2_Result2RStride", "L2_Result2DStride", "L2_Result2GStride",
+      "L2_Res36",          "L2_Res37",          "L2_Res38",
+      "L2_ResultWrapAddr", "L2_Res40",          "L2_Res41", "L2_Res42"};
+  static const char *pe_names[] = {
+      "PE_Config",    "PE_Bias",       "PE_Scale",     "PE_FinalScaleEpsilon",
+      "PE_PreScale",  "PE_FinalScale", "PE_LUT1",      "PE_LUT2",
+      "PE_LUT3",      "PE_LUT4",       "PE_LUT5",      "PE_LUT6",
+      "PE_LUT7",      "PE_LUT8",       "PE_Quant",     "PE_Res15"};
+  static const char *ne_names[] = {
+      "KernelCfg",   "MacCfg",      "MatrixVectorBias", "NEBias",
+      "PostScale",   "RcasConfig", "RoundModeCfg",     "SRSeed[0]",
+      "SRSeed[1]",   "SRSeed[2]",  "SRSeed[3]",        "QuantZeroPoint",
+      "NE_Res12"};
+  static const char *cdma_names[] = {
+      "CacheDMAControl",  "CacheDMAPre0",      "CacheDMAPre1",
+      "CacheDMAPad3",     "CacheDMAPad4",      "CacheDMAPad5",
+      "CacheDMADsid",     "CacheDMAFootprint", "EarlyTermArg12",
+      "CacheDMAFlushArg", "EarlyTermArg34",    "TelemetryBackOff",
+      "CDMA_Res12",       "CDMA_Res13"};
+
+  static const char *tdma_src_names[81] = {
+      "Src1DMAConfig", "Src2DMAConfig", "Src1WrapCfg", "Src2WrapCfg",
+      "Src1BaseAddrLo", "Src1BaseAddrHi", "Src1RowStride", "Src1PlaneStride",
+      "Src2BaseAddrLo", "Src1GroupStride", "Src2BaseAddrHi", "Src2RowStride",
+      "Src2PlaneStride", "Src2GroupStride", "pad_38", "pad_3C",
+      "Src1MetaDataConfig", "pad_44", "pad_48", "pad_4C",
+      "Src1MetaDataAddrLo", "Src1MetaDataAddrHi", "Src1MetaDataSize", "Src2MetaDataConfig",
+      "Src2MetaDataAddrLo", "Src2MetaDataAddrHi", "Src1FmtMode", "Src2FmtMode",
+      "Res_70", "Res_74", "Src1CompressedInfo", "Src1CompressedSizeLo",
+      "Src1CompressedSizeHi", "Src1CropOffset", "Src2CompressedInfo", "Src2CompressedSizeLo",
+      "Src2CompressedSizeHi", "Src2CropOffset", "Res_98", "Res_9C",
+      "Res_A0", "Res_A4", "Res_A8", "Res_AC", "Res_B0", "Res_B4",
+      "Src1WrapDynamic", "Src2WrapDynamic", "Src1DependencyOffset", "Src2DependencyOffset",
+      "TextureConfig", "TextureIdxPermute", "TextureSrcPermute", "TextureBackgroundVal",
+      "TextureExtMaxDim1", "TextureExtMaxDim2", "TextureExtMaxDim3", "TextureCropBatchSplitDim1",
+      "TextureCropDepthDim1", "TextureCropBatchSplitDim2", "Res_F0", "Res_F4",
+      "Res_F8", "Res_FC", "Res_100", "TextureCropCoeffVal", "Res_108", "Res_10C",
+      "Res_110", "Res_114", "Res_118", "Res_11C", "Res_120", "Res_124",
+      "Res_128", "Res_12C", "Res_130", "Res_134", "Res_138", "Res_13C",
+      "Res_140"};
+
+  static const char *tdma_dst_names[27] = {
+      "DstDMAConfig", "pad0", "DstBaseAddrLo", "DstBaseAddrHi",
+      "DstRowStride", "DstPlaneStride", "DstDepthStride", "DstGroupStride",
+      "DstInternalCfg", "pad1", "DstMetaDataAddrLo", "DstMetaDataAddrHi",
+      "DstFmtMode", "pad2", "DstFmtCtrl", "pad3",
+      "DstCompressedInfo", "pad4", "DstCompSizeLo", "DstCompSizeHi",
+      "DstPixelOffset", "TD_Res21", "TD_Res22", "TD_Res23", "TD_Res24",
+      "TD_Res25", "TD_Res26"};
+
+  static const char *kdma_names[83] = {
+      "MasterCfg", "AlignedCoeffSize", "Prefetch", "Res_0", "Res_1", "Res_2",
+      "KernelGroupStride", "KernelOCGStride", "CoeffDMAConfig[0]", "CoeffDMAConfig[1]",
+      "CoeffDMAConfig[2]", "CoeffDMAConfig[3]", "CoeffDMAConfig[4]", "CoeffDMAConfig[5]",
+      "CoeffDMAConfig[6]", "CoeffDMAConfig[7]", "CoeffDMAConfig[8]", "CoeffDMAConfig[9]",
+      "CoeffDMAConfig[10]", "CoeffDMAConfig[11]", "CoeffDMAConfig[12]", "CoeffDMAConfig[13]",
+      "CoeffDMAConfig[14]", "CoeffDMAConfig[15]", "CoeffBaseAddr[0]", "CoeffBaseAddr[1]",
+      "CoeffBaseAddr[2]", "CoeffBaseAddr[3]", "CoeffBaseAddr[4]", "CoeffBaseAddr[5]",
+      "CoeffBaseAddr[6]", "CoeffBaseAddr[7]", "CoeffBaseAddr[8]", "CoeffBaseAddr[9]",
+      "CoeffBaseAddr[10]", "CoeffBaseAddr[11]", "CoeffBaseAddr[12]", "CoeffBaseAddr[13]",
+      "CoeffBaseAddr[14]", "CoeffBaseAddr[15]", "CoeffBfrSize[0]", "CoeffBfrSize[1]",
+      "CoeffBfrSize[2]", "CoeffBfrSize[3]", "CoeffBfrSize[4]", "CoeffBfrSize[5]",
+      "CoeffBfrSize[6]", "CoeffBfrSize[7]", "CoeffBfrSize[8]", "CoeffBfrSize[9]",
+      "CoeffBfrSize[10]", "CoeffBfrSize[11]", "CoeffBfrSize[12]", "CoeffBfrSize[13]",
+      "CoeffBfrSize[14]", "CoeffBfrSize[15]", "BiasDMAConfig", "BiasBaseAddr", "Res_Bias0",
+      "Res_Bias1", "PostScaleDMAConfig", "PostScaleBaseAddr", "Res_PS0", "Res_PS1",
+      "PaletteDMAConfig", "PaletteBaseAddr", "Res_Pal0", "Res_Pal1", "NLutDMAConfig",
+      "NLutBaseAddr", "Res_NL0", "Res_NL1", "KDMA_Res72", "KDMA_Res73", "KDMA_Res74",
+      "KDMA_Res75", "KDMA_Res76", "KDMA_Res77", "KDMA_Res78", "KDMA_Res79", "KDMA_Res80",
+      "KDMA_Res81", "KDMA_Res82"};
+
+  static const hwx_reg_range_t h18_ranges[] = {
+      {H16_COMMON_START, H18_COMMON_COUNT, common_names},
+      {H16_L2_START, H18_L2_COUNT, l2_names},
+      {H16_PE_START, H18_PE_COUNT, pe_names},
+      {H16_NE_START, H18_NE_COUNT, ne_names},
+      {H16_TILEDMA_SRC_START, H18_TILEDMA_SRC_COUNT, tdma_src_names},
+      {H16_TILEDMA_DST_START, H18_TILEDMA_DST_COUNT, tdma_dst_names},
+      {H16_KERNELDMA_START, H18_KERNELDMA_COUNT, kdma_names},
+      {H16_CACHEDMA_START, H18_CACHEDMA_COUNT, cdma_names},
+  };
+
+  return lookup_reg_name(addr, h18_ranges, 8);
+}
+
 
 void dump_hw_blocks(const hwx_state_t *state, const hwx_block_info_t *blocks,
                     int count, const char *(*name_lookup)(uint32_t)) {
@@ -639,107 +850,143 @@ void print_kerneldmasrc_h13(const hwx_state_t *state) {
 
 void print_common_h16(const hwx_state_t *state) {
   printf("        --- Common (0x0000) ---\n");
-  ane_common_h16_t common =
-      *(ane_common_h16_t *)&state->values[H16_COMMON_START / 4];
+  uint32_t infmt=0, src2infmt=0, outfmt=0;
+  uint32_t inw=0, inh=0, inc=0, ind=0;
+  uint32_t outw=0, outh=0, outc=0, outd=0;
+  uint32_t ng=0, kw=0, kh=0, sx=0, sy=0, pl=0, pt=0, ox=0, oy=0;
+  uint32_t k3d=0, s3d=0, p3d=0, o3d=0;
+  uint32_t ucin=0, ucen=0, overlap=0, overlapt=0, overlapb=0;
+  uint32_t active_ne=0, small_src=0, task_type=0, out_trans=0, fill_lower=0;
+  uint32_t ocg=0, fat=0, wustack=0, halfwu=0, relu_type=0;
+  uint32_t pw=0, ph=0;
+  uint32_t s1br=0, s2br=0, s1t=0, s2t=0, ot=0, nid=0, dpe=0, dpe0=0, dpe1=0;
+
+  if (state->instr_ver >= 20) {
+    ane_common_h18_t c = *(ane_common_h18_t *)&state->values[H16_COMMON_START / 4];
+    infmt = c.ch_cfg.infmt; src2infmt = c.ch_cfg.src2infmt; outfmt = c.ch_cfg.outfmt;
+    inw = c.inwidth; inh = c.inheight; inc = c.inchannels; ind = c.indepth;
+    outw = c.outwidth; outh = c.outheight; outc = c.outchannels; outd = c.outdepth;
+    ng = c.num_groups; kw = c.conv_cfg.kw; kh = c.conv_cfg.kh; sx = c.conv_cfg.sx; sy = c.conv_cfg.sy;
+    pl = c.conv_cfg.pad_left; pt = c.conv_cfg.pad_top; ox = c.conv_cfg.ox; oy = c.conv_cfg.oy;
+    k3d = c.conv_cfg_3d.kd; s3d = c.conv_cfg_3d.sz; p3d = c.conv_cfg_3d.pz; o3d = c.conv_cfg_3d.oz;
+    ucin = c.unicast_cfg.unicast_cin; ucen = c.unicast_cfg.unicast_en;
+    overlap = c.tile_overlap.overlap; overlapt = c.tile_overlap.pad_top; overlapb = c.tile_overlap.pad_bottom;
+    active_ne = c.maccfg.active_ne; small_src = c.maccfg.small_src_mode; task_type = c.maccfg.task_type;
+    out_trans = c.maccfg.out_trans; fill_lower = c.maccfg.fill_lower_ne;
+    ocg = c.ne_cfg.ocg_size; fat = c.ne_cfg.fat_tile_en; halfwu = c.ne_cfg.half_wu_mode;
+    pw = c.patch_cfg.patch_width; ph = c.patch_cfg.patch_height;
+    s1br = c.pe_cfg.src1_br; s2br = c.pe_cfg.src2_br; s1t = c.pe_cfg.src1_trans; s2t = c.pe_cfg.src2_trans; ot = c.pe_cfg.out_trans;
+    nid = c.nid; dpe = c.dpe; dpe0 = c.dpe0; dpe1 = c.dpe1;
+  } else if (state->instr_ver >= 19) {
+    ane_common_h17_t c = *(ane_common_h17_t *)&state->values[H16_COMMON_START / 4];
+    infmt = c.ch_cfg.infmt; src2infmt = c.ch_cfg.src2infmt; outfmt = c.ch_cfg.outfmt;
+    inw = c.inwidth; inh = c.inheight; inc = c.inchannels; ind = c.indepth;
+    outw = c.outwidth; outh = c.outheight; outc = c.outchannels; outd = c.outdepth;
+    ng = c.num_groups; kw = c.conv_cfg.kw; kh = c.conv_cfg.kh; sx = c.conv_cfg.sx; sy = c.conv_cfg.sy;
+    pl = c.conv_cfg.pad_left; pt = c.conv_cfg.pad_top; ox = c.conv_cfg.ox; oy = c.conv_cfg.oy;
+    k3d = c.conv_cfg_3d.kd; s3d = c.conv_cfg_3d.sz; p3d = c.conv_cfg_3d.pz; o3d = c.conv_cfg_3d.oz;
+    ucin = c.unicast_cfg.unicast_cin; ucen = c.unicast_cfg.unicast_en;
+    overlap = c.tile_overlap.overlap; overlapt = c.tile_overlap.pad_top; overlapb = c.tile_overlap.pad_bottom;
+    active_ne = c.maccfg.active_ne; small_src = c.maccfg.small_src_mode; task_type = c.maccfg.task_type;
+    out_trans = c.maccfg.out_trans; fill_lower = c.maccfg.fill_lower_ne;
+    ocg = c.ne_cfg.ocg_size; fat = c.ne_cfg.fat_tile_en; wustack = c.ne_cfg.wustack_log2;
+    pw = c.patch_cfg.patch_width; ph = c.patch_cfg.patch_height;
+    s1br = c.pe_cfg.src1_br; s2br = c.pe_cfg.src2_br; s1t = c.pe_cfg.src1_trans; s2t = c.pe_cfg.src2_trans; ot = c.pe_cfg.out_trans;
+    nid = c.nid; dpe = c.dpe; dpe0 = c.dpe0; dpe1 = c.dpe1;
+  } else {
+    ane_common_h16_t c = *(ane_common_h16_t *)&state->values[H16_COMMON_START / 4];
+    infmt = c.ch_cfg.infmt; src2infmt = c.ch_cfg.src2infmt; outfmt = c.ch_cfg.outfmt;
+    inw = c.inwidth; inh = c.inheight; inc = c.inchannels; ind = c.indepth;
+    outw = c.outwidth; outh = c.outheight; outc = c.outchannels; outd = c.outdepth;
+    ng = c.num_groups; kw = c.conv_cfg.kw; kh = c.conv_cfg.kh; sx = c.conv_cfg.sx; sy = c.conv_cfg.sy;
+    pl = c.conv_cfg.pad_left; pt = c.conv_cfg.pad_top; ox = c.conv_cfg.ox; oy = c.conv_cfg.oy;
+    k3d = c.conv_cfg_3d.kd; s3d = c.conv_cfg_3d.sz; p3d = c.conv_cfg_3d.pz; o3d = c.conv_cfg_3d.oz;
+    ucin = c.unicast_cfg.unicast_cin; ucen = c.unicast_cfg.unicast_en;
+    overlap = c.tile_overlap.overlap; overlapt = c.tile_overlap.pad_top; overlapb = c.tile_overlap.pad_bottom;
+    active_ne = c.maccfg.active_ne; small_src = c.maccfg.small_src_mode; task_type = c.maccfg.task_type;
+    out_trans = c.maccfg.out_trans; fill_lower = c.maccfg.fill_lower_ne;
+    ocg = c.ne_cfg.ocg_size; fat = c.ne_cfg.fat_tile_en; wustack = c.ne_cfg.wustack_log2;
+    pw = c.patch_cfg.patch_width; ph = c.patch_cfg.patch_height;
+    s1br = c.pe_cfg.src1_br; s2br = c.pe_cfg.src2_br; s1t = c.pe_cfg.src1_trans; s2t = c.pe_cfg.src2_trans; ot = c.pe_cfg.out_trans;
+    nid = c.nid; dpe = c.dpe; dpe0 = c.dpe0; dpe1 = c.dpe1;
+  }
+
   if (!state->valid[H16_COMMON_START / 4]) {
-    common.ch_cfg.infmt = 2;     // default to FLOAT16
-    common.ch_cfg.src2infmt = 2; // default to FLOAT16
-    common.ch_cfg.outfmt = 2;    // default to FLOAT16
+    infmt = 2; src2infmt = 2; outfmt = 2;
   }
 
   if (state->valid[(H16_COMMON_START + 0x04) / 4] ||
       state->valid[(H16_COMMON_START + 0x08) / 4] ||
       state->valid[(H16_COMMON_START + 0x0C) / 4] ||
       state->valid[(H16_COMMON_START + 0x10) / 4]) {
-    const char *infmt_name = get_ch_fmt_name(common.ch_cfg.infmt);
-    const char *src2fmt_name = get_ch_fmt_name(common.ch_cfg.src2infmt);
     printf("        InDim     : W=%u H=%u C=%u D=%u Type=%s (Src2Type=%s)\n",
-           common.inwidth, common.inheight, common.inchannels,
-           common.indepth, infmt_name, src2fmt_name);
+            inw, inh, inc, ind, get_ch_fmt_name(infmt), get_ch_fmt_name(src2infmt));
   }
 
   if (state->valid[(H16_COMMON_START + 0x14) / 4] ||
       state->valid[(H16_COMMON_START + 0x18) / 4] ||
       state->valid[(H16_COMMON_START + 0x1C) / 4] ||
       state->valid[(H16_COMMON_START + 0x20) / 4]) {
-    const char *outfmt_name = get_ch_fmt_name(common.ch_cfg.outfmt);
-    printf("        OutDim    : W=%u H=%u C=%u D=%u Type=%s\n",
-           common.outwidth, common.outheight, common.outchannels,
-           common.outdepth, outfmt_name);
+    printf("        OutDim    : W=%u H=%u C=%u D=%u Type=%s\n", outw, outh, outc, outd, get_ch_fmt_name(outfmt));
   }
 
   if (state->valid[(H16_COMMON_START + 0x24) / 4]) {
-    printf("        NumGroups : %u\n", common.num_groups);
+    printf("        NumGroups : %u\n", ng);
   }
 
   if (state->valid[(H16_COMMON_START + 0x28) / 4]) {
-    printf("        ConvCfg   : K=%ux%u S=%ux%u P(left/top)=%ux%u O(x/y)=%ux%u\n",
-           common.conv_cfg.kw, common.conv_cfg.kh, common.conv_cfg.sx,
-           common.conv_cfg.sy, common.conv_cfg.pad_left,
-           common.conv_cfg.pad_top, common.conv_cfg.ox, common.conv_cfg.oy);
+    printf("        ConvCfg   : K=%ux%u S=%ux%u P(left/top)=%ux%u O=%ux%u\n",
+           kw, kh, sx, sy, pl, pt, ox, oy);
   }
 
   if (state->valid[(H16_COMMON_START + 0x2C) / 4]) {
     uint32_t v = state->values[(H16_COMMON_START + 0x2C) / 4];
-    printf("        ConvCfg3D : 0x%08x (Kd=%u Sz=%u Pz=%u Oz=%u)\n", v,
-           common.conv_cfg_3d.kd, common.conv_cfg_3d.sz, common.conv_cfg_3d.pz,
-           common.conv_cfg_3d.oz);
+    printf("        ConvCfg3D : 0x%08x (Kd=%u Sz=%u Pz=%u Oz=%u)\n", v, k3d, s3d, p3d, o3d);
   }
 
   if (state->valid[(H16_COMMON_START + 0x30) / 4]) {
-    printf("        Unicast   : Cin=%u En=%d\n", common.unicast_cfg.unicast_cin,
-           common.unicast_cfg.unicast_en);
+    printf("        Unicast   : Cin=%u En=%d\n", ucin, ucen);
   }
 
   if (state->valid[(H16_COMMON_START + 0x34) / 4]) {
-    printf("        TileHeight: %u\n", common.tile_height);
-  }
-
-  if (state->valid[(H16_COMMON_START + 0x38) / 4]) {
-    printf("        TileOverlap: %u (Top=%u Bottom=%u)\n",
-           common.tile_overlap.overlap, common.tile_overlap.pad_top,
-           common.tile_overlap.pad_bottom);
+    printf("        TileOvlp  : Ovlp=%u Pad(T/B)=%ux%u\n", overlap, overlapt, overlapb);
   }
 
   if (state->valid[(H16_COMMON_START + 0x3C) / 4]) {
-    uint32_t tt = common.maccfg.task_type;
-    printf("        MacCfg    : TaskType=%u %s ActiveNE=%u ReluType=%u "
+    printf("        MacCfg    : TaskType=%u %s ActiveNE=%u SmSrc=%u ReluType=%u "
            "OutTrans=%d FillLowerNE=%d\n",
-           tt, (tt != 0) ? [[NSString stringWithFormat:@"(%s)", get_hw_task_type_name(tt)] UTF8String] : "((None))",
-           common.maccfg.active_ne, common.maccfg.relu_type,
-           common.maccfg.out_trans, common.maccfg.fill_lower_ne);
+           task_type, (task_type != 0) ? [[NSString stringWithFormat:@"(%s)", get_hw_task_type_name(task_type)] UTF8String] : "((None))",
+           active_ne, small_src, relu_type, out_trans, fill_lower);
   }
 
   if (state->valid[(H16_COMMON_START + 0x40) / 4]) {
-    printf("        NECfg     : OCGSize=%u FatTileEn=%d WUStack=%u\n",
-           common.ne_cfg.ocg_size, common.ne_cfg.fat_tile_en,
-           common.ne_cfg.wustack_log2);
+    if (state->instr_ver >= 20) {
+      printf("        NECfg     : OCGSize=%u FatTileEn=%d HalfWUMode=%u\n",
+             ocg, fat, halfwu);
+    } else {
+      printf("        NECfg     : OCGSize=%u FatTileEn=%d WUStack=%u\n",
+             ocg, fat, wustack);
+    }
   }
 
   if (state->valid[(H16_COMMON_START + 0x44) / 4]) {
-    printf("        PatchCfg  : PW=%u PH=%u\n", common.patch_cfg.patch_width,
-           common.patch_cfg.patch_height);
+    printf("        PatchCfg  : PW=%u PH=%u\n", pw, ph);
   }
 
   if (state->valid[(H16_COMMON_START + 0x48) / 4]) {
-    printf("        PECfg     : Src1Br=%d Src2Br=%d Src1T=%d Src2T=%d OutT=%d Tr=%d Br=%d PSrc=%d ActiveNE=%d\n",
-           common.pe_cfg.src1_broadcast, common.pe_cfg.src2_broadcast,
-           common.pe_cfg.src1_transpose, common.pe_cfg.src2_transpose,
-           common.pe_cfg.output_transpose, common.pe_cfg.idx_transpose,
-           common.pe_cfg.idx_broadcast, common.pe_cfg.primary_source,
-           common.pe_cfg.active_ne);
+    printf("        PECfg     : S1BR=%d S2BR=%d S1T=%d S2T=%d OutTrans=%d\n",
+           s1br, s2br, s1t, s2t, ot);
   }
 
   if (state->valid[(H16_COMMON_START + 0x4C) / 4])
-    printf("        NID       : 0x%08x\n", common.nid);
+    printf("        NID       : 0x%08x\n", nid);
   if (state->valid[(H16_COMMON_START + 0x50) / 4])
-    printf("        DPE       : 0x%08x\n", common.dpe);
+    printf("        DPE       : 0x%08x\n", dpe);
   if (state->valid[(H16_COMMON_START + 0x54) / 4])
-    printf("        Val21     : 0x%08x\n", common.val_21);
+    printf("        DPE0      : 0x%08x\n", dpe0);
   if (state->valid[(H16_COMMON_START + 0x58) / 4])
-    printf("        Val22     : 0x%08x\n", common.val_22);
-
-  if (common.maccfg.task_type == 7) {
+    printf("        DPE1      : 0x%08x\n", dpe1);
+  if (task_type == 7) {
     if (state->valid[(H16_COMMON_START + 0x80) / 4])
       printf("        GocStrideX: %d\n", state->values[(H16_COMMON_START + 0x80) / 4]);
     if (state->valid[(H16_COMMON_START + 0x84) / 4])
@@ -748,117 +995,150 @@ void print_common_h16(const hwx_state_t *state) {
 }
 
 void print_ne_h16(const hwx_state_t *state) {
-  ane_ne_h16_t ne = *(ane_ne_h16_t *)&state->values[H16_NE_START / 4];
   printf("        --- Neural Engine (0x4900) ---\n");
 
-  if (state->valid[H16_NE_START / 4]) {
-    uint32_t fmt = ne.kernel_cfg.kernel_fmt;
-    printf("        KernelCfg: Fmt=%u (%s) Palettized=%d (%d-bit) Sparse=%d Binary=%d "
-           "Reuse=%d Align=%u BSize=%u AsymQuant=%d\n",
-           fmt, get_ch_fmt_name(fmt),
-           ne.kernel_cfg.palettized_en, ne.kernel_cfg.palettized_bits,
-           ne.kernel_cfg.sparse_en, ne.kernel_cfg.sparse_binary,
-           ne.kernel_cfg.group_kernel_reuse,
-           ne.kernel_cfg.kernel_align_fmt,
-           ne.kernel_cfg.sparse_block_size,
-           ne.kernel_cfg.asym_quant_en);
+  uint32_t kfmt=0, pen=0, pbits=0, sen=0, reuse=0, sbs_w=0, sbs_a=0, asym=0;
+  uint32_t op=0, km=0, ssrc=0;
+  uint32_t mbias=0, nebias=0, ps=0, rcas=0, rmode=0, rbits=0, qzp=0;
+  uint32_t seeds[4] = {0};
+
+  if (state->instr_ver >= 20) {
+    ane_ne_h18_t ne = *(ane_ne_h18_t *)&state->values[H16_NE_START / 4];
+    kfmt = ne.kernel_cfg.kernel_fmt; pen = ne.kernel_cfg.palettized_en;
+    pbits = ne.kernel_cfg.palettized_bits; sen = ne.kernel_cfg.sparse_en;
+    reuse = ne.kernel_cfg.group_kernel_reuse; sbs_w = ne.kernel_cfg.sparse_block_size_w;
+    sbs_a = ne.kernel_cfg.sparse_block_size_a;
+    op = ne.mac_cfg.op_mode; km = ne.mac_cfg.kernel_mode; ssrc = ne.mac_cfg.small_src_mode;
+    mbias = ne.matrix_bias; nebias = ne.ne_bias; ps = ne.post_scale;
+    rcas = state->values[(H16_NE_START + 0x14) / 4]; rmode = ne.round_mode_cfg.sr_mode;
+    rbits = ne.round_mode_cfg.sr_int_bits;
+    memcpy(seeds, ne.sr_seed, 16); qzp = ne.quant_zero_point;
+  } else if (state->instr_ver >= 19) {
+    ane_ne_h17_t ne = *(ane_ne_h17_t *)&state->values[H16_NE_START / 4];
+    kfmt = ne.kernel_cfg.kernel_fmt; pen = ne.kernel_cfg.palettized_en;
+    pbits = ne.kernel_cfg.palettized_bits; sen = ne.kernel_cfg.sparse_en;
+    reuse = ne.kernel_cfg.group_kernel_reuse; sbs_w = ne.kernel_cfg.sparse_block_size;
+    asym = ne.kernel_cfg.asym_quant_en;
+    op = ne.mac_cfg.op_mode; km = ne.mac_cfg.kernel_mode;
+    mbias = ne.matrix_bias; nebias = ne.ne_bias; ps = ne.post_scale;
+    rcas = state->values[(H16_NE_START + 0x14) / 4]; rmode = ne.round_mode_cfg.sr_mode;
+    rbits = ne.round_mode_cfg.sr_int_bits;
+    memcpy(seeds, ne.sr_seed, 16); qzp = ne.quant_zero_point;
+  } else {
+    ane_ne_h16_t ne = *(ane_ne_h16_t *)&state->values[H16_NE_START / 4];
+    kfmt = ne.kernel_cfg.kernel_fmt; pen = ne.kernel_cfg.palettized_en;
+    pbits = ne.kernel_cfg.palettized_bits; sen = ne.kernel_cfg.sparse_en;
+    reuse = ne.kernel_cfg.group_kernel_reuse; sbs_w = ne.kernel_cfg.sparse_block_size;
+    asym = ne.kernel_cfg.asym_quant_en;
+    op = ne.mac_cfg.op_mode; km = ne.mac_cfg.kernel_mode;
+    mbias = ne.matrix_bias.matrix_vector_bias; nebias = ne.ne_bias.val;
+    ps = ne.post_scale.val; rcas = state->values[(H16_NE_START + 0x14) / 4];
+    rmode = ne.st_round_cfg.round_mode; rbits = ne.st_round_cfg.integer_bits;
+    memcpy(seeds, ne.st_round_seed, 16); qzp = ne.quant.quant_zero_point;
   }
 
-  if (state->valid[(H16_NE_START + 0x4) / 4]) {
-    uint32_t op_mode = ne.mac_cfg.op_mode;
-    printf("        MacCfg: OpMode=%u (%s) KMode=%d BiasEn=%d PostScaleEn=%d BP=%u "
-           "NonLinear=%u MVBiasEn=%d MaxPoolEn=%d DoubleInt8En=%d\n",
-           op_mode, get_ne_op_mode_name(op_mode),
-           ne.mac_cfg.kernel_mode,
-           ne.mac_cfg.ne_bias_en, ne.mac_cfg.post_scale_en,
-           ne.mac_cfg.binary_point,
-           ne.mac_cfg.non_linear_mode,
-           ne.mac_cfg.matrix_bias_en,
-           ne.mac_cfg.max_pool_mode,
-           ne.mac_cfg.double_int8_en);
-    if (ne.mac_cfg.arg_output_select != 0) {
-      printf("                ArgOutputSelect: 0x%x\n", ne.mac_cfg.arg_output_select);
+  if (state->valid[H16_NE_START / 4]) {
+    printf("        KernelCfg: Fmt=%s Pal=%d(%dbit) SparseEn=%d Reuse=%d",
+           get_ch_fmt_name(kfmt), pen, pbits, sen, reuse);
+    if (state->instr_ver >= 20) {
+      printf(" SBS(W/A)=%d/%d\n", sbs_w, sbs_a);
+    } else {
+      printf(" SBS=%d Asym=%d\n", sbs_w, asym);
     }
   }
 
-  if (state->valid[(H16_NE_START + 0x8) / 4]) {
-    printf("        MatrixBias: 0x%04x\n", ne.matrix_bias.matrix_vector_bias);
+  if (state->valid[(H16_NE_START + 0x4) / 4]) {
+    printf("        MacCfg: Op=%u (%s) Mode=0x%02x", op, get_ne_op_mode_name(op), km);
+    if (state->instr_ver >= 20) printf(" SmallSrc=%u", ssrc);
+    printf("\n");
   }
 
-  if (state->valid[(H16_NE_START + 0x0c) / 4]) {
-    uint32_t val = ne.ne_bias.val;
-    printf("        NEBias    : 0x%06x (Exp=%d, Val=0x%04x)\n", 
-           val, (val >> 16) & 0x1F, val & 0xFFFF);
-  }
-
-  if (state->valid[(H16_NE_START + 0x10) / 4]) {
-    uint32_t val = ne.post_scale.val;
-    printf("        PostScale : 0x%06x (Exp=%d, Val=0x%04x)\n", 
-           val, (val >> 16) & 0x1F, val & 0xFFFF);
-  }
-
-  if (state->valid[(H16_NE_START + 0x14) / 4]) {
-    printf("        RCAS Config: KeyMask=0x%02x CmpBit=%d SenseAxis=%d "
-           "SenseBit=%d Mode=%d\n",
-           ne.rcas_cfg.key_mask, ne.rcas_cfg.cmp_bit, ne.rcas_cfg.sense_axis,
-           ne.rcas_cfg.sense_bit, ne.rcas_cfg.mode);
-  }
-
-  if (state->valid[(H16_NE_START + 0x18) / 4]) {
-    printf("        RoundMode: Mode=%u IntBits=%u\n",
-           ne.st_round_cfg.round_mode, ne.st_round_cfg.integer_bits);
-  }
-
-  if (state->valid[(H16_NE_START + 0x1c) / 4]) {
-    printf("        SRSeeds  : 0x%08x 0x%08x 0x%08x 0x%08x\n",
-           ne.st_round_seed[0], ne.st_round_seed[1], ne.st_round_seed[2],
-           ne.st_round_seed[3]);
-  }
-
-  if (state->valid[(H16_NE_START + 0x2c) / 4]) {
-    printf("        QuantZP  : %d\n", ne.quant.quant_zero_point);
-  }
+  if (state->valid[(H16_NE_START + 0x8) / 4])
+    printf("        MatrixBias: 0x%08x\n", mbias);
+  if (state->valid[(H16_NE_START + 0x0c) / 4])
+    printf("        NEBias: 0x%08x\n", nebias);
+  if (state->valid[(H16_NE_START + 0x10) / 4])
+    printf("        PostScale: 0x%08x\n", ps);
+  if (state->valid[(H16_NE_START + 0x14) / 4])
+    printf("        RcasConfig: 0x%08x\n", rcas);
+  if (state->valid[(H16_NE_START + 0x18) / 4])
+    printf("        RoundMode: Mode=%d Bits=%d\n", rmode, rbits);
+  if (state->valid[(H16_NE_START + 0x1c) / 4])
+    printf("        SRSeeds: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+           seeds[0], seeds[1], seeds[2], seeds[3]);
+  if (state->valid[(H16_NE_START + 0x2c) / 4])
+    printf("        QuantZeroPoint: %d\n", qzp);
 }
 void print_pe_h16(const hwx_state_t *state) {
-  ane_common_h16_t common = *(ane_common_h16_t *)&state->values[H16_COMMON_START / 4];
-  uint32_t task_type = common.maccfg.task_type;
-
-  if (state->valid[(H16_COMMON_START + 0x3c) / 4] && task_type == 0) {
-    return;
+  uint32_t task_type = 0;
+  if (state->instr_ver >= 20) {
+    task_type = ((const ane_common_h18_t *)&state->values[H16_COMMON_START / 4])->maccfg.task_type;
+  } else if (state->instr_ver >= 19) {
+    task_type = ((const ane_common_h17_t *)&state->values[H16_COMMON_START / 4])->maccfg.task_type;
+  } else {
+    task_type = ((const ane_common_h16_t *)&state->values[H16_COMMON_START / 4])->maccfg.task_type;
   }
 
-  ane_pe_h16_t pe = *(ane_pe_h16_t *)&state->values[H16_PE_START / 4];
-  
-  if (state->valid[H16_PE_START / 4]) {
-    printf("        --- Planar Engine (0x4500) ---\n");
+  if (state->valid[(H16_COMMON_START + 0x3c) / 4] && task_type == 0) return;
+
+  printf("        --- Planar Engine (0x4500) ---\n");
+
+  uint32_t pool = 0, op = 0, lut_en = 0, cond = 0, red_idx = 0, red_keep = 0, nl = 0, src1 = 0, src2 = 0;
+  uint32_t bias = 0, scale = 0, eps = 0, ps = 0, fs = 0;
+  const char *pool_str = "None";
+  const char *op_str = "None";
+
+  if (state->instr_ver >= 19) {
+    const ane_pe_h17_t *pe = (const ane_pe_h17_t *)&state->values[H16_PE_START / 4];
+    pool = pe->pe_cfg.pool_mode; op = pe->pe_cfg.op; lut_en = pe->pe_cfg.lut_en;
+    cond = pe->pe_cfg.cond; red_idx = pe->pe_cfg.red_idx; red_keep = pe->pe_cfg.red_keep;
+    nl = pe->pe_cfg.nl_mode; src1 = pe->pe_cfg.src1_idx; src2 = pe->pe_cfg.src2_idx;
+    bias = pe->bias; scale = pe->scale; eps = pe->epsilon; ps = pe->pre_scale; fs = pe->final_scale;
+    pool_str = (task_type == 1 || task_type == 2) ? get_pe_pool_mode_name_v17(pool) : "None";
+    op_str = (task_type >= 3 && task_type <= 6) ? get_pe_op_mode_name_v17(op) : "None";
+  } else {
+    const ane_pe_h16_t *pe = (const ane_pe_h16_t *)&state->values[H16_PE_START / 4];
+    pool = pe->pe_cfg.pool_mode; op = pe->pe_cfg.op; lut_en = pe->pe_cfg.lut_en;
+    cond = pe->pe_cfg.cond; red_idx = pe->pe_cfg.red_idx; red_keep = pe->pe_cfg.red_keep;
+    nl = pe->pe_cfg.nl_mode; src1 = pe->pe_cfg.src1; src2 = pe->pe_cfg.src2;
+    bias = pe->bias; scale = pe->scale; eps = pe->final_scale_epsilon; ps = pe->pre_scale; fs = pe->final_scale;
   }
 
   if (task_type == 7) {
-    // GOC Mode: PE Cluster is bypassed. Look to Common PECfg (+0x240)
-    // Word 16 of common is PECfg (index 16, offset +0x40 in HW, +0x240 in Obj)
     uint32_t pe_common_cfg = state->values[(H16_COMMON_START + 0x40) / 4];
     printf("        PE Config (GOC) : Cond=%u CtoW=%u Src1Sel=%u Src2Sel=%u\n",
-           (pe_common_cfg >> 4) & 0x1F, // GOC Condition (bits 4-8)
-           (pe_common_cfg >> 10) & 1,   // CtoW Trigger (bit 10)
-           (pe_common_cfg >> 16) & 3,   // Src1 Selection
-           (pe_common_cfg >> 18) & 3);  // Src2 Selection
+           (pe_common_cfg >> 4) & 0x1F, (pe_common_cfg >> 10) & 1, (pe_common_cfg >> 16) & 3, (pe_common_cfg >> 18) & 3);
   } else if (state->valid[H16_PE_START / 4]) {
-    // Arithmetic/Pooling Mode: Functional Cluster (0x454) is active
-    const char *pool_str = get_pe_pool_mode_name_v17(pe.cfg.pool_mode);
-    const char *op_str = get_pe_op_mode_name_v17(pe.cfg.op);
-    const char *cond_str = get_pe_condition_name_v17(pe.cfg.cond);
-    const char *nl_str = get_pe_nl_mode_name_v17(pe.cfg.nl_mode);
-    const char *src1_str = get_pe_src1_name_v17(pe.cfg.src1);
-    const char *src2_str = get_pe_src2_name_v17(pe.cfg.src2);
-                         
-    printf("        Config    : Pool=%u (%s) Op=%u (%s) LutEn=%u NLMode=%u (%s) Cond=%u (%s) Src1=%u (%s) Src2=%u (%s)\n",
-           pe.cfg.pool_mode, pool_str,
-           pe.cfg.op, op_str,
-           pe.cfg.lut_en, 
-           pe.cfg.nl_mode, nl_str,
-           pe.cfg.cond, cond_str,
-           pe.cfg.src1, src1_str,
-           pe.cfg.src2, src2_str);
+    printf("        PE Config : Pool=%u (%s) Op=%u (%s) LutEn=%u Cond=%u RedIdx=%u "
+           "RedKeep=%u NLMode=%u Src1=%u Src2=%u\n",
+           pool, pool_str, op, op_str, lut_en, cond, red_idx, red_keep, nl, src1, src2);
+  }
+
+  if (state->valid[(H16_PE_START + 0x4) / 4])
+    printf("        PE Bias   : 0x%05x (%f)\n", bias & 0x7FFFF, decode_f19(bias));
+  if (state->valid[(H16_PE_START + 0x8) / 4])
+    printf("        PE Scale  : 0x%05x (%f)\n", scale & 0x7FFFF, decode_f19(scale));
+  if (state->valid[(H16_PE_START + 0x0c) / 4])
+    printf("        PE Final Scale Epsilon : 0x%05x (%f)\n", eps & 0x7FFFF, decode_f19(eps));
+  if (state->valid[(H16_PE_START + 0x10) / 4])
+    printf("        PE PreScale  : 0x%05x (%f)\n", ps & 0x7FFFF, decode_f19(ps));
+  if (state->valid[(H16_PE_START + 0x14) / 4])
+    printf("        PE Final Scale : 0x%05x (%f)\n", fs & 0x7FFFF, decode_f19(fs));
+}
+
+void print_pe_h17(const hwx_state_t *state) {
+  ane_pe_h17_t pe = *(ane_pe_h17_t *)&state->values[H16_PE_START / 4];
+  printf("        --- Planar Engine (0x4500) [H17] ---\n");
+
+  if (state->valid[H16_PE_START / 4]) {
+    static const char *pe_op_names[] = {"None", "Add", "Mul", "Min",
+                                        "Max",  "5?",  "6?",  "7?"};
+    printf("        PE Config : Pool=%u Op=%u(%s) LutEn=%u Cond=%u RedIdx=%u "
+           "RedKeep=%u NLMode=%u CtoW=%u Src1Idx=%u Src2Idx=%u MaxIdx=%u\n",
+           pe.pe_cfg.pool_mode, pe.pe_cfg.op, pe_op_names[pe.pe_cfg.op & 7],
+           pe.pe_cfg.lut_en, pe.pe_cfg.cond, pe.pe_cfg.red_idx,
+           pe.pe_cfg.red_keep, pe.pe_cfg.nl_mode, pe.pe_cfg.c_to_w,
+           pe.pe_cfg.src1_idx, pe.pe_cfg.src2_idx, pe.pe_cfg.max_idx);
   }
   if (state->valid[(H16_PE_START + 0x4) / 4])
     printf("        PE Bias   : 0x%05x (%f)\n", pe.bias & 0x7FFFF,
@@ -866,25 +1146,96 @@ void print_pe_h16(const hwx_state_t *state) {
   if (state->valid[(H16_PE_START + 0x8) / 4])
     printf("        PE Scale  : 0x%05x (%f)\n", pe.scale & 0x7FFFF,
            decode_f19(pe.scale));
-  if (state->valid[(H16_PE_START + 0x0c) / 4])
-    printf("        PE Final Scale Epsilon : 0x%05x (%f)\n",
-           pe.final_scale_epsilon & 0x7FFFF,
-           decode_f19(pe.final_scale_epsilon));
   if (state->valid[(H16_PE_START + 0x10) / 4])
     printf("        PE PreScale  : 0x%05x (%f)\n", pe.pre_scale & 0x7FFFF,
            decode_f19(pe.pre_scale));
   if (state->valid[(H16_PE_START + 0x14) / 4])
     printf("        PE Final Scale : 0x%05x (%f)\n", pe.final_scale & 0x7FFFF,
            decode_f19(pe.final_scale));
-  for (int i = 0; i < 8; i++) {
-    if (state->valid[(H16_PE_START + 0x18 + i * 4) / 4])
-      printf("        PE LUT%d    : 0x%08x\n", i + 1, pe.lut[i]);
+
+  if (state->valid[(H16_PE_START + 0x18) / 4]) {
+    printf("        PE Src1   : Index=%u Relu=%d Transpose=%d\n",
+           pe.src1_cfg.src1_idx, pe.src1_cfg.relu, pe.src1_cfg.transpose);
   }
-  if (state->valid[(H16_PE_START + 0x38) / 4]) {
-    printf("        PE Quant  : Src1Off=%u Src2Off=%u OutZP=%u\n",
-           pe.quant.src1_in_off, pe.quant.src2_in_off, pe.quant.out_zp);
+  if (state->valid[(H16_PE_START + 0x20) / 4]) {
+    printf("        PE Src2   : Index=%u Relu=%d Transpose=%d\n",
+           pe.src2_cfg.src2_idx, pe.src2_cfg.relu, pe.src2_cfg.transpose);
   }
 }
+
+void print_pe_h18(const hwx_state_t *state) {
+  ane_pe_h18_t pe = *(ane_pe_h18_t *)&state->values[H16_PE_START / 4];
+  printf("        --- Planar Engine (0x4500) [H18] ---\n");
+
+  if (state->valid[H16_PE_START / 4]) {
+    static const char *pe_op_names[] = {"None", "Add", "Mul", "Min",
+                                        "Max",  "5?",  "6?",  "7?"};
+    printf("        PE Config : Pool=%u Op=%u(%s) LutEn=%u Cond=%u RedIdx=%u "
+           "RedKeep=%u NLMode=%u CtoW=%u Src1Idx=%u Src2Idx=%u MaxIdx=%u\n",
+           pe.pe_cfg.pool_mode, pe.pe_cfg.op, pe_op_names[pe.pe_cfg.op & 7],
+           pe.pe_cfg.lut_en, pe.pe_cfg.cond, pe.pe_cfg.red_idx,
+           pe.pe_cfg.red_keep, pe.pe_cfg.nl_mode, pe.pe_cfg.c_to_w,
+           pe.pe_cfg.src1_idx, pe.pe_cfg.src2_idx, pe.pe_cfg.max_idx);
+  }
+  if (state->valid[(H16_PE_START + 0x4) / 4])
+    printf("        PE Bias   : 0x%05x (%f)\n", pe.bias & 0x7FFFF,
+           decode_f19(pe.bias));
+  if (state->valid[(H16_PE_START + 0x8) / 4])
+    printf("        PE Scale  : 0x%05x (%f)\n", pe.scale & 0x7FFFF,
+           decode_f19(pe.scale));
+  if (state->valid[(H16_PE_START + 0x10) / 4])
+    printf("        PE PreScale  : 0x%05x (%f)\n", pe.pre_scale & 0x7FFFF,
+           decode_f19(pe.pre_scale));
+  if (state->valid[(H16_PE_START + 0x14) / 4])
+    printf("        PE Final Scale : 0x%05x (%f)\n", pe.final_scale & 0x7FFFF,
+           decode_f19(pe.final_scale));
+}
+
+void print_l2_h17(const hwx_state_t *state) {
+  const ane_l2_h17_t *l2 =
+      (const ane_l2_h17_t *)&state->values[(H16_L2_START) / 4];
+  printf("        --- L2 Cache Control (0x4100) [H17] ---\n");
+  if (state->valid[H16_L2_START / 4]) {
+    printf("        L2_Control: 0x%08x\n", l2->l2_control);
+  }
+
+  if (state->valid[(H16_L2_START + 0x04) / 4]) {
+    printf("        L2_Src1Cfg: 0x%08x\n", l2->dma_cfg.src1_cfg);
+  }
+  if (state->valid[(H16_L2_START + 0x08) / 4]) {
+    printf("        L2_Src2Cfg: 0x%08x\n", l2->dma_cfg.src2_cfg);
+  }
+
+  printf("        L2_Src1: Base=0x%x0 RS=0x%x0 CS=0x%x0 DS=0x%x0 GS=0x%x0\n",
+         l2->src1.base, l2->src1.row_stride, l2->src1.channel_stride,
+         l2->src1.depth_stride, l2->src1.group_stride);
+
+  printf("        L2_Result: Base=0x%x0 CS=0x%x0 RS=0x%x0 DS=0x%x0 GS=0x%x0 Type=0x%x\n",
+         l2->result.base, l2->result.channel_stride, l2->result.row_stride,
+         l2->result.depth_stride, l2->result.group_stride, l2->result.res_type_cfg);
+  
+  if (state->valid[(H16_L2_START + 0x64) / 4]) {
+      printf("        L2_WrapCfg: 0x%08x\n", l2->wrap_cfg);
+  }
+}
+
+void print_l2_h18(const hwx_state_t *state) {
+  const ane_l2_h18_t *l2 =
+      (const ane_l2_h18_t *)&state->values[(H16_L2_START) / 4];
+  printf("        --- L2 Cache Control (0x4100) [H18] ---\n");
+  if (state->valid[H16_L2_START / 4]) {
+    printf("        L2_Control: 0x%08x\n", l2->l2_control);
+  }
+
+  printf("        L2_Src1: Base=0x%x0 RS=0x%x0 CS=0x%x0 DS=0x%x0 GS=0x%x0\n",
+         l2->src1.base, l2->src1.row_stride, l2->src1.channel_stride,
+         l2->src1.depth_stride, l2->src1.group_stride);
+
+  printf("        L2_Result: Base=0x%x0 CS=0x%x0 RS=0x%x0 DS=0x%x0 GS=0x%x0 Type=0x%x\n",
+         l2->result.base, l2->result.channel_stride, l2->result.row_stride,
+         l2->result.depth_stride, l2->result.group_stride, l2->result.res_type_cfg);
+}
+
 
 void print_pe_index_h16(const hwx_state_t *state) {
   uint32_t addr = H16_PE_EXT_START;
@@ -919,27 +1270,30 @@ void print_l2_h16(const hwx_state_t *state) {
                (val >> 17) & 0x7f);
   }
 
+  if (state->valid[H16_L2_START / 4]) {
+    printf("        L2_Control: 0x%08x\n", state->values[(H16_L2_START) / 4]);
+  }
+
   if (state->valid[(H16_L2_START + 0x04) / 4]) {
     uint32_t dma_fmt = l2->src1_cfg.dma_fmt;
     const char *fmt_str = (dma_fmt == 0) ? "8b" : (dma_fmt == 1) ? "16b" : (dma_fmt == 3) ? "32b" : "Unk";
-    printf("        Src1Cfg  : Type=%u (%s) Dependent=%u EnRelu=%u (%s) DMAFmt=%u (%s) "
+    printf("        Src1Cfg  : Type=%u (%s) Dependent=%u EnRelu=%u DMAFmt=%u (%s) "
            "Alias(C=%d,P=%d,CR=%d,PR=%d) Cmp=%u\n",
            l2->src1_cfg.src_type, L2_TYPE_STR(l2->src1_cfg.src_type),
            l2->src1_cfg.dependent, l2->l2_control.src1_relu,
-           l2->l2_control.src1_relu ? "Enabled" : "Disabled",
            dma_fmt, fmt_str,
            l2->src1_cfg.alias_conv_src, l2->src1_cfg.alias_planar_src,
            l2->src1_cfg.alias_conv_rslt, l2->src1_cfg.alias_planar_rslt,
            l2->src1_cfg.compression);
   }
+
   if (state->valid[(H16_L2_START + 0x08) / 4]) {
     uint32_t dma_fmt = l2->src2_cfg.dma_fmt;
     const char *fmt_str = (dma_fmt == 0) ? "8b" : (dma_fmt == 1) ? "16b" : (dma_fmt == 3) ? "32b" : "Unk";
-    printf("        Src2Cfg  : Type=%u (%s) Dependent=%u EnRelu=%u (%s) DMAFmt=%u (%s) "
+    printf("        Src2Cfg  : Type=%u (%s) Dependent=%u EnRelu=%u DMAFmt=%u (%s) "
            "Alias(C=%d,P=%d,CR=%d,PR=%d) Cmp=%u\n",
            l2->src2_cfg.src_type, L2_TYPE_STR(l2->src2_cfg.src_type),
            l2->src2_cfg.dependent, l2->l2_control.src2_relu,
-           l2->l2_control.src2_relu ? "Enabled" : "Disabled",
            dma_fmt, fmt_str,
            l2->src2_cfg.alias_conv_src, l2->src2_cfg.alias_planar_src,
            l2->src2_cfg.alias_conv_rslt, l2->src2_cfg.alias_planar_rslt,
@@ -1071,6 +1425,15 @@ const char *get_texture_mode_name(uint32_t mode) {
   }
 }
 
+const char *get_hw_tensor_format_mode_name(uint32_t mode) {
+  switch (mode) {
+    case 0: return "None";
+    case 1: return "Cmp";
+    case 2: return "Lossy";
+    default: return "Unknown";
+  }
+}
+
 void print_tiledmasrc_h16(const hwx_state_t *state) {
   const ane_tiledmasrc_h16_t *src =
       (const ane_tiledmasrc_h16_t *)&state->values[H16_TILEDMA_SRC_START / 4];
@@ -1179,15 +1542,6 @@ void print_tiledmasrc_h16(const hwx_state_t *state) {
   }
 }
 
-const char *get_hw_tensor_format_mode_name(uint32_t mode) {
-  switch (mode) {
-    case 0: return "None";
-    case 1: return "Cmp";
-    case 2: return "Lossy";
-    default: return "Unknown";
-  }
-}
-
 void print_tiledmadst_h16(const hwx_state_t *state) {
   const ane_tiledmadst_h16_t *dst =
       (const ane_tiledmadst_h16_t *)&state->values[H16_TILEDMA_DST_START / 4];
@@ -1289,6 +1643,57 @@ void print_kerneldmasrc_h16(const hwx_state_t *state) {
            k->non_linear_cfg.user_tag);
 }
 
+void print_kerneldmasrc_h17(const hwx_state_t *state) {
+  const ane_kerneldmasrc_h17_t *k =
+      (const ane_kerneldmasrc_h17_t *)&state->values[H16_KERNELDMA_START / 4];
+  printf("        --- KernelDMASrc (0x5500) [H17] ---\n");
+  if (state->valid[H16_KERNELDMA_START / 4])
+    printf("        MasterCfg: En=%d Sparse=%d Reuse=%d\n", k->pe_cfg.enable,
+           k->pe_cfg.sparse, k->pe_cfg.reuse);
+  if (state->valid[(H16_KERNELDMA_START + 0x04) / 4])
+    printf("        AlignedCoeffSize: 0x%08x\n", k->aligned_coeff_size);
+  if (state->valid[(H16_KERNELDMA_START + 0x08) / 4])
+    printf("        Prefetch : 0x%08x\n", k->prefetch);
+  if (state->valid[(H16_KERNELDMA_START + 0x18) / 4])
+    printf("        StrideX  : %u\n", k->stridex);
+  if (state->valid[(H16_KERNELDMA_START + 0x1c) / 4])
+    printf("        StrideY  : %u\n", k->stridey);
+
+  for (int i = 0; i < 16; i++) {
+    if (state->valid[(H16_KERNELDMA_START + 0x20) / 4 + i]) {
+      printf("        CoeffCfg[%d] : Hint=%u DSID=%u Tag=%u\n", i,
+             k->coeff_dma_cfg[i].cache_hint, k->coeff_dma_cfg[i].dataset_id,
+             k->coeff_dma_cfg[i].user_tag);
+    }
+  }
+  for (int i = 0; i < 16; i++) {
+    if (state->valid[(H16_KERNELDMA_START + 0x60) / 4 + i]) {
+      printf("        CoeffBase[%d]: 0x%08x\n", i, k->coeff_base_addr[i]);
+    }
+  }
+  for (int i = 0; i < 16; i++) {
+    if (state->valid[(H16_KERNELDMA_START + 0xa0) / 4 + i]) {
+      printf("        CoeffSize[%d]: 0x%08x\n", i, k->coeff_mem_bfr_size[i]);
+    }
+  }
+  if (state->valid[(H16_KERNELDMA_START + 0xe0) / 4])
+    printf("        BiasCfg  : Hint=%u\n", k->bias_dma_cfg.cache_hint);
+  if (state->valid[(H16_KERNELDMA_START + 0xf0) / 4])
+    printf("        PSCfg    : Hint=%u\n", k->postscale_dma_cfg.cache_hint);
+  if (state->valid[(H16_KERNELDMA_START + 0x100) / 4])
+    printf("        PalCfg   : Hint=%u Tag=%u\n", k->palette_dma_cfg.cache_hint,
+           k->palette_dma_cfg.user_tag);
+  if (state->valid[(H16_KERNELDMA_START + 0x110) / 4])
+    printf("        NLutCfg  : Hint=%u Tag=%u\n", k->nlut_dma_cfg.cache_hint,
+           k->nlut_dma_cfg.user_tag);
+}
+
+void print_kerneldmasrc_h18(const hwx_state_t *state) {
+  printf("        --- KernelDMASrc (0x5500) [H18] ---\n");
+  print_kerneldmasrc_h17(state);
+}
+
+
 void print_cachedma_h16(const hwx_state_t *state) {
   ane_cachedma_h16_t cdma =
       *(ane_cachedma_h16_t *)&state->values[H16_CACHEDMA_START / 4];
@@ -1335,6 +1740,11 @@ void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
     print_common_h16(state);
     print_ne_h16(state);
     print_pe_index_h16(state);
+  if (state->subtype == 9)
+    print_pe_h17(state);
+  else if (state->subtype == 10)
+    print_pe_h18(state);
+  else
     print_pe_h16(state);
     print_l2_h16(state);
     print_tiledmasrc_h16(state);
@@ -1343,17 +1753,43 @@ void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
     print_cachedma_h16(state);
 
     if (dump_reg_blocks) {
-      hwx_block_info_t blocks[] = {
-          {"[0x0000] Common Module", H16_COMMON_START, 23},
-          {"[0x4100] L2 Cache Control", H16_L2_START, 41},
-          {"[0x4500] Planar Engine (PE)", H16_PE_START, 16},
-          {"[0x4900] Neural Engine Core (NE)", H16_NE_START, 12},
-          {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START, 81},
-          {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START, 21},
-          {"[0x5500] KernelDMA Source", H16_KERNELDMA_START, 72},
-          {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START, 12},
-      };
-      dump_hw_blocks(state, blocks, 8, get_m4_reg_name);
+      if (state->instr_ver == 20) {
+        hwx_block_info_t blocks[] = {
+          {"[0x0000] Common Module", H16_COMMON_START, H18_COMMON_COUNT},
+          {"[0x4100] L2 Cache Control", H16_L2_START, H18_L2_COUNT},
+          {"[0x4500] Planar Engine (PE)", H16_PE_START, H18_PE_COUNT},
+          {"[0x4900] Neural Engine Core (NE)", H16_NE_START, H18_NE_COUNT},
+          {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START, H18_TILEDMA_SRC_COUNT},
+          {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START, H18_TILEDMA_DST_COUNT},
+          {"[0x5500] KernelDMA Source", H16_KERNELDMA_START, H18_KERNELDMA_COUNT},
+          {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START, H18_CACHEDMA_COUNT},
+        };
+        dump_hw_blocks(state, blocks, 8, get_h18_reg_name);
+      } else if (state->instr_ver == 19) {
+        hwx_block_info_t blocks[] = {
+          {"[0x0000] Common Module", H16_COMMON_START, H17_COMMON_COUNT},
+          {"[0x4100] L2 Cache Control", H16_L2_START, H17_L2_COUNT},
+          {"[0x4500] Planar Engine (PE)", H16_PE_START, H17_PE_COUNT},
+          {"[0x4900] Neural Engine Core (NE)", H16_NE_START, H17_NE_COUNT},
+          {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START, H17_TILEDMA_SRC_COUNT},
+          {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START, H17_TILEDMA_DST_COUNT},
+          {"[0x5500] KernelDMA Source", H16_KERNELDMA_START, H17_KERNELDMA_COUNT},
+          {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START, H17_CACHEDMA_COUNT},
+        };
+        dump_hw_blocks(state, blocks, 8, get_h17_reg_name);
+      } else {
+        hwx_block_info_t blocks[] = {
+            {"[0x0000] Common Module", H16_COMMON_START, 23},
+            {"[0x4100] L2 Cache Control", H16_L2_START, 41},
+            {"[0x4500] Planar Engine (PE)", H16_PE_START, 16},
+            {"[0x4900] Neural Engine Core (NE)", H16_NE_START, 12},
+            {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START, 81},
+            {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START, 21},
+            {"[0x5500] KernelDMA Source", H16_KERNELDMA_START, 72},
+            {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START, 12},
+        };
+        dump_hw_blocks(state, blocks, 8, get_m4_reg_name);
+      }
     }
   } else {
     print_common_h13(state);
@@ -1385,8 +1821,15 @@ void report_hwx_state_json(const hwx_state_t *state) {
   [dict setObject:@(state->subtype) forKey:@"subtype"];
 
   NSMutableArray *regs = [NSMutableArray array];
-  const char *(*name_lookup)(uint32_t) =
-      (state->instr_ver >= 11) ? get_m4_reg_name : get_m1_reg_name;
+  const char *(*name_lookup)(uint32_t) = NULL;
+  if (state->instr_ver == 20)
+    name_lookup = get_h18_reg_name;
+  else if (state->instr_ver == 19)
+    name_lookup = get_h17_reg_name;
+  else if (state->instr_ver >= 11)
+    name_lookup = get_m4_reg_name;
+  else
+    name_lookup = get_m1_reg_name;
 
   for (uint32_t r = 0; r < HW_MAX_REGS; r++) {
     if (state->valid[r]) {

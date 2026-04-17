@@ -320,7 +320,8 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 | **0x4168** | `+0x410` | **Src1WrapStart** | **WrapNumBlocks**: 0-11, **WrapLen**: 12-31. |
 | **0x416C** | `+0x414` | **Src2WrapStart** | **WrapNumBlocks**: 0-11, **WrapLen**: 12-31. |
 | **0x4170** | `+0x418` | **L2Reserved** |  |
-| **0x4174** | `+0x41c` | **ResultWrapStart**| **IndexMask**: 0-3, **StartOffset**: 4-15. |
+| **0x4174** | `+0x41c` | **ResultWrapIndex** | Halfword (`strh`): **WrapIndex**: 0-15. _(SetL2ResultWrapIndex)_ |
+| **0x4176** | `+0x41e` | **ResultWrapStartOffset** | Halfword (`strh`): **StartOffset**: 0-15. _(SetL2ResultWrapStartOffset)_ |
 | **0x4178** | `+0x420` | **MiscField0x4178** |  |
 | **0x417C** | `+0x424` | **MiscField0x417C** |  |
 | **0x4180** | `+0x428` | **MiscField0x4180** |  |
@@ -330,8 +331,8 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 | **0x4190** | `+0x438` | **Src1AddrWrap** |  |
 | **0x4194** | `+0x43c` | **Src2AddrWrap** |  |
 | **0x4198** | `+0x440` | **L2Reserved** |  |
-| **0x419C** | `+0x444` | **ResultWrapAddr** |  |
-| **0x41A0** | `+0x448` | **CropOffsetTexture** | **Src1X**: 0-5, **Src1Y**: 8-12, **Src2X**: 16-21, **Src2Y**: 24-28. |
+| **0x419C** | `+0x444` | **ResultWrapAddrCfg** | **ResultWrapAddr**: 0-11 (12b, L2 block units; _SetL2ResultWrapAddr_), **ResultWrapAddrOffset**: 16-26 (11b; _SetL2ResultWrapAddrOffset_). |
+| **0x41A0** | `+0x448` | **SrcOffsetXlsbs** | **SrcOffsetXlsbs**: 0-5 (6b; _SetL2SrcOffsetXlsbs_), **SrcOffsetYlsbs**: 8-12 (5b; _SetL2SrcOffsetYlsbsFromCropOffsetY_). |
 
 ### Planar Engine (PE) (0x4500 block, Object `+0x454`)
 - **Count**: 15 registers (`0x0f` words, `0x3c` bytes).

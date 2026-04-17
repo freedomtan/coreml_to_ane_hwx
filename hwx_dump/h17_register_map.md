@@ -17,6 +17,8 @@ Exhaustive row-by-row mapping for H17 (A18).
 ## Common (0x0000)
 - **Count**: 23 registers (`0x17` words, `0x5c` bytes).
 - **Object Layout**: Starts at `+0x1f8` of the `ZinAneTd` object.
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
 | :--- | :--- | :--- | :--- |
 | **0x0000** | `+0x1f8` | **ChCfg** |  |
 | **0x0004** | `+0x1fc` | **MirrorWord_1** |  |
@@ -43,11 +45,14 @@ Exhaustive row-by-row mapping for H17 (A18).
 | **0x0058** | `+0x250` | **MirrorWord_22** |  |
 
 
+
 ## L2 Cache (0x4100)
 - **Base Offset**: `+0x3bc` (relative to ZinAneTd base).
 - **Structure**: 42 registers (`0x2a` words, `0xa8` bytes).
 - **Alignment Note**: H17 (v19) uses a 3-word shift relative to H18 (v20); Source 1 starts at Index 7 (+0x3d8).
 
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
 | :--- | :--- | :--- | :--- |
 | **0x4100** | `+0x3bc` | **Control** |  |
 | **0x4104** | `+0x3c0` | **MirrorWord_1** |  |
@@ -92,8 +97,11 @@ Exhaustive row-by-row mapping for H17 (A18).
 
 
 
+
 ## Planar Engine (PE) (0x4500)
 - **Object Layout**: Starts at `+0x3dc` of the `ZinAneTd` object.
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
 | :--- | :--- | :--- | :--- |
 | **0x4500** | `+0x3dc` | **Config** | **OpMode**: 2-4, **FirstSource**: 16-18, **SecondSource**: 19-21. |
 | **0x4504** | `+0x3e0` | **Bias** |  |
@@ -113,10 +121,13 @@ Exhaustive row-by-row mapping for H17 (A18).
 | **0x453C** | `+0x418` | **ExtraCfg** |  |
 
 
+
 ## Neural Engine (NE) (0x4900)
 - **Base Offset**: `+0x3a0` (relative to ZinAneTd base).
 - **Structure**: Core convolution and post-processing registers.
 
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
 | :--- | :--- | :--- | :--- |
 | **0x4900** | `+0x3a0` | **KernelCfg** |  |
 | **0x4904** | `+0x3a4` | **MacCfg** |  |
@@ -133,10 +144,13 @@ Exhaustive row-by-row mapping for H17 (A18).
 | **0x4930** | `+0x3d0` | **ExtraCfg** |  |
 
 
+
 ## TileDMA Source (TileDmaSrc) (0x4D00)
 - **Base Offset**: `+0x290` (relative to ZinAneTd base).
 - **Structure**: 81 registers (`0x51` words, `0x144` bytes).
 
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
 | :--- | :--- | :--- | :--- |
 | **0x4D00** | `+0x290` | **Src1BaseLo** |  |
 | **0x4D04** | `+0x294` | **Src1BaseHi** |  |
@@ -218,10 +232,13 @@ Exhaustive row-by-row mapping for H17 (A18).
 | **0x4E40** | `+0x3d0` | **Src1UserTag** |  |
 
 
+
 ## TileDMA Destination (TileDmaDst) (0x5100)
 - **Base Offset**: `+0x4f0` (relative to ZinAneTd base).
 - **Structure**: 23 registers (`0x17` words, `0x5c` bytes).
 
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
 | :--- | :--- | :--- | :--- |
 | **0x5100** | `+0x4f0` | **DstBaseAddrLo** |  |
 | **0x5104** | `+0x4f4` | **DstBaseAddrHi** |  |
@@ -247,9 +264,12 @@ Exhaustive row-by-row mapping for H17 (A18).
 | **0x5158** | `+0x548` | **DstUserTag** |  |
 
 
+
 ## KernelDMA Source (KernelDmaSrc) (0x5500)
 - **Count**: 81 registers (`0x51` words, `0x144` bytes).
 - **Object Layout**: Starts at `+0x034` of the `ZinAneTd` object.
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
 | :--- | :--- | :--- | :--- |
 | **0x5500** | `+0x034` | **KernelDmaEnable** |  |
 | **0x5504** | `+0x038` | **AlignedCoeffSize** |  |
@@ -334,10 +354,13 @@ Exhaustive row-by-row mapping for H17 (A18).
 | **0x5640** | `+0x174` | **KernelDmaUserTag** |  |
 
 
+
 ## CacheDMA (0x5900)
 - **Base Offset**: `+0x554` (relative to ZinAneTd base).
 - **Structure**: 14 registers (`0x0e` words, `0x38` bytes).
 
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
 | :--- | :--- | :--- | :--- |
 | **0x5900** | `+0x554` | **CacheDmaEnable** |  |
 | **0x5904** | `+0x558` | **CacheDmaW1_Res** |  |
@@ -355,10 +378,13 @@ Exhaustive row-by-row mapping for H17 (A18).
 | **0x5934** | `+0x588` | **PrefetchRate** |  |
 
 
+
 ## Hardware Traits (ZinHWTraits<19u>)
 The compiler maintains a set of statically defined traits for the H17 architecture (19u) that explicitly dictate the raw memory offsets of hardware components.
 
 ### L2 Stride Offsets
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
 | :--- | :--- | :--- | :--- |
 | ANE_L2_SOURCE_CHANNEL_STRIDE_OFFSET | `+Source 1` | Channel |  |
 | ANE_L2_SOURCE_ROW_STRIDE_OFFSET | `+Source 1` | Row |  |
@@ -374,7 +400,10 @@ The compiler maintains a set of statically defined traits for the H17 architectu
 | ANE_L2_RESULT_GROUP_STRIDE_OFFSET | `+Result` | Group |  |
 
 
+
 ### Tile DMA Stride Offsets
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
 | :--- | :--- | :--- | :--- |
 | ANE_TILE_DMA_SRC_ROW_STRIDE_OFFSET | `+Source 1` | Row |  |
 | ANE_TILE_DMA_SRC_PLANE_STRIDE_OFFSET | `+Source 1` | Plane |  |
@@ -387,9 +416,13 @@ The compiler maintains a set of statically defined traits for the H17 architectu
 | ANE_TILE_DMA_DST_ROW_STRIDE_OFFSET | `+Destination` | Row |  |
 
 
+
 ## Standalone Performance Tracer Registers
+
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
 | :--- | :--- | :--- | :--- |
 | **0x5D00** | `+0x4a8` | **PETraceCfg** | Found via HandlesPerfTracerConfig disassembly |
 | **0x5D04** | `+0x4e4` | **NETraceCfg** | Found via HandlesPerfTracerConfig disassembly |
+
 
 

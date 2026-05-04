@@ -892,20 +892,39 @@ void print_ne_h16(const hwx_state_t *state) {
   if (state->valid[(H16_NE_START + 0x2c) / 4])
     printf("        QuantZeroPoint: %d\n", qzp);
 }
+
 void print_pe_h16(const hwx_state_t *state) {
   uint32_t task_type = 0;
+  bool is_task_type_valid = false;
+  uint32_t maccfg_offset = 0;
+
   if (state->instr_ver >= 20) {
-    task_type = ((const ane_common_h18_t *)&state->values[H16_COMMON_START / 4])
-                    ->maccfg.task_type;
+    maccfg_offset = 0x48;
+    if (state->valid[(H16_COMMON_START + maccfg_offset) / 4]) {
+      task_type =
+          ((const ane_common_h18_t *)&state->values[H16_COMMON_START / 4])
+              ->maccfg.task_type;
+      is_task_type_valid = true;
+    }
   } else if (state->instr_ver >= 19) {
-    task_type = ((const ane_common_h17_t *)&state->values[H16_COMMON_START / 4])
-                    ->maccfg.task_type;
+    maccfg_offset = 0x48;
+    if (state->valid[(H16_COMMON_START + maccfg_offset) / 4]) {
+      task_type =
+          ((const ane_common_h17_t *)&state->values[H16_COMMON_START / 4])
+              ->maccfg.task_type;
+      is_task_type_valid = true;
+    }
   } else {
-    task_type = ((const ane_common_h16_t *)&state->values[H16_COMMON_START / 4])
-                    ->maccfg.task_type;
+    maccfg_offset = 0x3C;
+    if (state->valid[(H16_COMMON_START + maccfg_offset) / 4]) {
+      task_type =
+          ((const ane_common_h16_t *)&state->values[H16_COMMON_START / 4])
+              ->maccfg.task_type;
+      is_task_type_valid = true;
+    }
   }
 
-  if (state->valid[(H16_COMMON_START + 0x3c) / 4] && task_type == 0)
+  if (is_task_type_valid && task_type == 0)
     return;
 
   printf("        --- Planar Engine (0x4500) ---\n");
@@ -952,23 +971,37 @@ void print_pe_h16(const hwx_state_t *state) {
     fs = pe->final_scale;
   }
 
-  task_type = get_task_type_mapping(task_type);
-  pool_str = (task_type == 0 || task_type == 2)
-                 ? get_pe_pool_mode_name_v17(pool)
-                 : "None";
-  op_str =
-      (task_type >= 3 && task_type <= 6) ? get_pe_op_mode_name_v17(op) : "None";
+  if (is_task_type_valid) {
+    task_type = get_task_type_mapping(task_type);
+    pool_str = (task_type == 0 || task_type == 2)
+                   ? get_pe_pool_mode_name_v17(pool)
+                   : "None";
+    op_str = (task_type >= 3 && task_type <= 6) ? get_pe_op_mode_name_v17(op)
+                                                : "None";
 
-  if (task_type == 7) {
-    uint32_t pe_common_cfg = state->values[(H16_COMMON_START + 0x40) / 4];
-    printf("        PE Config (GOC) : Cond=%u CtoW=%u Src1Sel=%u Src2Sel=%u\n",
-           (pe_common_cfg >> 4) & 0x1F, (pe_common_cfg >> 10) & 1,
-           (pe_common_cfg >> 16) & 3, (pe_common_cfg >> 18) & 3);
+    if (task_type == 7) {
+      uint32_t pe_common_cfg_offset = (state->instr_ver >= 19) ? 0x4C : 0x40;
+      if (state->valid[(H16_COMMON_START + pe_common_cfg_offset) / 4]) {
+        uint32_t pe_common_cfg =
+            state->values[(H16_COMMON_START + pe_common_cfg_offset) / 4];
+        printf(
+            "        PE Config (GOC) : Cond=%u CtoW=%u Src1Sel=%u Src2Sel=%u\n",
+            (pe_common_cfg >> 4) & 0x1F, (pe_common_cfg >> 10) & 1,
+            (pe_common_cfg >> 16) & 3, (pe_common_cfg >> 18) & 3);
+      }
+    } else if (state->valid[H16_PE_START / 4]) {
+      printf("        PE Config : Pool=%u (%s) Op=%u (%s) LutEn=%u Cond=%u "
+             "RedIdx=%u "
+             "RedKeep=%u NLMode=%u Src1=%u Src2=%u\n",
+             pool, pool_str, op, op_str, lut_en, cond, red_idx, red_keep, nl,
+             src1, src2);
+    }
   } else if (state->valid[H16_PE_START / 4]) {
     printf("        PE Config : Pool=%u (%s) Op=%u (%s) LutEn=%u Cond=%u "
            "RedIdx=%u "
            "RedKeep=%u NLMode=%u Src1=%u Src2=%u\n",
-           pool, pool_str, op, op_str, lut_en, cond, red_idx, red_keep, nl,
+           pool, get_pe_pool_mode_name_v17(pool), op,
+           get_pe_op_mode_name_v17(op), lut_en, cond, red_idx, red_keep, nl,
            src1, src2);
   }
 

@@ -125,7 +125,7 @@ void print_usage(const char* prog_name) {
               << "  /tmp/<model_name>.mlmodelc/\n"
               << "  └── model.mil            MIL source file\n\n"
               << "Output file structure:\n"
-              << "  /tmp/hwx_output/<model_name>/\n"
+              << "  /tmp/hwx_output/<model_name>_<arch>/\n"
               << "  ├── model.hwx                   Compiled binary\n"
               << "  ├── model.hwx_AnalyticsBuffer_main  Performance data\n"
               << "  ├── analytics.json              JSON analytics export\n"
@@ -309,7 +309,7 @@ int compile_mil_to_hwx(const CompilerConfig& config) {
         return 1;
     }
 
-    std::string model_output_dir = config.output_path + config.model_name + "/";
+    std::string model_output_dir = config.output_path + config.model_name + "_" + config.target_arch + "/";
     if (!create_directory(model_output_dir)) {
         std::cerr << "Error: Failed to create model output directory: " << model_output_dir << "\n";
         return 1;
@@ -344,6 +344,7 @@ int compile_mil_to_hwx(const CompilerConfig& config) {
 
     // Analytics flags
     if (config.generate_analytics) {
+        flagsDict[@"DumpStatusDictionaryToFile"] = @YES;
         flagsDict[@"GenerateStaticPerfAnalytics"] = @YES;
         flagsDict[@"GenerateAnalyticsBuffer"] = @YES;
     }
@@ -403,7 +404,7 @@ int compile_mil_to_hwx(const CompilerConfig& config) {
  * Extract and analyze analytics
  */
 int extract_analytics(const CompilerConfig& config) {
-    std::string model_output_dir = config.output_path + config.model_name + "/";
+    std::string model_output_dir = config.output_path + config.model_name + "_" + config.target_arch + "/";
     std::string hwx_path = model_output_dir + "model.hwx";
     std::string analytics_path = model_output_dir + "model.hwx_AnalyticsBuffer_main";
     std::string json_path = model_output_dir + "analytics.json";

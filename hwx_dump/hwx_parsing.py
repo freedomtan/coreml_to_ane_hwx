@@ -504,12 +504,42 @@ def decode_pe_h16(values, valid):
         print("        --- Planar Engine (0x4500) ---")
         if valid[base]:
             pc = values.get(base, 0)
-            print(f"        PECfg     : Op={(pc>>2)&7} LutEn={(pc>>5)&1} Cond={(pc>>6)&7} Src1={(pc>>16)&1} Src2={(pc>>18)&3}")
-            
+            # PE Config (0x4500) register bitfields:
+            pool_mode = pc & 3  # bits 0-1
+            operation = (pc >> 2) & 7  # bits 2-4
+            lut_en = (pc >> 5) & 1  # bit 5 (LUT enable for exp/log/etc)
+            condition = (pc >> 6) & 0xf  # bits 6-9
+            nl_mode = (pc >> 12) & 3  # bits 12-13
+            src1_sel = (pc >> 16) & 1  # bit 16
+            src2_sel = (pc >> 18) & 3  # bits 18-19
+
+            # Decode operation names
+            op_names = ["Add", "Mul", "Max", "Min", "Sub", "Div", "Op6", "Op7"]
+            pool_names = ["None", "Avg", "Max", "Min"]
+            cond_names = ["None", "Abs", "Eq", "Gt", "GE", "LE", "Lt", "NE", "C8", "C9", "C10", "C11", "C12", "C13", "C14", "C15"]
+            nl_names = ["None", "ReLU", "Clamp", "Abs"]
+            src_names = ["Primary", "Texture", "L2", "Reg"]
+
+            op_str = op_names[operation] if operation < len(op_names) else f"Op{operation}"
+            pool_str = pool_names[pool_mode] if pool_mode < len(pool_names) else f"Pool{pool_mode}"
+
+            # LutEn=1 means piecewise-linear LUT is enabled (exp, log, sigmoid, tanh, GELU, etc)
+            lut_hint = " [LUT-ENABLED]" if lut_en == 1 else ""
+
+            print(f"        PE Config : Pool={pool_mode} ({pool_str}) Op={operation} ({op_str}) LutEn={lut_en}{lut_hint} Cond={condition} ({cond_names[condition]}) NLMode={nl_mode} ({nl_names[nl_mode]}) Src1={src1_sel} ({src_names[src1_sel]}) Src2={src2_sel} ({src_names[src2_sel]})")
+
         if valid[base + 1]: print(f"        PE Bias   : 0x{values.get(base+1, 0)&0x7ffff:05x} ({f19(values.get(base+1, 0)):.4f})")
         if valid[base + 2]: print(f"        PE Scale  : 0x{values.get(base+2, 0)&0x7ffff:05x} ({f19(values.get(base+2, 0)):.4f})")
+        if valid[base + 3]: print(f"        PE ScaleEps: 0x{values.get(base+3, 0)&0x7ffff:05x} ({f19(values.get(base+3, 0)):.4f})")
         if valid[base + 4]: print(f"        PE PreScl : 0x{values.get(base+4, 0)&0x7ffff:05x} ({f19(values.get(base+4, 0)):.4f})")
         if valid[base + 5]: print(f"        PE FinScl : 0x{values.get(base+5, 0)&0x7ffff:05x} ({f19(values.get(base+5, 0)):.4f})")
+
+        # LUT parameters (for exp/log approximation in softmax)
+        if any(valid[base + 6 + i] for i in range(8)):
+            lut_vals = [values.get(base + 6 + i, 0) for i in range(8) if valid[base + 6 + i]]
+            if lut_vals:
+                print(f"        PE LUT    : {' '.join([f'0x{v:08x}' for v in lut_vals])} [Piecewise-linear params]")
+
         if valid[base + 14]:
             q = values.get(base + 14, 0)
             print(f"        PE Quant  : S1Off={q&0xff} S2Off={(q>>8)&0xff} OutZP={(q>>16)&0xff}")
@@ -653,7 +683,15 @@ def decode_kerneldma_h16(values, valid):
         for name, off in [("BiasCfg", 56), ("PSScaleCfg", 60), ("PalCfg", 64), ("NLutCfg", 68)]:
             if valid[base + off]:
                 c = values.get(base + off, 0)
-                print(f"        {name:10}: En={c&1} DSID={(c>>8)&0xff} Tag={(c>>16)&0xff}")
+                enabled = c & 1
+                # Add marker for NLut (used in Softmax, LogSoftmax)
+                hint = " [NE-NLUT: Softmax/LogSoftmax exp/log]" if name == "NLutCfg" and enabled else ""
+                print(f"        {name:10}: En={enabled} DSID={(c>>8)&0xff} Tag={(c>>16)&0xff}{hint}")
+
+                # Display NLutBaseAddr if NLutCfg is enabled
+                if name == "NLutCfg" and enabled and valid[base + off + 1]:
+                    addr = values.get(base + off + 1, 0)
+                    print(f"        NLutBase  : 0x{addr:08x} [Non-Linear LUT table in memory]")
 
 def decode_regs(reg_values, reg_valid, subtype):
     arch_ver = get_instruction_set_version(subtype)

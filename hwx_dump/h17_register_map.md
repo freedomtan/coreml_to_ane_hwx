@@ -379,50 +379,37 @@ Exhaustive row-by-row mapping for H17 (A18).
 
 
 
-## Hardware Traits (ZinHWTraits<19u>)
-The compiler maintains a set of statically defined traits for the H17 architecture (19u) that explicitly dictate the raw memory offsets of hardware components.
+## Hardware Traits (`ZinHWTraits<19u>`)
+The compiler maintains a set of statically defined traits for the A18 architecture (`19u`) that explicitly dictate the raw memory offsets of hardware components. Memory dumping `__DATA_CONST` reveals strict validation of our L2 and TileDMA address deductions:
 
-### L2 Stride Offsets
-
-| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
+### L2 Buffer Stride Offsets
+| Trait Symbol | Hex Value | Decimal | Block Affiliation |
 | :--- | :--- | :--- | :--- |
-| ANE_L2_SOURCE_CHANNEL_STRIDE_OFFSET | `+Source 1` | Channel |  |
-| ANE_L2_SOURCE_ROW_STRIDE_OFFSET | `+Source 1` | Row |  |
-| ANE_L2_SOURCE_DEPTH_STRIDE_OFFSET | `+Source 1` | Depth |  |
-| ANE_L2_SOURCE_GROUP_STRIDE_OFFSET | `+Source 1` | Group |  |
-| ANE_L2_SOURCE2_CHANNEL_STRIDE_OFFSET | `+Source 2` | Channel |  |
-| ANE_L2_SOURCE2_ROW_STRIDE_OFFSET | `+Source 2` | Row |  |
-| ANE_L2_SOURCE2_DEPTH_STRIDE_OFFSET | `+Source 2` | Depth |  |
-| ANE_L2_SOURCE2_GROUP_STRIDE_OFFSET | `+Source 2` | Group |  |
-| ANE_L2_RESULT_CHANNEL_STRIDE_OFFSET | `+Result` | Channel |  |
-| ANE_L2_RESULT_ROW_STRIDE_OFFSET | `+Result` | Row |  |
-| ANE_L2_RESULT_DEPTH_STRIDE_OFFSET | `+Result` | Depth |  |
-| ANE_L2_RESULT_GROUP_STRIDE_OFFSET | `+Result` | Group |  |
-
-
+| `ANE_L2_SOURCE_CHANNEL_STRIDE_OFFSET` | `0x4114` | `16660` | Src1 Channel Stride |
+| `ANE_L2_SOURCE_ROW_STRIDE_OFFSET` | `0x4118` | `16664` | Src1 Row Stride |
+| `ANE_L2_SOURCE_DEPTH_STRIDE_OFFSET` | `0x411C` | `16668` | Src1 Depth Stride |
+| `ANE_L2_SOURCE_GROUP_STRIDE_OFFSET` | `0x4120` | `16672` | Src1 Group Stride |
+| `ANE_L2_SOURCE2_CHANNEL_STRIDE_OFFSET` | `0x4128` | `16680` | Src2 Channel Stride |
+| `ANE_L2_SOURCE2_ROW_STRIDE_OFFSET` | `0x412C` | `16684` | Src2 Row Stride |
+| `ANE_L2_SOURCE2_DEPTH_STRIDE_OFFSET` | `0x4130` | `16688` | Src2 Depth Stride |
+| `ANE_L2_SOURCE2_GROUP_STRIDE_OFFSET` | `0x4134` | `16692` | Src2 Group Stride |
+| `ANE_L2_RESULT_CHANNEL_STRIDE_OFFSET` | `0x4150` | `16720` | Result Channel Stride |
+| `ANE_L2_RESULT_ROW_STRIDE_OFFSET` | `0x4154` | `16724` | Result Row Stride |
+| `ANE_L2_RESULT_DEPTH_STRIDE_OFFSET` | `0x4158` | `16728` | Result Depth Stride |
+| `ANE_L2_RESULT_GROUP_STRIDE_OFFSET` | `0x415C` | `16732` | Result Group Stride |
 
 ### Tile DMA Stride Offsets
-
-| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
+| Trait Symbol | Hex Value | Decimal | Block Affiliation |
 | :--- | :--- | :--- | :--- |
-| ANE_TILE_DMA_SRC_ROW_STRIDE_OFFSET | `+Source 1` | Row |  |
-| ANE_TILE_DMA_SRC_PLANE_STRIDE_OFFSET | `+Source 1` | Plane |  |
-| ANE_TILE_DMA_SRC_DEPTH_STRIDE_OFFSET | `+Source 1` | Depth |  |
-| ANE_TILE_DMA_SRC_GROUP_STRIDE_OFFSET | `+Source 1` | Group |  |
-| ANE_TILE_DMA_SRC_ROW_STRIDE2_OFFSET | `+Source 2` | Row |  |
-| ANE_TILE_DMA_SRC_PLANE_STRIDE2_OFFSET | `+Source 2` | Plane |  |
-| ANE_TILE_DMA_SRC_DEPTH_STRIDE2_OFFSET | `+Source 2` | Depth |  |
-| ANE_TILE_DMA_SRC_GROUP_STRIDE2_OFFSET | `+Source 2` | Group |  |
-| ANE_TILE_DMA_DST_ROW_STRIDE_OFFSET | `+Destination` | Row |  |
-
-
-
-## Standalone Performance Tracer Registers
-
-| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
-| :--- | :--- | :--- | :--- |
-| **0x5D00** | `+0x4a8` | **PETraceCfg** | Found via HandlesPerfTracerConfig disassembly |
-| **0x5D04** | `+0x4e4` | **NETraceCfg** | Found via HandlesPerfTracerConfig disassembly |
-
-
-
+| `ANE_TILE_DMA_SRC_ROW_STRIDE_OFFSET` | `0x4D18` | `19736` | TileDmaSrc1 Row Stride |
+| `ANE_TILE_DMA_SRC_PLANE_STRIDE_OFFSET` | `0x4D1C` | `19740` | TileDmaSrc1 Channel Stride |
+| `ANE_TILE_DMA_SRC_DEPTH_STRIDE_OFFSET` | `0x4D20` | `19744` | TileDmaSrc1 Depth Stride |
+| `ANE_TILE_DMA_SRC_GROUP_STRIDE_OFFSET` | `0x4D24` | `19748` | TileDmaSrc1 Group Stride |
+| `ANE_TILE_DMA_SRC_ROW_STRIDE2_OFFSET` | `0x4D30` | `19760` | TileDmaSrc2 Row Stride |
+| `ANE_TILE_DMA_SRC_PLANE_STRIDE2_OFFSET` | `0x4D34` | `19764` | TileDmaSrc2 Channel Stride |
+| `ANE_TILE_DMA_SRC_DEPTH_STRIDE2_OFFSET` | `0x4D38` | `19768` | TileDmaSrc2 Depth Stride |
+| `ANE_TILE_DMA_SRC_GROUP_STRIDE2_OFFSET` | `0x4D3C` | `19772` | TileDmaSrc2 Group Stride |
+| `ANE_TILE_DMA_DST_ROW_STRIDE_OFFSET` | `0x5110` | `20752` | TileDmaDst Row Stride |
+| `ANE_TILE_DMA_DST_PLANE_STRIDE_OFFSET` | `0x5114` | `20756` | TileDmaDst Channel Stride |
+| `ANE_TILE_DMA_DST_DEPTH_STRIDE_OFFSET` | `0x5118` | `20760` | TileDmaDst Depth Stride |
+| `ANE_TILE_DMA_DST_GROUP_STRIDE_OFFSET` | `0x511C` | `20764` | TileDmaDst Group Stride |

@@ -174,8 +174,8 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x0048** | `+0x240` | **PECfg** | **Src1Broadcast**: 0-3, **Src2Broadcast**: 4-7, **Src1Transpose**: 8, **Src2Transpose**: 9, **OutputTranspose**: 10, **IdxTranspose**: 14, **IdxBroadcast**: 15, **PEPrimarySource**: 16-18, **ActiveNE**: 19-21. |
 | **0x004C** | `+0x244` | **NID** | Network ID / Layer Trace ID. |
 | **0x0050** | `+0x248` | **DPE** | Distributed Processing Element config. |
-| **0x0080** | `+0x278` | **GocStrideX** | **StrideX**: 0-31. (Relocated in H16). |
-| **0x0084** | `+0x27c` | **GocStrideY** | **StrideY**: 0-31. (Relocated in H16). |
+| **0x0054** | `+0x24c` | **Reserved0** | Padding / unused in H16. |
+| **0x0058** | `+0x250` | **Reserved1** | Padding / unused in H16. |
 
 *Note: M4 drops `ChannelDmaLength` and several M1 properties. E4M3Overflow and TextureBypassFilter are explicitly unsupported in the binary.*
 

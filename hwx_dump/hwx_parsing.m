@@ -946,18 +946,6 @@ void print_common_h16(const hwx_state_t *state) {
     printf("        NID       : 0x%08x\n", nid);
   if (state->valid[(H16_COMMON_START + 0x50) / 4])
     printf("        DPE       : 0x%08x\n", dpe);
-  if (state->valid[(H16_COMMON_START + 0x54) / 4])
-    printf("        DPE0      : 0x%08x\n", dpe0);
-  if (state->valid[(H16_COMMON_START + 0x58) / 4])
-    printf("        DPE1      : 0x%08x\n", dpe1);
-  if (task_type == 7) {
-    if (state->valid[(H16_COMMON_START + 0x80) / 4])
-      printf("        GocStrideX: %d\n",
-             state->values[(H16_COMMON_START + 0x80) / 4]);
-    if (state->valid[(H16_COMMON_START + 0x84) / 4])
-      printf("        GocStrideY: %d\n",
-             state->values[(H16_COMMON_START + 0x84) / 4]);
-  }
 }
 
 void print_ne_h16(const hwx_state_t *state) {

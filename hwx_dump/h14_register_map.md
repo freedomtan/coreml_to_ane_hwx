@@ -182,7 +182,7 @@ The `ZinAneTd<11u>` object (descriptor) is divided into these hardware-mapped re
 | **0x0044** | `0x0044` | `+0x230` | **NID** | Network ID / Layer Trace ID. |
 | **0x0048** | `0x0048` | `+0x234` | **DPE** | Distributed Processing Element config. |
 
-*Note: H14 Common block is narrower than H16 (19 vs 23 registers). H16 adds `UnicastCfg`, `PECfg`, and relocated `GocStrideX/Y`.*
+*Note: H14 Common block is narrower than H16 (19 vs 23 registers). H16 adds `UnicastCfg` and `PECfg`.*
 
 ### TileDMA Source (0x1100 OLD / 0x4D00 Modern, Object `+0x240`)
 - **Count**: 53 registers (`0x35` words, `0xD4` bytes).

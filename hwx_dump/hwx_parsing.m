@@ -38,6 +38,22 @@ const char *get_m1_reg_name(uint32_t addr) {
   return lookup_reg_name(addr, m1_ranges, 7);
 }
 
+// H14 (ISA v11, subtype 5) uses OLD hardware addresses.
+// PE=0x0900, NE=0x0D00, TileDmaDst=0x1500, no CacheDMA block.
+const char *get_h14_reg_name(uint32_t addr) {
+  static const hwx_reg_range_t h14_ranges[] = {
+      {H14_COMMON_START,      H14_COMMON_COUNT,      h13_common_names},
+      {H14_L2_START,          H14_L2_COUNT,           h13_l2_names},
+      {H14_PE_START,          H14_PE_COUNT,           h13_pe_names},
+      {H14_NE_START,          H14_NE_COUNT,           h13_ne_names},
+      {H14_TILEDMA_SRC_START, H14_TILEDMA_SRC_COUNT,  h13_tdma_src_names},
+      {H14_TILEDMA_DST_START, H14_TILEDMA_DST_COUNT,  h13_tdma_dst_names},
+      {H14_KERNELDMA_START,   H14_KERNELDMA_COUNT,    h13_kdma_names},
+  };
+
+  return lookup_reg_name(addr, h14_ranges, 7);
+}
+
 const char *get_m4_reg_name(uint32_t addr) {
   static const hwx_reg_range_t m4_ranges[] = {
       {H16_COMMON_START, 23, h16_common_names},
@@ -1662,7 +1678,30 @@ void print_cachedma_h16(const hwx_state_t *state) {
 }
 
 void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
-  if (state->instr_ver >= 11) {
+  if (state->instr_ver == 11) {
+    // H14 (ISA v11 / subtype 5): OLD hardware addresses
+    // PE=0x0900, NE=0x0D00, TileDmaDst=0x1500, no CacheDMA.
+    print_common_h13(state);   // Common layout matches H13 struct
+    print_l2_h13(state);       // L2 at 0x0500
+    print_pe_h13(state);       // PE at 0x0900
+    print_ne_h13(state);       // NE at 0x0D00
+    print_tiledmasrc_h13(state); // TileDmaSrc at 0x1100
+    print_tiledmadst_h13(state); // TileDmaDst at 0x1500
+    print_kerneldmasrc_h13(state); // KernelDmaSrc at 0x1900
+
+    if (dump_reg_blocks) {
+      hwx_block_info_t blocks[] = {
+          {"[0x0000] Common Module",       H14_COMMON_START,      H14_COMMON_COUNT},
+          {"[0x0500] L2 Cache Control",    H14_L2_START,          H14_L2_COUNT},
+          {"[0x0900] Planar Engine (PE)",  H14_PE_START,          H14_PE_COUNT},
+          {"[0x0D00] Neural Engine (NE)",  H14_NE_START,          H14_NE_COUNT},
+          {"[0x1100] TileDMA Source",      H14_TILEDMA_SRC_START, H14_TILEDMA_SRC_COUNT},
+          {"[0x1500] TileDMA Destination", H14_TILEDMA_DST_START, H14_TILEDMA_DST_COUNT},
+          {"[0x1900] KernelDMA Source",    H14_KERNELDMA_START,   H14_KERNELDMA_COUNT},
+      };
+      dump_hw_blocks(state, blocks, 7, get_h14_reg_name);
+    }
+  } else if (state->instr_ver > 11) {
     print_common_h16(state);
     print_ne_h16(state);
     print_pe_index_h16(state);
@@ -1751,7 +1790,7 @@ void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
 
 void report_hwx_state_json(const hwx_state_t *state) {
   NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-  [dict setObject:(state->instr_ver >= 11 ? @"M4" : @"M1") forKey:@"arch"];
+  [dict setObject:(state->instr_ver > 11 ? @"M4" : state->instr_ver == 11 ? @"H14" : @"M1") forKey:@"arch"];
   [dict setObject:@(state->subtype) forKey:@"subtype"];
 
   NSMutableArray *regs = [NSMutableArray array];
@@ -1760,8 +1799,10 @@ void report_hwx_state_json(const hwx_state_t *state) {
     name_lookup = get_h18_reg_name;
   else if (state->instr_ver == 19)
     name_lookup = get_h17_reg_name;
-  else if (state->instr_ver >= 11)
+  else if (state->instr_ver > 11)
     name_lookup = get_m4_reg_name;
+  else if (state->instr_ver == 11)
+    name_lookup = get_h14_reg_name;
   else
     name_lookup = get_m1_reg_name;
 
@@ -2141,7 +2182,7 @@ static void handle_segment_64(const struct mach_header_64 *header,
         if (strcmp(sect->sectname, "__text") == 0 ||
             strcmp(sect->sectname, "__TEXT") == 0) {
           uint32_t instr_ver = get_instruction_set_version(header->cpusubtype);
-          // H15 (subtype 6, ISA V8) uses Dense format despite ISA < 11
+          // H14 (subtype 5, ISA v11) and H15 (subtype 6, ISA v8) both use Dense format
           if (instr_ver >= 11 || header->cpusubtype == 6) {
             decode_ane_td_m4(section_ptr, section_size, header->cpusubtype,
                              dump_reg_blocks, dump_json);

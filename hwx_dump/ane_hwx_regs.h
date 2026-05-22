@@ -11,13 +11,32 @@
 #define HW_MAX_REGS 0x20000
 
 // Architecture block start addresses
-#define H13_COMMON_START 0x0000
-#define H13_L2_START 0x4800
-#define H13_PE_START 0x8800
-#define H13_NE_START 0xC800
+#define H13_COMMON_START    0x0000
+#define H13_L2_START        0x4800
+#define H13_PE_START        0x8800
+#define H13_NE_START        0xC800
 #define H13_TILEDMA_SRC_START 0x13800
 #define H13_TILEDMA_DST_START 0x17800
 #define H13_KERNELDMA_START 0x1F800
+
+// H14 (ISA v11, subtype 5) OLD hardware addresses
+// All blocks share a uniform +0x3C00 offset to the modern (H16) address space.
+#define H14_COMMON_START      0x0000
+#define H14_L2_START          0x0500
+#define H14_PE_START          0x0900
+#define H14_NE_START          0x0D00
+#define H14_TILEDMA_SRC_START 0x1100
+#define H14_TILEDMA_DST_START 0x1500
+#define H14_KERNELDMA_START   0x1900
+
+// H14 register counts (from InitializeTdToDefaults() disassembly)
+#define H14_COMMON_COUNT      19
+#define H14_L2_COUNT          25
+#define H14_PE_COUNT           5
+#define H14_NE_COUNT           5
+#define H14_TILEDMA_SRC_COUNT 53
+#define H14_TILEDMA_DST_COUNT  9
+#define H14_KERNELDMA_COUNT   70
 
 #define H16_COMMON_START 0x0000
 #define H16_L2_START 0x4100

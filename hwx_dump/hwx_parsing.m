@@ -1922,7 +1922,7 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
     }
 
     hwx_state_t state = {0};
-    state.instr_ver = 11;
+    state.instr_ver = get_instruction_set_version(subtype);
     state.subtype = subtype;
 
     const uint32_t *words = (const uint32_t *)(ptr + offset);
@@ -2141,7 +2141,8 @@ static void handle_segment_64(const struct mach_header_64 *header,
         if (strcmp(sect->sectname, "__text") == 0 ||
             strcmp(sect->sectname, "__TEXT") == 0) {
           uint32_t instr_ver = get_instruction_set_version(header->cpusubtype);
-          if (instr_ver >= 11) {
+          // H15 (subtype 6, ISA V8) uses Dense format despite ISA < 11
+          if (instr_ver >= 11 || header->cpusubtype == 6) {
             decode_ane_td_m4(section_ptr, section_size, header->cpusubtype,
                              dump_reg_blocks, dump_json);
           } else {

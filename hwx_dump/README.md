@@ -23,7 +23,7 @@ The `.hwx` file is a customized Mach-O binary.
 | H14/H14c/H14g (A15/M2) | 5 | 11 |
 | H15/H15c/H15g (A16/M3) | 6 | 8 |
 | H16/H16c/H16g/H16s (A17 Pro/M4) | 7 | 17 |
-| H17/H17a/H17g (A18 Pro/M5) | 9 | 19 |
+| H17/H17a/H17g (A18/A18 Pro/M5) | 9 | 19 |
 | H18 (A19/A19 Pro) | 10 | 20 |
 
 > [!NOTE]

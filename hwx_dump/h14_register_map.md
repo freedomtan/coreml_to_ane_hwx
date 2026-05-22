@@ -8,19 +8,19 @@ The `ZinAneTd<11u>` object maps internal offsets to hardware register blocks as 
 | `+0x1ec` | `0x13` (19) | `0x0000` | `0x004C` | `0x0000` | Common (InDim, OutDim, Conv params) |
 | `+0x240` | `0x35` (53) | `0x1100` | `0x11D4` | `0x4D00` | TileDmaSrc (Engine Control) |
 | `+0x31c` | `0x19` (25) | `0x0500` | `0x0564` | `0x4100` | L2 Cache / Buffer |
-| `+0x388` | `0x05` (5)  | `0x0900` | `0x0914` | `0x4900` | NE (Neural Engine) |
-| `+0x3a4` | `0x05` (5)  | `0x0D00` | `0x0D14` | `0x5100` | TileDmaDst (Engine Control) |
-| `+0x3c0` | `0x09` (9)  | `0x1500` | `0x1524` | `0x5900` | CacheDMA & Telemetry |
+| `+0x388` | `0x05` (5)  | `0x0900` | `0x0914` | `0x4500` | PE (Planar Engine) |
+| `+0x3a4` | `0x05` (5)  | `0x0D00` | `0x0D14` | `0x4900` | NE (Neural Engine) |
+| `+0x3c0` | `0x09` (9)  | `0x1500` | `0x1524` | `0x5100` | TileDmaDst (Engine Control) |
 
 Before registers, there are some header words.
 
 **⚠️ H14 Address Translation Note:** H14 (`ZinAneTd<11u>`) uses an OLD hardware address layout. Modern tools (H15+) remap these:
 - `0x0000` → `0x0000` (Common — unchanged)
 - `0x0500` → `0x4100` (L2 Cache — `+0x3C00`)
-- `0x0900` → `0x4900` (NE — `+0x4000`)
-- `0x0D00` → `0x5100` (TileDmaDst — `+0x4400`)
+- `0x0900` → `0x4500` (PE — `+0x3C00`)
+- `0x0D00` → `0x4900` (NE — `+0x3C00`)
 - `0x1100` → `0x4D00` (TileDmaSrc — `+0x3C00`)
-- `0x1500` → `0x5900` (CacheDMA — `+0x4400`)
+- `0x1500` → `0x5100` (TileDmaDst — `+0x3C00`)
 - `0x1900` → `0x5500` (KernelDmaSrc — `+0x3C00`)
 
 *All block offsets verified from `ZinAneTd<11u>::InitializeTdToDefaults()` at 0x1a6bff68c.*
@@ -60,8 +60,9 @@ Word Index is computed as `HW Addr (OLD) / 4`.
 | **11** | `0x002C` | `0x002C` | **ConvCfg3d** | **Kd**: 0-5, **Sz**: 6-11, **Pz**: 12-16, **Oz**: 17-21. |
 | **12** | `0x0030` | `0x0030` | **MacCfg** | **TaskType**: 0-3, **ActiveNE**: 4-6, **SmallSrc**: 7, **ReluType**: 8-10. |
 | ... | ... | ... | ... | ... |
-| **0x240** | `0x0900` | `0x4900` | **KernelCfg** | **Fmt**: 0-1, **PalettizedEn**: 2, **SparseEn**: 8. |
-| **0x241** | `0x0904` | `0x4904` | **MacCfg (NE)** | **OpMode**: 0-2, **KernelMode**: 3, **BinPoint**: 8-13. |
+| **0x240** | `0x0900` | `0x4500` | **PEConfig** | **PoolMode**: 0-1, **Operation**: 2-4, **NLMode**: 12-13. |
+| **0x350** | `0x0D00` | `0x4900` | **KernelCfg** | **Fmt**: 0-1, **PalettizedEn**: 2, **SparseEn**: 8. |
+| **0x351** | `0x0D04` | `0x4904` | **MacCfg (NE)** | **OpMode**: 0-2, **KernelMode**: 3, **BinPoint**: 8-13. |
 | **0x646** | `0x1918` | `0x5518` | **KernelStrideX** | **StrideX**: 6-31. (NEW in H14) |
 | **0x647** | `0x191C` | `0x551C` | **KernelStrideY** | **StrideY**: 6-31. (NEW in H14) |
 
@@ -69,12 +70,11 @@ Word Index is computed as `HW Addr (OLD) / 4`.
 The `ZinAneTd<11u>` object (descriptor) is divided into these hardware-mapped regions:
 - **Common (0x0000)**: Generic geometry, patch size, and primary convolution config.
 - **L2 Cache (0x0500 OLD / 0x4100 Modern)**: L2 buffer strides and wrap offsets.
-- **PE**: Planar Engine (Bias, Quantization, Pooling) — not initialized in `InitializeTdToDefaults`; written via `CommonConfig` API methods.
-- **NE (0x0900 OLD / 0x4900 Modern)**: Neural Engine core config (KernelFmt, OpMode, BinaryPoint).
+- **PE (0x0900 OLD / 0x4500 Modern)**: Planar Engine — Bias, Quantization, Pooling.
+- **NE (0x0D00 OLD / 0x4900 Modern)**: Neural Engine core config (KernelFmt, OpMode, BinaryPoint).
 - **TileDmaSrc (0x1100 OLD / 0x4D00 Modern)**: Tile DMA Source with DataSet IDs and 4D pixel offsets.
-- **TileDmaDst (0x0D00 OLD / 0x5100 Modern)**: Tile DMA Destination with DataSet ID.
+- **TileDmaDst (0x1500 OLD / 0x5100 Modern)**: Tile DMA Destination with DataSet ID.
 - **KernelDmaSrc (0x1900 OLD / 0x5500 Modern)**: Stride, coefficients, sparse block sizes, and 16-buffer DMA.
-- **CacheDMA (0x1500 OLD / 0x5900 Modern)**: Telemetry and cache prefetch control.
 
 ## Detailed Bitfield Mappings
 
@@ -280,65 +280,45 @@ The `ZinAneTd<11u>` object (descriptor) is divided into these hardware-mapped re
 | **0x0560** | `0x4160` | `+0x37c` | **ResultWrapStartOffset** | **StartOffset**: 0-15. (`SetL2ResultWrapStartOffset`) |
 | **0x0564** | `0x4164` | `+0x380` | **L2Reserved** | |
 
-### Neural Engine (NE) (0x0900 OLD / 0x4900 Modern, Object `+0x388`)
+### Planar Engine (PE) (0x0900 OLD / 0x4500 Modern, Object `+0x388`)
 - **Count**: 5 registers (`0x05` words, `0x14` bytes).
 - **Object Layout**: Starts at `+0x388` of the `ZinAneTd` object.
 
 | OLD HW Addr | Modern HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- | :--- |
-| **0x0900** | `0x4900` | `+0x388` | **KernelCfg** | **Fmt**: 0-1, **PalettizedEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **Reuse**: 10, **SparseBinary**: 15, **Align**: 16, **BlockSize**: 21-23. |
-| **0x0904** | `0x4904` | `+0x38c` | **MacCfg** | **OpMode**: 0-2 (0:Conv, 1:EW, 2:RCAS, 4:Bypass, 5:Transconv), **KMode**: 3, **BiasEn**: 4, **PassEn**: 5, **BinPoint**: 8-13, **NLMode**: 16-17. |
-| **0x0908** | `0x4908` | `+0x390` | **NEBias** | **BiasVal**: 0-15, **ExpIdx**: 16-20. |
-| **0x090C** | `0x490C` | `+0x394` | **NEPostScale** | **ScaleVal**: 0-15, **ExpIdx**: 16-20 (Negated). |
-| **0x0910** | `0x4910` | `+0x398` | **RoundModeCfg** | **Mode**: 0-1, **IntBits**: 4-8. |
-| **0x0914** | `0x4914` | `+0x39c` | **SRSeed0** | **Seed**: 0-31. |
+| **0x0900** | `0x4500` | `+0x388` | **PEConfig** | **PoolMode**: 0-1, **Operation**: 2-4, **NLMode**: 12-13. |
+| **0x0904** | `0x4504` | `+0x38c` | **Bias** | 19-bit Floating Point (F19) bias value. |
+| **0x0908** | `0x4508` | `+0x390` | **Scale** | 19-bit Floating Point (F19) scale value. |
+| **0x090C** | `0x450C` | `+0x394` | **PreScale** | 19-bit Floating Point (F19) pre-scale value. |
+| **0x0910** | `0x4510` | `+0x398` | **Quant** | **Src1InputOffset**: 0-7, **Src2InputOffset**: 8-15, **OutputZeroPoint**: 16-23. |
 
-### TileDMA Destination (0x0D00 OLD / 0x5100 Modern, Object `+0x3a4`)
+### Neural Engine (NE) (0x0D00 OLD / 0x4900 Modern, Object `+0x3a4`)
 - **Count**: 5 registers (`0x05` words, `0x14` bytes).
 - **Object Layout**: Starts at `+0x3a4` of the `ZinAneTd` object.
 
-| OLD HW Addr | Modern HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
+| OLD HW Addr | Modern HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- | :--- |
-| **0x0D00** | `0x5100` | `+0x3a4` | **DstDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. (NEW: DataSetId in H14) |
-| **0x0D04** | `0x5104` | `+0x3a8` | **DstBaseAddr** | **Addr**: 6-31. |
-| **0x0D08** | `0x5108` | `+0x3ac` | **DstRowStride** | **Stride**: 6-31. |
-| **0x0D0C** | `0x510C` | `+0x3b0` | **DstPlaneStride** | **Stride**: 6-31. |
-| **0x0D10** | `0x5110` | `+0x3b4` | **DstFmt** | **FormatMode**: 0-1, **MemFmt**: 12-13. |
-| **0x0D14** | `0x5114` | `+0x3b8` | **DstPixelOffset** | **PixelOffset**: 0-15. (H14 preserves 4D pixel offset; removed in H16) |
+| **0x0D00** | `0x4900` | `+0x3a4` | **KernelCfg** | **Fmt**: 0-1, **PalettizedEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **Reuse**: 10, **SparseBinary**: 15, **Align**: 16, **BlockSize**: 21-23. |
+| **0x0D04** | `0x4904` | `+0x3a8` | **MacCfg** | **OpMode**: 0-2 (0:Conv, 1:EW, 2:RCAS, 4:Bypass, 5:Transconv), **KMode**: 3, **BiasEn**: 4, **PassEn**: 5, **BinPoint**: 8-13, **NLMode**: 16-17. |
+| **0x0D08** | `0x4908` | `+0x3ac` | **NEBias** | **BiasVal**: 0-15, **ExpIdx**: 16-20. |
+| **0x0D0C** | `0x490C` | `+0x3b0` | **NEPostScale** | **ScaleVal**: 0-15, **ExpIdx**: 16-20 (Negated). |
+| **0x0D10** | `0x4910` | `+0x3b4` | **RoundModeCfg** | **Mode**: 0-1, **IntBits**: 4-8. |
 
-### CacheDMA / Telemetry (0x1500 OLD / 0x5900 Modern, Object `+0x3c0`)
+### TileDMA Destination (0x1500 OLD / 0x5100 Modern, Object `+0x3c0`)
 - **Count**: 9 registers (`0x09` words, `0x24` bytes).
 - **Object Layout**: Starts at `+0x3c0` of the `ZinAneTd` object.
 
-| OLD HW Addr | Modern HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
+| OLD HW Addr | Modern HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- | :--- |
-| **0x1500** | `0x5900` | `+0x3c0` | **TelemetryControl** | **Flush**: 0, **Enable**: 1, **TaskSync**: 2-3, **EarlyTerm**: 4-8. |
-| **0x1504** | `0x5904` | `+0x3c4` | **TelemetryPre0** | **BandwidthLimit**, **SieveFiltering**, **ResponseAgeOut**. |
-| **0x1508** | `0x5908` | `+0x3c8` | **TelemetryPre1** | **UserTag**, **Sieve1**: 0-13. |
-| **0x150C** | `0x590C` | `+0x3cc` | **TelemetryReserved1** | Reserved. |
-| **0x1510** | `0x5910` | `+0x3d0` | **TelemetryReserved2** | Reserved. |
-| **0x1514** | `0x5914` | `+0x3d4` | **TelemetryReserved3** | Reserved. |
-| **0x1518** | `0x5918` | `+0x3d8` | **TelemetryDSID** | **DataSetIdAndSize**: 7-29. |
-| **0x151C** | `0x591C` | `+0x3dc` | **FootprintArg** | **FootprintArg2**: 17-27. |
-| **0x1520** | `0x5920` | `+0x3e0` | **EarlyTermArg12** | **Arg1**: 0-15, **Arg2**: 16-31. |
-| **0x1524** | `0x5924` | `+0x3e4` | **FlushRegister** | **FlushArg**: 0-15. |
-
-### Planar Engine (PE) — Not initialized in `InitializeTdToDefaults`
-- **HW Address**: Not present in `InitializeTdToDefaults()`; written via `CommonConfig` API methods.
-- **Object Offset**: Unknown (inferred ~`+0x454` from H16 layout; unverified for H14).
-- **Register Count**: Unknown.
-
-The PE block in H14 is configured exclusively through higher-level API calls (`HandleCommonConfig`, bias/quantization setters), not the default initialization path. Likely uses the same addresses as H16 (modern `0x4500`), but this is unverified via binary.
-
-| (Inferred) HW Addr | Register Name | Bit-Field Mapping |
-| :--- | :--- | :--- |
-| **0x4500** | **Config** | PoolMode: 0-1, Operation: 2-4, NLMode: 12-13. |
-| **0x4504** | **Bias** | 19-bit Floating Point (F19) bias value. |
-| **0x4508** | **Scale** | 19-bit Floating Point (F19) scale value. |
-| **0x450C** | **FinalScaleEpsilon** | 19-bit Floating Point (F19) epsilon. |
-| **0x4510** | **PreScale** | 19-bit Floating Point (F19) pre-scale value. |
-| **0x4514** | **FinalScale** | 19-bit Floating Point (F19) final scale. |
-| **0x4538** | **Quant** | **Src1InputOffset**: 0-7, **Src2InputOffset**: 8-15, **OutputZeroPoint**: 16-23. |
+| **0x1500** | `0x5100` | `+0x3c0` | **DstDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. (NEW: DataSetId in H14) |
+| **0x1504** | `0x5104` | `+0x3c4` | **DstBaseAddr** | **Addr**: 6-31. |
+| **0x1508** | `0x5108` | `+0x3c8` | **DstRowStride** | **Stride**: 6-31. |
+| **0x150C** | `0x510C` | `+0x3cc` | **DstPlaneStride** | **Stride**: 6-31. |
+| **0x1510** | `0x5110` | `+0x3d0` | **DstDepthStride** | **Stride**: 6-31. |
+| **0x1514** | `0x5114` | `+0x3d4` | **DstGroupStride** | **Stride**: 6-31. |
+| **0x1518** | `0x5118` | `+0x3d8` | **DstFmt** | **FormatMode**: 0-1, **MemFmt**: 12-13. |
+| **0x151C** | `0x511C` | `+0x3dc` | **DstPixelOffset** | **PixelOffset**: 0-15. (H14 preserves pixel offset; removed in H16) |
+| **0x1520** | `0x5120` | `+0x3e0` | **DstReserved** | Reserved. |
 
 ## Cross-Cutting Subsystems
 
@@ -351,14 +331,14 @@ Certain high-level configurations touch multiple disparate hardware blocks simul
 - **Planar Engine** (via CommonConfig API): Configures `bias`, `scale`, `pre_scale`, `final_scale`, and `quant` zero points.
 
 **SetQuantizationOutputZeroOffset**
-- **Neural Engine** (`+0x38c` / `0x0904`): Flips bit flags in `mac_cfg`.
-- **Neural Engine** (`+0x398`): Writes to `quant` (post scale).
+- **Neural Engine** (`+0x3a8` / `0x0D04`): Flips bit flags in `mac_cfg`.
+- **Neural Engine** (`+0x3b4`): Writes to post scale.
 
 ### DataSet IDs (NEW in H14)
 H14 introduces DataSet ID fields across DMA blocks to enable memory tracking in multi-model execution:
 - `SetTileDmaSrc1DataSetId(uint32_t)` — writes to `Src1DMAConfig[8:15]`
 - `SetTileDmaSrc2DataSetId(uint32_t)` — writes to `Src2DMAConfig[8:15]`
-- `SetTileDmaDstDataSetId(uint32_t)` — writes to `DstDMAConfig[8:15]`
+- `SetTileDmaDstDataSetId(uint32_t)` — writes to `DstDMAConfig[8:15]` at OLD `0x1500`
 - `SetKernelDmaSrcDataSetId(uint32_t, unsigned long)` — writes per-buffer `CoeffDMAConfig[N][8:15]`
 
 ### Sparse Kernel Block Size (NEW in H14)
@@ -371,9 +351,7 @@ The compiler maintains statically defined traits for the H14 architecture (`11u`
 | Group | OLD Base | Modern Base | Offset Delta | Blocks |
 | :--- | :--- | :--- | :--- | :--- |
 | **Group 0** | `0x0000` | `0x0000` | `+0x0000` | Common |
-| **Group 1** | `0x0500` | `0x4100` | `+0x3C00` | L2 Cache, TileDmaSrc, KernelDmaSrc |
-| **Group 2** | `0x0900` | `0x4900` | `+0x4000` | NE (Neural Engine) |
-| **Group 3** | `0x0D00` | `0x5100` | `+0x4400` | TileDmaDst, CacheDMA |
+| **Group 1** | `0x0500` | `0x4100` | `+0x3C00` | L2 Cache, PE, NE, TileDmaSrc, TileDmaDst, KernelDmaSrc |
 
 ### L2 Buffer Stride Offsets (OLD addresses)
 | Trait Symbol | OLD Hex | Modern Hex | Block Affiliation |
@@ -402,8 +380,8 @@ The compiler maintains statically defined traits for the H14 architecture (`11u`
 | `ANE_TILE_DMA_SRC_PLANE_STRIDE2_OFFSET` | `0x112C` | `0x4D2C` | TileDmaSrc2 Channel Stride |
 | `ANE_TILE_DMA_SRC_DEPTH_STRIDE2_OFFSET` | `0x1130` | `0x4D30` | TileDmaSrc2 Depth Stride |
 | `ANE_TILE_DMA_SRC_GROUP_STRIDE2_OFFSET` | `0x1134` | `0x4D34` | TileDmaSrc2 Group Stride |
-| `ANE_TILE_DMA_DST_ROW_STRIDE_OFFSET` | `0x0D08` | `0x5108` | TileDmaDst Row Stride |
-| `ANE_TILE_DMA_DST_PLANE_STRIDE_OFFSET` | `0x0D0C` | `0x510C` | TileDmaDst Channel Stride |
+| `ANE_TILE_DMA_DST_ROW_STRIDE_OFFSET` | `0x1508` | `0x5108` | TileDmaDst Row Stride |
+| `ANE_TILE_DMA_DST_PLANE_STRIDE_OFFSET` | `0x150C` | `0x510C` | TileDmaDst Channel Stride |
 
 ---
 *Verified via binary analysis of ANECompiler (`ZinAneTd<11u>::InitializeTdToDefaults()` at 0x1a6bff68c).*

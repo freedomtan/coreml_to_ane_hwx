@@ -16,33 +16,33 @@ Exhaustive row-by-row mapping for H17 (A18).
 
 ## Common (0x0000)
 - **Count**: 23 registers (`0x17` words, `0x5c` bytes).
-- **Object Layout**: Starts at `+0x1f8` of the `ZinAneTd` object.
+- **Object Layout**: Starts at `+0x204` of the `ZinAneTd` object.
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
 | :--- | :--- | :--- | :--- |
-| **0x0000** | `+0x1f8` | **ChCfg** |  |
-| **0x0004** | `+0x1fc` | **MirrorWord_1** |  |
-| **0x0008** | `+0x200` | **MirrorWord_2** |  |
-| **0x000C** | `+0x204` | **FmtCfg** | **Src1InFmt**: 0-1, **Src2InFmt**: 2-3, **OutFmt**: 4-5. |
-| **0x0010** | `+0x208` | **InWidth** | 0-16. |
-| **0x0014** | `+0x20c` | **InHeight** | 0-16. |
-| **0x0018** | `+0x210` | **InChannels** | 0-16. |
-| **0x001C** | `+0x214` | **InDepth** | 0-16. |
-| **0x0020** | `+0x218` | **OutWidth** | 0-16. |
-| **0x0024** | `+0x21c` | **OutHeight** | 0-16. |
-| **0x0028** | `+0x220` | **OutChannels** | 0-16. |
-| **0x002C** | `+0x224` | **OutDepth** | 0-16. |
-| **0x0030** | `+0x228` | **NumGroups** | 0-16. |
-| **0x0034** | `+0x22c` | **ConvCfg** | **Kw**: 0-5, **Kh**: 6-11, **Sx**: 13-14, **Sy**: 15-16, **Ox**: 28-29, **Oy**: 30-31. |
-| **0x0038** | `+0x230` | **ConvCfg3d** | **Kd**: 0-4, **Sz**: 6-7, **Oz**: 13-14. |
-| **0x003C** | `+0x234` | **TileOverlap** |  |
-| **0x0040** | `+0x238` | **MirrorWord_16** |  |
-| **0x0044** | `+0x23c` | **MirrorWord_17** |  |
-| **0x0048** | `+0x240` | **NECfg** | **TaskType**: 4-7, **PerfTraceEn**: 22. |
-| **0x004C** | `+0x244` | **MirrorWord_19** |  |
-| **0x0050** | `+0x248` | **MirrorWord_20** |  |
-| **0x0054** | `+0x24c` | **MirrorWord_21** |  |
-| **0x0058** | `+0x250` | **MirrorWord_22** |  |
+| **0x0000** | `+0x204` | **FmtCfg** | **Src1InFmt**: 0-1, **Src2InFmt**: 2-3, **OutFmt**: 4-5. |
+| **0x0004** | `+0x208` | **InWidth** | 0-16. |
+| **0x0008** | `+0x20c` | **InHeight** | 0-16. |
+| **0x000C** | `+0x210` | **InChannels** | 0-16. |
+| **0x0010** | `+0x214` | **InDepth** | 0-16. |
+| **0x0014** | `+0x218` | **OutWidth** | 0-16. |
+| **0x0018** | `+0x21c` | **OutHeight** | 0-16. |
+| **0x001C** | `+0x220` | **OutChannels** | 0-16. |
+| **0x0020** | `+0x224` | **OutDepth** | 0-16. |
+| **0x0024** | `+0x228` | **NumGroups** | 0-16. |
+| **0x0028** | `+0x22c` | **ConvCfg** | **Kw**: 0-5, **Kh**: 6-11, **Sx**: 13-14, **Sy**: 15-16, **Ox**: 28-29, **Oy**: 30-31. |
+| **0x002C** | `+0x230` | **ConvCfg3d** | **Kd**: 0-4, **Sz**: 6-7, **Oz**: 13-14. |
+| **0x0030** | `+0x234` | **UnicastCfg** | **UnicastEn**: 14. |
+| **0x0034** | `+0x238` | **TileHeight** | 0-16. |
+| **0x0038** | `+0x23c` | **TileOverlap** | **PadBottom**, **PadTop**. |
+| **0x003C** | `+0x240` | **MacCfg** | **TaskType**: 4-7, **PerfTraceEn**: 22. |
+| **0x0040** | `+0x244` | **NECfg** | **OCGSize**, etc. |
+| **0x0044** | `+0x248` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
+| **0x0048** | `+0x24c` | **PECfg** | **Src1Transpose**, **Src1Broadcast**, etc. |
+| **0x004C** | `+0x250` | **NID** | Network ID / Layer Trace ID. |
+| **0x0050** | `+0x254` | **DPE** | Distributed Processing Element config. |
+| **0x0054** | `+0x258` | **Reserved0** | Padding / unused. |
+| **0x0058** | `+0x25c` | **Reserved1** | Padding / unused. |
 
 
 

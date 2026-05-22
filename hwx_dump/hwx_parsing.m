@@ -517,6 +517,181 @@ void print_kerneldmasrc_h13(const hwx_state_t *state) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// H14 (ISA v11 / subtype 5) semantic printers
+// All read from H14 OLD addresses: Common=0x0000, L2=0x0500, PE=0x0900,
+// NE=0x0D00, TileDmaSrc=0x1100, TileDmaDst=0x1500, KernelDmaSrc=0x1900.
+// ---------------------------------------------------------------------------
+
+void print_common_h14(const hwx_state_t *state) {
+  printf("        --- Common (0x0000) ---\n");
+  // H14 Common layout: 19 registers starting at word 0
+  uint32_t w0  = state->values[H14_COMMON_START/4 + 0];  // ChannelCfg
+  uint32_t w1  = state->values[H14_COMMON_START/4 + 1];  // InWidth
+  uint32_t w2  = state->values[H14_COMMON_START/4 + 2];  // InHeight
+  uint32_t w3  = state->values[H14_COMMON_START/4 + 3];  // InChannels
+  uint32_t w5  = state->values[H14_COMMON_START/4 + 5];  // OutWidth
+  uint32_t w6  = state->values[H14_COMMON_START/4 + 6];  // OutHeight
+  uint32_t w7  = state->values[H14_COMMON_START/4 + 7];  // OutChannels
+  uint32_t w10 = state->values[H14_COMMON_START/4 + 10]; // ConvCfg
+  uint32_t w12 = state->values[H14_COMMON_START/4 + 12]; // MacCfg
+
+  uint32_t infmt  = (w0 >> 0) & 0x3;
+  uint32_t outfmt = (w0 >> 4) & 0x3;
+  uint32_t inw = w1 & 0x3FFF, inh = w2 & 0x3FFF, inc = w3 & 0x3FFF;
+  uint32_t outw = w5 & 0x3FFF, outh = w6 & 0x3FFF, outc = w7 & 0x3FFF;
+  printf("        InDim : W=%u H=%u C=%u Type=%s\n", inw, inh, inc, get_ch_fmt_name(infmt));
+  printf("        OutDim: W=%u H=%u C=%u Type=%s\n", outw, outh, outc, get_ch_fmt_name(outfmt));
+
+  uint32_t kw = (w10 >> 0) & 0x3F, kh = (w10 >> 6) & 0x3F;
+  uint32_t sx = (w10 >> 13) & 0x3, sy = (w10 >> 15) & 0x3;
+  uint32_t pl = (w10 >> 17) & 0x1F, pt = (w10 >> 22) & 0x1F;
+  if (kw || kh)
+    printf("        ConvCfg: K=%ux%u S=%ux%u P(left/top)=%ux%u\n", kw, kh, sx, sy, pl, pt);
+
+  uint32_t task_type = (w12 >> 0) & 0xF;
+  uint32_t active_ne = (w12 >> 4) & 0x7;
+  uint32_t small_src = (w12 >> 7) & 0x1;
+  printf("        MacCfg: TaskType=%u ActiveNE=%u SmallSrc=%u\n", task_type, active_ne, small_src);
+}
+
+void print_l2_h14(const hwx_state_t *state) {
+  printf("        --- L2 Cache (0x0500) ---\n");
+  uint32_t ctrl  = state->values[H14_L2_START/4 + 0];  // 0x0500 Control
+  uint32_t scfg1 = state->values[H14_L2_START/4 + 1];  // 0x0504 Src1Cfg
+  uint32_t scfg2 = state->values[H14_L2_START/4 + 2];  // 0x0508 Src2Cfg
+  uint32_t sbase = state->values[H14_L2_START/4 + 3];  // 0x050C Src1Base
+  uint32_t rcfg  = state->values[H14_L2_START/4 + 13]; // 0x0534 ResultCfg
+  uint32_t rbase = state->values[H14_L2_START/4 + 14]; // 0x0538 ResultBase
+
+  if (!state->valid[H14_L2_START/4] && !state->valid[H14_L2_START/4 + 1])
+    return;
+
+  printf("        L2Ctrl: Src1ReLU=%u PaddingMode=%u Src2ReLU=%u\n",
+         (ctrl >> 0) & 1, (ctrl >> 2) & 3, (ctrl >> 4) & 1);
+  printf("        Src1Cfg: Type=%u DMAFmt=%s Intrlv=%u AliasConvSrc=%u\n",
+         (scfg1 >> 0) & 3, get_l2_dma_fmt_name((scfg1 >> 6) & 3),
+         (scfg1 >> 8) & 0xF, (scfg1 >> 4) & 1);
+  printf("        Src2Cfg: Type=%u DMAFmt=%s Intrlv=%u\n",
+         (scfg2 >> 0) & 3, get_l2_dma_fmt_name((scfg2 >> 6) & 3),
+         (scfg2 >> 8) & 0xF);
+  printf("        Src1Base: 0x%05x\n", sbase);
+  printf("        ResultCfg: Type=%u DMAFmt=%s Intrlv=%u\n",
+         (rcfg >> 0) & 3, get_l2_dma_fmt_name((rcfg >> 6) & 3),
+         (rcfg >> 8) & 0xF);
+  printf("        ResultBase: 0x%05x\n", rbase);
+}
+
+void print_pe_h14(const hwx_state_t *state) {
+  if (!state->valid[H14_PE_START/4])
+    return;
+  printf("        --- Planar Engine (0x0900) ---\n");
+  uint32_t cfg   = state->values[H14_PE_START/4 + 0]; // 0x0900 PEConfig
+  uint32_t bias  = state->values[H14_PE_START/4 + 1]; // 0x0904 Bias (F19)
+  uint32_t scale = state->values[H14_PE_START/4 + 2]; // 0x0908 Scale (F19)
+  uint32_t pre   = state->values[H14_PE_START/4 + 3]; // 0x090C PreScale (F19)
+  uint32_t quant = state->values[H14_PE_START/4 + 4]; // 0x0910 Quant
+  printf("        PECfg: PoolMode=%u Operation=%u NLMode=%u\n",
+         (cfg >> 0) & 3, (cfg >> 2) & 7, (cfg >> 12) & 3);
+  printf("        Bias=0x%05x Scale=0x%05x PreScale=0x%05x\n", bias, scale, pre);
+  printf("        Quant: Src1ZP=%u Src2ZP=%u OutZP=%u\n",
+         (quant >> 0) & 0xFF, (quant >> 8) & 0xFF, (quant >> 16) & 0xFF);
+}
+
+void print_ne_h14(const hwx_state_t *state) {
+  printf("        --- Neural Engine (0x0D00) ---\n");
+  uint32_t kcfg  = state->values[H14_NE_START/4 + 0]; // 0x0D00 KernelCfg
+  uint32_t mcfg  = state->values[H14_NE_START/4 + 1]; // 0x0D04 MacCfg
+  uint32_t bias  = state->values[H14_NE_START/4 + 2]; // 0x0D08 NEBias
+  uint32_t ps    = state->values[H14_NE_START/4 + 3]; // 0x0D0C NEPostScale
+  uint32_t rmode = state->values[H14_NE_START/4 + 4]; // 0x0D10 RoundModeCfg
+
+  printf("        KernelCfg: Fmt=%s PalEn=%u SparseEn=%u Reuse=%u\n",
+         get_ch_fmt_name((kcfg >> 0) & 3),
+         (kcfg >> 2) & 1, (kcfg >> 8) & 1, (kcfg >> 10) & 1);
+  printf("        MacCfg: OpMode=%s KMode=%u BiasEn=%u BinPoint=%u NLMode=%u\n",
+         get_ne_op_mode_name((mcfg >> 0) & 7),
+         (mcfg >> 3) & 1, (mcfg >> 4) & 1, (mcfg >> 8) & 0x3F, (mcfg >> 16) & 3);
+  if (state->valid[H14_NE_START/4 + 2])
+    printf("        NEBias: 0x%08x\n", bias);
+  if (state->valid[H14_NE_START/4 + 3])
+    printf("        NEPostScale: 0x%08x\n", ps);
+  if (state->valid[H14_NE_START/4 + 4])
+    printf("        RoundMode: Mode=%u IntBits=%u\n", (rmode >> 0) & 3, (rmode >> 4) & 0x1F);
+}
+
+void print_tiledmasrc_h14(const hwx_state_t *state) {
+  printf("        --- TileDMA Source (0x1100) ---\n");
+  // Src1
+  uint32_t s1cfg  = state->values[H14_TILEDMA_SRC_START/4 + 0];  // 0x1100
+  uint32_t s1base = state->values[H14_TILEDMA_SRC_START/4 + 4];  // 0x1110
+  uint32_t s1row  = state->values[H14_TILEDMA_SRC_START/4 + 5];  // 0x1114
+  uint32_t s1ch   = state->values[H14_TILEDMA_SRC_START/4 + 6];  // 0x1118
+  uint32_t s1fmt  = state->values[H14_TILEDMA_SRC_START/4 + 14]; // 0x1138
+  // Src2
+  uint32_t s2cfg  = state->values[H14_TILEDMA_SRC_START/4 + 1];  // 0x1104
+  uint32_t s2base = state->values[H14_TILEDMA_SRC_START/4 + 9];  // 0x1124
+  uint32_t s2row  = state->values[H14_TILEDMA_SRC_START/4 + 10]; // 0x1128
+  uint32_t s2fmt  = state->values[H14_TILEDMA_SRC_START/4 + 15]; // 0x113C
+
+  printf("        Src1: En=%u DataSetId=%u CacheHint=%u Base=0x%06x Row=0x%06x Ch=0x%06x\n",
+         (s1cfg >> 0) & 1, (s1cfg >> 8) & 0xFF, (s1cfg >> 4) & 0xF,
+         s1base >> 6, s1row >> 6, s1ch >> 6);
+  printf("        Src1Fmt: Mode=%u MemFmt=%u Intrlv=%u\n",
+         (s1fmt >> 0) & 3, (s1fmt >> 12) & 3, (s1fmt >> 24) & 0xF);
+  if (state->valid[H14_TILEDMA_SRC_START/4 + 1]) {
+    printf("        Src2: En=%u DataSetId=%u Base=0x%06x Row=0x%06x\n",
+           (s2cfg >> 0) & 1, (s2cfg >> 8) & 0xFF, s2base >> 6, s2row >> 6);
+    printf("        Src2Fmt: Mode=%u MemFmt=%u Intrlv=%u\n",
+           (s2fmt >> 0) & 3, (s2fmt >> 12) & 3, (s2fmt >> 24) & 0xF);
+  }
+}
+
+void print_tiledmadst_h14(const hwx_state_t *state) {
+  printf("        --- TileDMA Destination (0x1500) ---\n");
+  uint32_t cfg   = state->values[H14_TILEDMA_DST_START/4 + 0]; // 0x1500
+  uint32_t base  = state->values[H14_TILEDMA_DST_START/4 + 1]; // 0x1504
+  uint32_t row   = state->values[H14_TILEDMA_DST_START/4 + 2]; // 0x1508
+  uint32_t plane = state->values[H14_TILEDMA_DST_START/4 + 3]; // 0x150C
+  uint32_t depth = state->values[H14_TILEDMA_DST_START/4 + 4]; // 0x1510
+  uint32_t group = state->values[H14_TILEDMA_DST_START/4 + 5]; // 0x1514
+  uint32_t fmt   = state->values[H14_TILEDMA_DST_START/4 + 6]; // 0x1518
+  uint32_t pxoff = state->values[H14_TILEDMA_DST_START/4 + 7]; // 0x151C
+
+  printf("        DstCfg: En=%u DataSetId=%u CacheHint=%u\n",
+         (cfg >> 0) & 1, (cfg >> 8) & 0xFF, (cfg >> 4) & 0xF);
+  printf("        DstBase: 0x%06x RowStride=0x%06x PlaneStride=0x%06x\n",
+         base >> 6, row >> 6, plane >> 6);
+  if (depth || group)
+    printf("        DstDepthStride=0x%06x GroupStride=0x%06x\n", depth >> 6, group >> 6);
+  printf("        DstFmt: Mode=%u MemFmt=%u\n", (fmt >> 0) & 3, (fmt >> 12) & 3);
+  if (pxoff)
+    printf("        DstPixelOffset: 0x%04x\n", pxoff & 0xFFFF);
+}
+
+void print_kerneldmasrc_h14(const hwx_state_t *state) {
+  printf("        --- KernelDMA Source (0x1900) ---\n");
+  uint32_t master = state->values[H14_KERNELDMA_START/4 + 0]; // 0x1900
+  uint32_t kgstr  = state->values[H14_KERNELDMA_START/4 + 6]; // 0x1918 KernelGroupStride
+  uint32_t kogstr = state->values[H14_KERNELDMA_START/4 + 7]; // 0x191C KernelOCGStride
+
+  printf("        MasterCfg: GroupKernelReuse=%u SparseFmt=%u MasterEn=%u\n",
+         (master >> 4) & 1, (master >> 5) & 1, (master >> 6) & 1);
+  if (kgstr || kogstr)
+    printf("        KernelStride: GroupStride=%u OCGStride=%u\n", kgstr >> 6, kogstr >> 6);
+
+  // 16 Coeff DMA buffers at words 8-23 (0x1920-0x195C)
+  for (int i = 0; i < 16; i++) {
+    uint32_t ccfg  = state->values[H14_KERNELDMA_START/4 + 8  + i]; // CoeffDMAConfig
+    uint32_t cbase = state->values[H14_KERNELDMA_START/4 + 24 + i]; // CoeffBaseAddr
+    uint32_t csz   = state->values[H14_KERNELDMA_START/4 + 40 + i]; // CoeffBfrSize
+    if ((ccfg >> 0) & 1) {
+      printf("        Coeff[%d]: En=1 DataSetId=%u CacheHint=%u Base=0x%08x Size=0x%08x\n",
+             i, (ccfg >> 8) & 0xFF, (ccfg >> 4) & 0xF, cbase >> 6, csz >> 6);
+    }
+  }
+}
+
 void print_common_h16(const hwx_state_t *state) {
   printf("        --- Common (0x0000) ---\n");
   uint32_t infmt = 0, src2infmt = 0, outfmt = 0;
@@ -1681,13 +1856,13 @@ void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
   if (state->instr_ver == 11) {
     // H14 (ISA v11 / subtype 5): OLD hardware addresses
     // PE=0x0900, NE=0x0D00, TileDmaDst=0x1500, no CacheDMA.
-    print_common_h13(state);   // Common layout matches H13 struct
-    print_l2_h13(state);       // L2 at 0x0500
-    print_pe_h13(state);       // PE at 0x0900
-    print_ne_h13(state);       // NE at 0x0D00
-    print_tiledmasrc_h13(state); // TileDmaSrc at 0x1100
-    print_tiledmadst_h13(state); // TileDmaDst at 0x1500
-    print_kerneldmasrc_h13(state); // KernelDmaSrc at 0x1900
+    print_common_h14(state);
+    print_l2_h14(state);
+    print_pe_h14(state);
+    print_ne_h14(state);
+    print_tiledmasrc_h14(state);
+    print_tiledmadst_h14(state);
+    print_kerneldmasrc_h14(state);
 
     if (dump_reg_blocks) {
       hwx_block_info_t blocks[] = {

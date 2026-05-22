@@ -109,7 +109,7 @@ H15 uses a **hybrid approach**, mixing `ZinAneTd<8u>` and `ZinAneTd<11u>` method
 - **Object Offset:** `+0x1F4` ✅
 - **Register Count:** 19 words ✅
 - **Methods:** 130 (identical to H14)
-- **Status:** Unchanged from H14. See [h14_register_map_complete.md](h14_register_map_complete.md) for details.
+- **Status:** Unchanged from H14. See [h14_register_map.md](h14_register_map.md) for details.
 - **Key Registers:** `ChannelCfg`, `InWidth`, `InHeight`, `InChannels`, `InDepth`, `OutWidth`, `OutHeight`, `OutChannels`, `OutDepth`, `NumGroups`, `ConvCfg`, `ConvCfg3D`, `MacCfg`.
 
 ### L2 Cache Block (0x4100)
@@ -252,9 +252,9 @@ This is the **largest single API consolidation** in ANE history.
 
 From reverse-engineered ANECompiler binary (392 methods total):
 
-1. **TileDMA:** 83 methods (+5 from H14) ([ZinAneTd_H15_TileDMA_Complete.h](ZinAneTd_H15_TileDMA_Complete.h))
-2. **L2 Cache:** 45 methods (-4 from H14) ([ZinAneTd_H15_L2Cache_Complete.h](ZinAneTd_H15_L2Cache_Complete.h))
-3. **Kernel DMA:** 18 methods (**-32 from H14!**) ([ZinAneTd_H15_KernelDMA_Complete.h](ZinAneTd_H15_KernelDMA_Complete.h))
+1. **TileDMA:** 83 methods (+5 from H14)
+2. **L2 Cache:** 45 methods (-4 from H14)
+3. **Kernel DMA:** 18 methods (**-32 from H14!**)
 4. **Common Config:** ~130 methods (same as H14)
 5. **Neural Engine:** 6 methods (same as H13/H14)
 6. **Hazard/Dependency:** ~20 methods (+8 from H14)
@@ -379,7 +379,5 @@ To add H15 support to `hwx_parser.cc` (or similar parsers):
 ## References
 
 - Decompiled API: `ZinAneTd_H15_*.h` — 392 methods, 3 categories complete
-- Summary: [ZinAneTd_H15_COMPLETE_SUMMARY.md](ZinAneTd_H15_COMPLETE_SUMMARY.md)
-- H14 Baseline: [h14_register_map_complete.md](h14_register_map_complete.md)
+- H14 Baseline: [h14_register_map.md](h14_register_map.md)
 - H16 Simplified: [h16_register_map.md](h16_register_map.md)
-- ISA Anomaly: [ANE_ISA_VERSION_ANALYSIS.md](ANE_ISA_VERSION_ANALYSIS.md)

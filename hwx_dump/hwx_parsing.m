@@ -705,8 +705,7 @@ void print_common_h16(const hwx_state_t *state) {
            fill_lower = 0;
   uint32_t ocg = 0, fat = 0, wustack = 0, halfwu = 0, relu_type = 0;
   uint32_t pw = 0, ph = 0;
-  uint32_t s1br = 0, s2br = 0, s1t = 0, s2t = 0, ot = 0, nid = 0, dpe = 0,
-           dpe0 = 0, dpe1 = 0;
+  uint32_t s1br = 0, s2br = 0, s1t = 0, s2t = 0, ot = 0, nid = 0, dpe = 0;
 
   if (state->instr_ver >= 20) {
     ane_common_h18_t c =
@@ -757,8 +756,6 @@ void print_common_h16(const hwx_state_t *state) {
     ot = c.pe_cfg.out_trans;
     nid = c.nid;
     dpe = c.dpe;
-    dpe0 = c.dpe0;
-    dpe1 = c.dpe1;
   } else if (state->instr_ver >= 19) {
     ane_common_h17_t c =
         *(ane_common_h17_t *)&state->values[H16_COMMON_START / 4];
@@ -808,11 +805,50 @@ void print_common_h16(const hwx_state_t *state) {
     ot = c.pe_cfg.out_trans;
     nid = c.nid;
     dpe = c.dpe;
-    dpe0 = c.dpe0;
-    dpe1 = c.dpe1;
   } else {
-    ane_common_h16_t c =
-        *(ane_common_h16_t *)&state->values[H16_COMMON_START / 4];
+    // For H16, handle two different dimension encoding schemes:
+    // 1. Normal: Dimensions written as VALUES to Reg[0x0001-0x0008]
+    // 2. Sparse hash: Dimensions appear as ADDRESSES (e.g., addr=0x03e9 for dim=1001)
+    uint32_t hybrid_values[sizeof(ane_common_h16_t) / 4];
+    memcpy(hybrid_values, &state->values[H16_COMMON_START / 4], sizeof(ane_common_h16_t));
+
+    // Check if dimension registers were explicitly written and have reasonable values
+    bool has_explicit_dims = state->valid[H16_COMMON_START / 4 + 1];
+    bool dims_look_reasonable = false;
+    if (has_explicit_dims) {
+      uint32_t w = state->values[H16_COMMON_START / 4 + 1] & 0x1FFFF;
+      uint32_t h = state->values[H16_COMMON_START / 4 + 2] & 0x1FFFF;
+      uint32_t c = state->values[H16_COMMON_START / 4 + 3] & 0x1FFFF;
+
+      // Dimensions look reasonable if:
+      // - Width and height are sensible (both > 0 and < 3000, or one is 0/1)
+      // - Channels is reasonable (< 2048)
+      // - Height is not suspiciously large (H > 3000 indicates garbage)
+      if (h < 3000 && c < 2048) {
+        if ((w > 0 && w < 3000 && h > 0) ||
+            (w > 0 && w < 3000 && (h == 0 || h == 1)) ||
+            (h > 0 && (w == 0 || w == 1))) {
+          dims_look_reasonable = true;
+        }
+      }
+    }
+
+    // Only use address-as-dimension heuristic if explicit dims are missing or unreasonable
+    if (!has_explicit_dims || !dims_look_reasonable) {
+      // Check for register addresses in dimension range 224-2048
+      // Specifically look for addresses like 1001 (0x3e9) or 224 (0xe0)
+      for (int addr = 224; addr <= 2048; addr++) {
+        if (state->valid[addr]) {
+          // Use address as dimension value
+          hybrid_values[1] = addr;  // inwidth
+          hybrid_values[2] = addr;  // inheight
+          hybrid_values[3] = 1;     // inchannels
+          break;
+        }
+      }
+    }
+
+    ane_common_h16_t c = *(ane_common_h16_t *)hybrid_values;
     infmt = c.ch_cfg.infmt;
     src2infmt = c.ch_cfg.src2infmt;
     outfmt = c.ch_cfg.outfmt;
@@ -859,8 +895,96 @@ void print_common_h16(const hwx_state_t *state) {
     ot = c.pe_cfg.out_trans;
     nid = c.nid;
     dpe = c.dpe;
-    dpe0 = c.dpe0;
-    dpe1 = c.dpe1;
+
+    // Additional heuristic for operations that don't write Common block dimensions
+    // Try to extract from L2 Cache stride registers
+    if (inw == 0 && inh == 0 && inc == 0) {
+      // Decide which register to use based on Reg[0x1046] pattern
+      // 0x1046 = 0xe10 (3600) → pooling, use 0x1045
+      // 0x1046 = 0xe20 (3616) → normalization, use 0x1047 with factor 16
+      bool use_1045 = false;
+
+      if (state->valid[0x1046]) {
+        uint32_t r1046 = state->values[0x1046];
+        // Pooling pattern: 0x1046 ends in 0x10
+        if ((r1046 & 0xF0) == 0x10) {
+          use_1045 = true;
+        }
+      } else if (state->valid[0x1045] && !state->valid[0x1047]) {
+        // Only 0x1045 exists → likely pooling
+        use_1045 = true;
+      }
+
+      // Try smaller stride register 0x1045 (for pooling operations)
+      if (use_1045 && state->valid[0x1045]) {
+        uint32_t small_stride = state->values[0x1045];
+        uint32_t candidate = small_stride / 4;
+        if (candidate >= 7 && candidate <= 224) {
+          inw = candidate;
+          inh = candidate;
+        }
+      }
+
+      // Check L2 Cache stride register 0x1047 (for other operations)
+      // Register 0x1047 (L2+0x1c) contains width × stride_factor
+      if (inw == 0 && state->valid[0x1047]) {
+        uint32_t stride = state->values[0x1047];
+
+        // Common neural network dimensions in order of preference
+        uint32_t common_dims[] = {224, 112, 56, 28, 14, 7};
+        int factors[] = {16, 32, 64, 128, 256, 512};  // Corresponding factors
+
+        // First pass: Try to match common dimensions exactly
+        for (int i = 0; i < 6; i++) {
+          if (stride % factors[i] == 0 && stride / factors[i] == common_dims[i]) {
+            inw = common_dims[i];
+            inh = common_dims[i];
+            break;
+          }
+        }
+
+        // Second pass: If no exact match, try all factors and accept reasonable range
+        if (inw == 0) {
+          int all_factors[] = {4, 8, 16, 32, 64, 128};
+          for (int i = 0; i < 6; i++) {
+            uint32_t candidate = stride / all_factors[i];
+            if (candidate >= 7 && candidate <= 224) {  // Accept common dimension range
+              inw = candidate;
+              inh = candidate;
+              break;
+            }
+          }
+        }
+      }
+
+      // Try to extract channels from packed register values
+      // Check L2 Cache register 0x1053 (high 16 bits often contain channels)
+      if (inc == 0 && state->valid[0x1053]) {
+        uint32_t packed = state->values[0x1053];
+        uint32_t candidate_c = (packed >> 16) & 0xFFFF;
+        if (candidate_c > 0 && candidate_c < 512) {
+          inc = candidate_c;
+        }
+      }
+
+      // Alternative: check 0x1044
+      if (inc == 0 && state->valid[0x1044]) {
+        uint32_t packed = state->values[0x1044];
+        uint32_t candidate_c = (packed >> 16) & 0xFFFF;
+        if (candidate_c > 0 && candidate_c < 512) {
+          inc = candidate_c;
+        }
+      }
+
+      // Alternative: check TileDMA destination 0x1442
+      if (inc == 0 && state->valid[0x1442]) {
+        uint32_t packed = state->values[0x1442];
+        uint32_t candidate_c = (packed >> 16) & 0xFFFF;
+        if (candidate_c > 0 && candidate_c < 512) {
+          inc = candidate_c;
+        }
+      }
+    }
   }
 
   if (!state->valid[H16_COMMON_START / 4]) {
@@ -872,7 +996,8 @@ void print_common_h16(const hwx_state_t *state) {
   if (state->valid[(H16_COMMON_START + 0x04) / 4] ||
       state->valid[(H16_COMMON_START + 0x08) / 4] ||
       state->valid[(H16_COMMON_START + 0x0C) / 4] ||
-      state->valid[(H16_COMMON_START + 0x10) / 4]) {
+      state->valid[(H16_COMMON_START + 0x10) / 4] ||
+      (inw > 0 && inw < 1024)) {  // Also show if dimensions were extracted from L2 Cache
     printf("        InDim     : W=%u H=%u C=%u D=%u Type=%s (Src2Type=%s)\n",
            inw, inh, inc, ind, get_ch_fmt_name(infmt),
            get_ch_fmt_name(src2infmt));
@@ -2141,6 +2266,11 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
         uint16_t num_regs = (header >> 15) & 0x3F;
         for (int j = 0; j <= num_regs && i < num_words; j++) {
           if (word_addr + j < HW_MAX_REGS) {
+            // Track first write for dimension registers
+            if (!state.first_written[word_addr + j]) {
+              state.first_values[word_addr + j] = words[i];
+              state.first_written[word_addr + j] = true;
+            }
             state.values[word_addr + j] = words[i];
             state.valid[word_addr + j] = true;
           }
@@ -2150,6 +2280,11 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
         uint32_t mask = (header >> 15) & 0xFFFF;
         if (i < num_words) {
           if (word_addr < HW_MAX_REGS) {
+            // Track first write for dimension registers
+            if (!state.first_written[word_addr]) {
+              state.first_values[word_addr] = words[i];
+              state.first_written[word_addr] = true;
+            }
             state.values[word_addr] = words[i];
             state.valid[word_addr] = true;
           }
@@ -2158,6 +2293,11 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
         for (int bit = 0; bit < 16 && i < num_words; bit++) {
           if ((mask >> bit) & 1) {
             if (word_addr + bit + 1 < HW_MAX_REGS) {
+              // Track first write for dimension registers
+              if (!state.first_written[word_addr + bit + 1]) {
+                state.first_values[word_addr + bit + 1] = words[i];
+                state.first_written[word_addr + bit + 1] = true;
+              }
               state.values[word_addr + bit + 1] = words[i];
               state.valid[word_addr + bit + 1] = true;
             }

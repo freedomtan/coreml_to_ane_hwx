@@ -71,6 +71,8 @@
 typedef struct {
   uint32_t values[HW_MAX_REGS];
   bool valid[HW_MAX_REGS];
+  uint32_t first_values[HW_MAX_REGS];  // Track first write to each register
+  bool first_written[HW_MAX_REGS];     // Whether first write happened
   uint32_t subtype;
   uint32_t instr_ver;
 } hwx_state_t;
@@ -274,8 +276,6 @@ typedef struct {
 
   uint32_t nid;
   uint32_t dpe;
-  uint32_t dpe0;
-  uint32_t dpe1;
 } ane_common_h16_t;
 
 // H17 (v19) Common Registers
@@ -373,8 +373,6 @@ typedef struct {
 
   uint32_t nid;
   uint32_t dpe;
-  uint32_t dpe0;
-  uint32_t dpe1;
 } ane_common_h17_t;
 
 // H18 (v20) Common Registers
@@ -473,8 +471,6 @@ typedef struct {
 
   uint32_t nid;
   uint32_t dpe;
-  uint32_t dpe0;
-  uint32_t dpe1;
 } ane_common_h18_t;
 
 typedef struct {

@@ -408,7 +408,7 @@ def decode_common_h16(values, valid):
             print(f"        ChannelCfg: InFmt={get_ch_fmt_name(cc&3)} Src2Fmt={get_ch_fmt_name((cc>>2)&3)} OutFmt={get_ch_fmt_name((cc>>4)&3)}")
 
         for name, off in [("InDim ", 1), ("OutDim", 5)]:
-            if all(valid[base+off+i] for i in range(4)):
+            if any(valid[base+off+i] for i in range(4)):
                 w, h, c, d = [values.get(base+off+i, 0) & 0x1ffff for i in range(4)]
                 print(f"        {name:10}: W={w} H={h} C={c} D={d}")
         
@@ -811,7 +811,9 @@ def parse_hwx(data, subtype=7, dump_json=False):
             reg_values, reg_valid = {}, [False] * 0x8000
             num_words = size_bytes // 4
             words = struct.unpack_from(f"<{num_words}I", data, offset)
-            w_idx = 10 # H16 header is 40 bytes (10 words)
+            # H16 task descriptor instruction stream starts at Word 9 (offset 36).
+            # The 10th header word (dtid) is actually the first instruction header.
+            w_idx = 9
             while w_idx < num_words:
                 hdr = words[w_idx]; w_idx += 1
                 is_masked = (hdr >> 31) & 1

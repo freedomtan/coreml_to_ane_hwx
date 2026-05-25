@@ -812,41 +812,56 @@ void print_common_h16(const hwx_state_t *state) {
     uint32_t hybrid_values[sizeof(ane_common_h16_t) / 4];
     memcpy(hybrid_values, &state->values[H16_COMMON_START / 4], sizeof(ane_common_h16_t));
 
-    // Check if dimension registers were explicitly written and have reasonable values
-    bool has_explicit_dims = state->valid[H16_COMMON_START / 4 + 1];
+    // Check if dimension values (not just valid flags) look reasonable
+    // Even if state->valid[] doesn't mark them, the actual values may be correct
+    // Note: Some H16 tasks write ANE header to registers 0x0-0x9, shifting Common block.
+    // The exact offset varies, so we check multiple possible locations.
+    uint32_t dim_w = state->values[0x1] & 0x1FFFF;
+    uint32_t dim_h = state->values[0x2] & 0x1FFFF;
+    uint32_t dim_c = state->values[0x3] & 0x1FFFF;
+    int common_offset = 0;  // Offset where Common block actually starts
+
+    // If dimensions at standard location (0x1-0x3) don't look valid, search for them
+    // Specifically check if register 0xb contains a value that could be width (e.g., 1001 = 0x3e9)
+    if (dim_w == 0 || dim_w >= 65536 || dim_h >= 65536 || dim_c >= 65536 ||
+        state->values[0x0] == 0) {
+
+      // Try shifted location 0xb-0xd (common for tasks with header in register space)
+      uint32_t test_w = state->values[0xb] & 0x1FFFF;
+      uint32_t test_h = state->values[0xc] & 0x1FFFF;
+      uint32_t test_c = state->values[0xd] & 0x1FFFF;
+
+      if (test_w > 0 && test_w < 10000 && test_h <= test_w && test_h < 10000 &&
+          test_c > 0 && test_c < 10000) {
+        // Use registers starting at 0xa (ch_cfg before width)
+        common_offset = 0xa;
+        dim_w = test_w;
+        dim_h = test_h;
+        dim_c = test_c;
+        // Copy from offset 0xa
+        for (int i = 0; i < (int)(sizeof(ane_common_h16_t) / 4) && 0xa + i < HW_MAX_REGS; i++) {
+          hybrid_values[i] = state->values[0xa + i];
+        }
+      }
+    }
+
     bool dims_look_reasonable = false;
-    if (has_explicit_dims) {
-      uint32_t w = state->values[H16_COMMON_START / 4 + 1] & 0x1FFFF;
-      uint32_t h = state->values[H16_COMMON_START / 4 + 2] & 0x1FFFF;
-      uint32_t c = state->values[H16_COMMON_START / 4 + 3] & 0x1FFFF;
 
-      // Dimensions look reasonable if:
-      // - Width and height are sensible (both > 0 and < 3000, or one is 0/1)
-      // - Channels is reasonable (< 2048)
-      // - Height is not suspiciously large (H > 3000 indicates garbage)
-      if (h < 3000 && c < 2048) {
-        if ((w > 0 && w < 3000 && h > 0) ||
-            (w > 0 && w < 3000 && (h == 0 || h == 1)) ||
-            (h > 0 && (w == 0 || w == 1))) {
-          dims_look_reasonable = true;
-        }
+    // Dimensions look reasonable if:
+    // - Width and height are sensible (both > 0 and < 3000, or one is 0/1)
+    // - Channels is reasonable (< 2048)
+    // - Height is not suspiciously large (H > 3000 indicates garbage)
+    if (dim_h < 3000 && dim_c < 2048) {
+      if ((dim_w > 0 && dim_w < 3000 && dim_h > 0) ||
+          (dim_w > 0 && dim_w < 3000 && (dim_h == 0 || dim_h == 1)) ||
+          (dim_h > 0 && (dim_w == 0 || dim_w == 1))) {
+        dims_look_reasonable = true;
       }
     }
 
-    // Only use address-as-dimension heuristic if explicit dims are missing or unreasonable
-    if (!has_explicit_dims || !dims_look_reasonable) {
-      // Check for register addresses in dimension range 224-2048
-      // Specifically look for addresses like 1001 (0x3e9) or 224 (0xe0)
-      for (int addr = 224; addr <= 2048; addr++) {
-        if (state->valid[addr]) {
-          // Use address as dimension value
-          hybrid_values[1] = addr;  // inwidth
-          hybrid_values[2] = addr;  // inheight
-          hybrid_values[3] = 1;     // inchannels
-          break;
-        }
-      }
-    }
+    // Note: Disabled address-as-dimension heuristic for H16 as it causes false positives
+    // The search-based approach above should find dimensions reliably
+    (void)dims_look_reasonable;  // Suppress unused variable warning
 
     ane_common_h16_t c = *(ane_common_h16_t *)hybrid_values;
     infmt = c.ch_cfg.infmt;
@@ -2256,7 +2271,9 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
 
     const uint32_t *words = (const uint32_t *)(ptr + offset);
     int num_words = (m4h->task_size * 4) / 4;
-    int i = sizeof(ane_header_h16_t) / 4;
+    // H16 task descriptor instruction stream starts at Word 9 (offset 36).
+    // The 10th header word (dtid) is actually the first instruction header.
+    int i = 9;
 
     while (i < num_words) {
       uint32_t header = words[i++];

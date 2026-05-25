@@ -63,6 +63,16 @@ def f19(v):
     bits = (v & 0x7FFFF) << 13
     return struct.unpack('f', struct.pack('I', bits))[0]
 
+def print_pe_float(label, v):
+    if (v & 0xFFF80000) != 0:
+        val_f = struct.unpack('f', struct.pack('I', v))[0]
+        print(f"        {label:<11}: 0x{v:08x} ({val_f:.6f})")
+    else:
+        bits = (v & 0x7FFFF) << 13
+        val_f = struct.unpack('f', struct.pack('I', bits))[0]
+        print(f"        {label:<11}: 0x{v&0x7ffff:05x} ({val_f:.6f})")
+
+
 def get_m1_reg_name(addr):
     # Common (0x0000)
     if H13_COMMON_START <= addr < H13_COMMON_START + 16 * 4:
@@ -528,11 +538,11 @@ def decode_pe_h16(values, valid):
 
             print(f"        PE Config : Pool={pool_mode} ({pool_str}) Op={operation} ({op_str}) LutEn={lut_en}{lut_hint} Cond={condition} ({cond_names[condition]}) NLMode={nl_mode} ({nl_names[nl_mode]}) Src1={src1_sel} ({src_names[src1_sel]}) Src2={src2_sel} ({src_names[src2_sel]})")
 
-        if valid[base + 1]: print(f"        PE Bias   : 0x{values.get(base+1, 0)&0x7ffff:05x} ({f19(values.get(base+1, 0)):.4f})")
-        if valid[base + 2]: print(f"        PE Scale  : 0x{values.get(base+2, 0)&0x7ffff:05x} ({f19(values.get(base+2, 0)):.4f})")
-        if valid[base + 3]: print(f"        PE ScaleEps: 0x{values.get(base+3, 0)&0x7ffff:05x} ({f19(values.get(base+3, 0)):.4f})")
-        if valid[base + 4]: print(f"        PE PreScl : 0x{values.get(base+4, 0)&0x7ffff:05x} ({f19(values.get(base+4, 0)):.4f})")
-        if valid[base + 5]: print(f"        PE FinScl : 0x{values.get(base+5, 0)&0x7ffff:05x} ({f19(values.get(base+5, 0)):.4f})")
+        if valid[base + 1]: print_pe_float("PE Bias", values.get(base+1, 0))
+        if valid[base + 2]: print_pe_float("PE Scale", values.get(base+2, 0))
+        if valid[base + 3]: print_pe_float("PE ScaleEps", values.get(base+3, 0))
+        if valid[base + 4]: print_pe_float("PE PreScl", values.get(base+4, 0))
+        if valid[base + 5]: print_pe_float("PE FinScl", values.get(base+5, 0))
 
         # LUT parameters (for exp/log approximation in softmax)
         if any(valid[base + 6 + i] for i in range(8)):
@@ -695,7 +705,7 @@ def decode_kerneldma_h16(values, valid):
 
 def decode_regs(reg_values, reg_valid, subtype):
     arch_ver = get_instruction_set_version(subtype)
-    arch = "M4" if arch_ver >= 11 else "M1"
+    arch = "M4" if arch_ver >= 11 or subtype == 6 else "M1"
     
     if arch == "M1":
         decode_common_h13(reg_values, reg_valid)
@@ -767,7 +777,7 @@ def decode_regs(reg_values, reg_valid, subtype):
 import json
 
 def report_hwx_state_json(reg_values, reg_valid, subtype):
-    arch = "M4" if get_instruction_set_version(subtype) >= 11 else "M1"
+    arch = "M4" if get_instruction_set_version(subtype) >= 11 or subtype == 6 else "M1"
     regs = []
     name_lookup = get_m4_reg_name if arch == "M4" else get_m1_reg_name
     

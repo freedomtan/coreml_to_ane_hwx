@@ -186,6 +186,16 @@ static float decode_f19(uint32_t val) {
   return (float)(f32_bits);
 }
 
+static void print_float_reg(const char *name, uint32_t val) {
+  if (val & 0xFFF80000) {
+    printf("        %-23s: 0x%08x (%f)\n", name, val, *(float *)&val);
+  } else {
+    uint32_t bits = (val & 0x7FFFF) << 13;
+    printf("        %-23s: 0x%05x (%f)\n", name, val & 0x7FFFF, *(float *)&bits);
+  }
+}
+
+
 const char *get_hw_tensor_format_name_v17(uint32_t mode, uint32_t mem_fmt,
                                           uint32_t trunc, uint32_t shift) {
   if (mode == 3 && mem_fmt == 3 && shift == 1)
@@ -1325,20 +1335,15 @@ void print_pe_h16(const hwx_state_t *state) {
   }
 
   if (state->valid[(H16_PE_START + 0x4) / 4])
-    printf("        PE Bias   : 0x%05x (%f)\n", bias & 0x7FFFF,
-           decode_f19(bias));
+    print_float_reg("PE Bias", bias);
   if (state->valid[(H16_PE_START + 0x8) / 4])
-    printf("        PE Scale  : 0x%05x (%f)\n", scale & 0x7FFFF,
-           decode_f19(scale));
+    print_float_reg("PE Scale", scale);
   if (state->valid[(H16_PE_START + 0x0c) / 4])
-    printf("        PE Final Scale Epsilon : 0x%05x (%f)\n", eps & 0x7FFFF,
-           decode_f19(eps));
+    print_float_reg("PE Final Scale Epsilon", eps);
   if (state->valid[(H16_PE_START + 0x10) / 4])
-    printf("        PE PreScale  : 0x%05x (%f)\n", ps & 0x7FFFF,
-           decode_f19(ps));
+    print_float_reg("PE PreScale", ps);
   if (state->valid[(H16_PE_START + 0x14) / 4])
-    printf("        PE Final Scale : 0x%05x (%f)\n", fs & 0x7FFFF,
-           decode_f19(fs));
+    print_float_reg("PE Final Scale", fs);
 }
 
 void print_pe_h17(const hwx_state_t *state) {
@@ -1356,17 +1361,13 @@ void print_pe_h17(const hwx_state_t *state) {
            pe.pe_cfg.src1_idx, pe.pe_cfg.src2_idx, pe.pe_cfg.max_idx);
   }
   if (state->valid[(H16_PE_START + 0x4) / 4])
-    printf("        PE Bias   : 0x%05x (%f)\n", pe.bias & 0x7FFFF,
-           decode_f19(pe.bias));
+    print_float_reg("PE Bias", pe.bias);
   if (state->valid[(H16_PE_START + 0x8) / 4])
-    printf("        PE Scale  : 0x%05x (%f)\n", pe.scale & 0x7FFFF,
-           decode_f19(pe.scale));
+    print_float_reg("PE Scale", pe.scale);
   if (state->valid[(H16_PE_START + 0x10) / 4])
-    printf("        PE PreScale  : 0x%05x (%f)\n", pe.pre_scale & 0x7FFFF,
-           decode_f19(pe.pre_scale));
+    print_float_reg("PE PreScale", pe.pre_scale);
   if (state->valid[(H16_PE_START + 0x14) / 4])
-    printf("        PE Final Scale : 0x%05x (%f)\n", pe.final_scale & 0x7FFFF,
-           decode_f19(pe.final_scale));
+    print_float_reg("PE Final Scale", pe.final_scale);
 
   if (state->valid[(H16_PE_START + 0x18) / 4]) {
     printf("        PE Src1   : Index=%u Relu=%d Transpose=%d\n",
@@ -1393,17 +1394,13 @@ void print_pe_h18(const hwx_state_t *state) {
            pe.pe_cfg.src1_idx, pe.pe_cfg.src2_idx, pe.pe_cfg.max_idx);
   }
   if (state->valid[(H16_PE_START + 0x4) / 4])
-    printf("        PE Bias   : 0x%05x (%f)\n", pe.bias & 0x7FFFF,
-           decode_f19(pe.bias));
+    print_float_reg("PE Bias", pe.bias);
   if (state->valid[(H16_PE_START + 0x8) / 4])
-    printf("        PE Scale  : 0x%05x (%f)\n", pe.scale & 0x7FFFF,
-           decode_f19(pe.scale));
+    print_float_reg("PE Scale", pe.scale);
   if (state->valid[(H16_PE_START + 0x10) / 4])
-    printf("        PE PreScale  : 0x%05x (%f)\n", pe.pre_scale & 0x7FFFF,
-           decode_f19(pe.pre_scale));
+    print_float_reg("PE PreScale", pe.pre_scale);
   if (state->valid[(H16_PE_START + 0x14) / 4])
-    printf("        PE Final Scale : 0x%05x (%f)\n", pe.final_scale & 0x7FFFF,
-           decode_f19(pe.final_scale));
+    print_float_reg("PE Final Scale", pe.final_scale);
 }
 
 void print_l2_h17(const hwx_state_t *state) {
@@ -2004,7 +2001,7 @@ void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
       };
       dump_hw_blocks(state, blocks, 7, get_h14_reg_name);
     }
-  } else if (state->instr_ver > 11) {
+  } else if (state->instr_ver > 11 || state->subtype == 6) {
     print_common_h16(state);
     print_ne_h16(state);
     print_pe_index_h16(state);
@@ -2093,7 +2090,7 @@ void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
 
 void report_hwx_state_json(const hwx_state_t *state) {
   NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-  [dict setObject:(state->instr_ver > 11 ? @"M4" : state->instr_ver == 11 ? @"H14" : @"M1") forKey:@"arch"];
+  [dict setObject:(state->instr_ver > 11 || state->subtype == 6 ? @"M4" : state->instr_ver == 11 ? @"H14" : @"M1") forKey:@"arch"];
   [dict setObject:@(state->subtype) forKey:@"subtype"];
 
   NSMutableArray *regs = [NSMutableArray array];
@@ -2102,7 +2099,7 @@ void report_hwx_state_json(const hwx_state_t *state) {
     name_lookup = get_h18_reg_name;
   else if (state->instr_ver == 19)
     name_lookup = get_h17_reg_name;
-  else if (state->instr_ver > 11)
+  else if (state->instr_ver > 11 || state->subtype == 6)
     name_lookup = get_m4_reg_name;
   else if (state->instr_ver == 11)
     name_lookup = get_h14_reg_name;

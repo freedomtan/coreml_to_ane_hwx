@@ -338,13 +338,13 @@ m1_ranges = [
     (H13_KERNELDMA_START, 5, h13_kdma_names),
 ]
 h14_ranges = [
-    (H14_COMMON_START, H14_COMMON_COUNT, h13_common_names),
-    (H14_L2_START, H14_L2_COUNT, h13_l2_names),
-    (H14_PE_START, H14_PE_COUNT, h13_pe_names),
-    (H14_NE_START, H14_NE_COUNT, h13_ne_names),
-    (H14_TILEDMA_SRC_START, H14_TILEDMA_SRC_COUNT, h13_tdma_src_names),
-    (H14_TILEDMA_DST_START, H14_TILEDMA_DST_COUNT, h13_tdma_dst_names),
-    (H14_KERNELDMA_START, H14_KERNELDMA_COUNT, h13_kdma_names),
+    (H14_COMMON_START, 16, h13_common_names),
+    (H14_L2_START, 16, h13_l2_names),
+    (H14_PE_START, 4, h13_pe_names),
+    (H14_NE_START, 5, h13_ne_names),
+    (H14_TILEDMA_SRC_START, 24, h13_tdma_src_names),
+    (H14_TILEDMA_DST_START, 7, h13_tdma_dst_names),
+    (H14_KERNELDMA_START, 5, h13_kdma_names),
 ]
 m4_ranges = [
     (H16_COMMON_START, 23, h16_common_names),
@@ -517,45 +517,11 @@ def lookup_reg_name(addr, ranges):
                 return names[idx]
     return None
 
-h13_flat_names = []
-h13_flat_names.extend(h13_common_names)
-h13_flat_names.extend(h13_l2_names)
-h13_flat_names.extend(h13_pe_names)
-h13_flat_names.extend(h13_ne_names)
-h13_flat_names.append(None)
-h13_flat_names.extend(h13_tdma_src_names)
-h13_flat_names.extend(h13_tdma_dst_names)
-h13_flat_names.append(None)
-h13_flat_names.extend(h13_kdma_names)
-h13_flat_names.append(None)
-h13_flat_names.extend(h16_common_names)
-h13_flat_names.append(None)
-h13_flat_names.extend(h16_l2_names)
-
-def lookup_reg_name_h14(addr):
-    h14_ranges_def = [
-        (H14_COMMON_START, H14_COMMON_COUNT, 0),
-        (H14_L2_START, H14_L2_COUNT, 16),
-        (H14_PE_START, H14_PE_COUNT, 32),
-        (H14_NE_START, H14_NE_COUNT, 36),
-        (H14_TILEDMA_SRC_START, H14_TILEDMA_SRC_COUNT, 42),
-        (H14_TILEDMA_DST_START, H14_TILEDMA_DST_COUNT, 66),
-        (H14_KERNELDMA_START, H14_KERNELDMA_COUNT, 74),
-    ]
-    for start, count, flat_offset in h14_ranges_def:
-        if start <= addr < start + count * 4:
-            idx = (addr - start) // 4
-            if idx < count:
-                flat_idx = flat_offset + idx
-                if 0 <= flat_idx < len(h13_flat_names):
-                    return h13_flat_names[flat_idx]
-    return None
-
 def get_reg_name(addr, subtype):
     if subtype in (1, 3, 4):
         return lookup_reg_name(addr, m1_ranges)
     elif subtype == 5:
-        return lookup_reg_name_h14(addr)
+        return lookup_reg_name(addr, h14_ranges)
     elif subtype in (6, 7):
         return lookup_reg_name(addr, m4_ranges)
     elif subtype == 9:
@@ -1078,7 +1044,7 @@ def print_common_h16(state):
         task_type = (m >> 4) & 0xF
         out_trans = (m >> 28) & 1
         fill_lower = (m >> 29) & 1
-        relu_type = 0
+        relu_type = (m >> 24) & 0xF
         ne_cfg = hybrid_values[16]
         ocg = ne_cfg & 7
         fat = (ne_cfg >> 3) & 1
@@ -1441,6 +1407,13 @@ def print_pe_h18(state):
     if state.valid[base + 5]: print_float_reg("PE Final Scale", state.values[base + 5])
 
 def print_l2_h16(state):
+    if state.subtype == 9:
+        print_l2_h17(state)
+        return
+    elif state.subtype == 10:
+        print_l2_h18(state)
+        return
+        
     base = H16_L2_START // 4
     print("        --- L2 Cache Control (0x4100) ---")
     
@@ -1457,7 +1430,6 @@ def print_l2_h16(state):
     if state.valid[base]:
         val = state.values[base]
         print(f"        L2_Control: 0x{val:08x} (src1_relu: {val&1}, padding: {(val>>2)&3}, src2_relu: {(val>>4)&1}, barrier_en: {(val>>16)&1}, barrier_idx: {(val>>17)&0x7f})")
-        print(f"        L2_Control: 0x{val:08x}")
         
     if state.valid[base + 1]:
         s1 = state.values[base + 1]
@@ -1806,6 +1778,13 @@ def print_tiledmadst_h16(state):
         print(f"        DstPixelOff: 0x{pxoff:08x} (CropY={pxoff>>16})")
 
 def print_kerneldmasrc_h16(state):
+    if state.subtype == 9:
+        print_kerneldmasrc_h17(state)
+        return
+    elif state.subtype == 10:
+        print_kerneldmasrc_h18(state)
+        return
+        
     base = H16_KERNELDMA_START // 4
     print("        --- KernelDMASrc (0x5500) ---")
     if state.valid[base]:

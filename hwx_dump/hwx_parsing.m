@@ -42,13 +42,13 @@ const char *get_m1_reg_name(uint32_t addr) {
 // PE=0x0900, NE=0x0D00, TileDmaDst=0x1500, no CacheDMA block.
 const char *get_h14_reg_name(uint32_t addr) {
   static const hwx_reg_range_t h14_ranges[] = {
-      {H14_COMMON_START,      H14_COMMON_COUNT,      h13_common_names},
-      {H14_L2_START,          H14_L2_COUNT,           h13_l2_names},
-      {H14_PE_START,          H14_PE_COUNT,           h13_pe_names},
-      {H14_NE_START,          H14_NE_COUNT,           h13_ne_names},
-      {H14_TILEDMA_SRC_START, H14_TILEDMA_SRC_COUNT,  h13_tdma_src_names},
-      {H14_TILEDMA_DST_START, H14_TILEDMA_DST_COUNT,  h13_tdma_dst_names},
-      {H14_KERNELDMA_START,   H14_KERNELDMA_COUNT,    h13_kdma_names},
+      {H14_COMMON_START,      16,                     h13_common_names},
+      {H14_L2_START,          16,                     h13_l2_names},
+      {H14_PE_START,          4,                      h13_pe_names},
+      {H14_NE_START,          5,                      h13_ne_names},
+      {H14_TILEDMA_SRC_START, 24,                     h13_tdma_src_names},
+      {H14_TILEDMA_DST_START, 7,                      h13_tdma_dst_names},
+      {H14_KERNELDMA_START,   5,                      h13_kdma_names},
   };
 
   return lookup_reg_name(addr, h14_ranges, 7);
@@ -908,6 +908,7 @@ void print_common_h16(const hwx_state_t *state) {
     task_type = c.maccfg.task_type;
     out_trans = c.maccfg.out_trans;
     fill_lower = c.maccfg.fill_lower_ne;
+    relu_type = c.maccfg.relu_type;
     ocg = c.ne_cfg.ocg_size;
     fat = c.ne_cfg.fat_tile_en;
     wustack = c.ne_cfg.wustack_log2;
@@ -1480,10 +1481,6 @@ void print_l2_h16(const hwx_state_t *state) {
            "barrier_idx: %d)\n",
            val, val & 1, (val >> 2) & 3, (val >> 4) & 1, (val >> 16) & 1,
            (val >> 17) & 0x7f);
-  }
-
-  if (state->valid[H16_L2_START / 4]) {
-    printf("        L2_Control: 0x%08x\n", state->values[(H16_L2_START) / 4]);
   }
 
   if (state->valid[(H16_L2_START + 0x04) / 4]) {
@@ -2118,10 +2115,24 @@ void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
       print_pe_h18(state);
     else
       print_pe_h16(state);
-    print_l2_h16(state);
+
+    if (state->subtype == 9)
+      print_l2_h17(state);
+    else if (state->subtype == 10)
+      print_l2_h18(state);
+    else
+      print_l2_h16(state);
+
     print_tiledmasrc_h16(state);
     print_tiledmadst_h16(state);
-    print_kerneldmasrc_h16(state);
+
+    if (state->subtype == 9)
+      print_kerneldmasrc_h17(state);
+    else if (state->subtype == 10)
+      print_kerneldmasrc_h18(state);
+    else
+      print_kerneldmasrc_h16(state);
+
     print_cachedma_h16(state);
 
     if (dump_reg_blocks) {

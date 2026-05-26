@@ -1838,6 +1838,113 @@ void print_tiledmadst_h16(const hwx_state_t *state) {
   }
 }
 
+// ============================================================================
+// FP16 and LUT Decoding Support
+// ============================================================================
+
+// Convert FP16 to FP32
+static float fp16_to_fp32(uint16_t h) {
+  uint32_t sign = (h & 0x8000) << 16;
+  uint32_t exp = (h & 0x7C00) >> 10;
+  uint32_t mant = (h & 0x03FF);
+
+  if (exp == 0) {
+    if (mant == 0) {
+      // Zero
+      uint32_t f = sign;
+      return *(float *)&f;
+    } else {
+      // Denormalized
+      exp = 1;
+      while ((mant & 0x400) == 0) {
+        mant <<= 1;
+        exp--;
+      }
+      mant &= 0x3FF;
+    }
+  } else if (exp == 0x1F) {
+    // Inf or NaN
+    uint32_t f = sign | 0x7F800000 | (mant << 13);
+    return *(float *)&f;
+  }
+
+  // Normalized: adjust exponent bias from 15 to 127
+  uint32_t f = sign | ((exp + 127 - 15) << 23) | (mant << 13);
+  return *(float *)&f;
+}
+
+// Decode and print LUT coefficients
+static void decode_lut_coefficients(const uint8_t *data, size_t size,
+                                   const char *operation_hint) {
+  if (data == NULL || size == 0) {
+    return;
+  }
+
+  printf("        --- LUT Coefficient Analysis ---\n");
+  printf("        Total Size: %zu bytes (%zu FP16 values)\n", size, size / 2);
+
+  const uint16_t *fp16_data = (const uint16_t *)data;
+  size_t num_values = size / 2;
+
+  // Try to identify segment structure
+  // Typical patterns:
+  // - Slope, intercept pairs (2 values per segment)
+  // - Breakpoint, slope, intercept triplets (3 values per segment)
+
+  printf("        \n");
+  printf("        Raw FP16 Values (first 32):\n");
+  for (size_t i = 0; i < num_values && i < 32; i++) {
+    float val = fp16_to_fp32(fp16_data[i]);
+    printf("        [%2zu] 0x%04x = %8.4f", i, fp16_data[i], val);
+    if ((i + 1) % 4 == 0) {
+      printf("\n");
+    } else {
+      printf("  ");
+    }
+  }
+  if (num_values > 32) {
+    printf("        ... (%zu more values)\n", num_values - 32);
+  }
+  printf("\n");
+
+  // Attempt to detect segment pattern by looking for monotonic increasing breakpoints
+  printf("        Attempting segment detection:\n");
+
+  // Pattern 1: Try breakpoint, slope, intercept (3 values per segment)
+  if (num_values >= 9) {  // At least 3 segments
+    printf("        Pattern: [breakpoint, slope, intercept] triplets\n");
+    int num_segments = (int)(num_values / 3);
+    for (int i = 0; i < num_segments && i < 12; i++) {
+      float breakpoint = fp16_to_fp32(fp16_data[i * 3 + 0]);
+      float slope = fp16_to_fp32(fp16_data[i * 3 + 1]);
+      float intercept = fp16_to_fp32(fp16_data[i * 3 + 2]);
+      printf("        Segment %2d: x >= %7.3f, y = %7.3f*x + %7.3f\n",
+             i, breakpoint, slope, intercept);
+    }
+    if (num_segments > 12) {
+      printf("        ... (%d more segments)\n", num_segments - 12);
+    }
+  }
+
+  // Pattern 2: Try slope, intercept pairs (2 values per segment)
+  printf("\n        Alternative: [slope, intercept] pairs\n");
+  if (num_values >= 4) {  // At least 2 segments
+    int num_segments = (int)(num_values / 2);
+    for (int i = 0; i < num_segments && i < 12; i++) {
+      float slope = fp16_to_fp32(fp16_data[i * 2 + 0]);
+      float intercept = fp16_to_fp32(fp16_data[i * 2 + 1]);
+      printf("        Segment %2d: y = %7.3f*x + %7.3f\n", i, slope, intercept);
+    }
+    if (num_segments > 12) {
+      printf("        ... (%d more segments)\n", num_segments - 12);
+    }
+  }
+  printf("\n");
+}
+
+// Global pointer to hwx file data for LUT decoding
+static NSData *g_hwx_file_data = nil;
+
 void print_kerneldmasrc_h16(const hwx_state_t *state) {
   const ane_kerneldmasrc_h16_t *k =
       (const ane_kerneldmasrc_h16_t *)&state->values[H16_KERNELDMA_START / 4];
@@ -2513,6 +2620,28 @@ static void handle_segment_64(const struct mach_header_64 *header,
         }
       }
     }
+
+    // Handle __KERN segments (contain LUT coefficients)
+    if (strncmp(seg->segname, "__KERN_", 7) == 0) {
+      if (sect->offset + sect->size <= data.length) {
+        const uint8_t *section_ptr = (const uint8_t *)data.bytes + sect->offset;
+        size_t section_size = (size_t)sect->size;
+
+        printf("      LUT Data Found (segment %s, section %s):\n",
+               seg->segname, sect->sectname);
+
+        // Store globally for use by print_kerneldmasrc_h16
+        g_hwx_file_data = data;
+
+        // Decode the LUT coefficients
+        decode_lut_coefficients(section_ptr, section_size, seg->segname);
+
+        if (dump_hexdump) {
+          hex_dump(sect->sectname, section_ptr, section_size);
+        }
+      }
+    }
+
     sect++;
   }
 }

@@ -910,12 +910,6 @@ print("Average latency: \(elapsed / 100 * 1000) ms")
 - Channel splitting strategies
 - Operation fusion patterns
 
-**Reference documentation:**
-- ResNet50: `RESNET50_H16_TASK_ANALYSIS.md`
-- MobileNetV2: `MOBILENETV2_H16_TASK_ANALYSIS.md`
-- Comparison: `RESNET50_H16_COMPARISON.md`
-- Global Avg Pool: `RESNET50_TASK121_GLOBAL_AVGPOOL_ANALYSIS.md`
-
 ---
 
 ## Additional Resources

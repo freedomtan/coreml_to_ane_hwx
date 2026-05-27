@@ -802,48 +802,6 @@ ls -lh /tmp/hwx_output/ResNet50_h16/model.hwx
 ./hwx_dump/hwx_parsing /tmp/hwx_output/ResNet50_h14/model.hwx
 ```
 
-### Issue 4: Python Script Errors
-
-**Error:**
-```
-FileNotFoundError: [Errno 2] No such file or directory: './hwx_dump/hwx_parsing'
-```
-
-**Solution:**
-```bash
-# Run from repository root
-cd /Users/freedom/work/coreml_to_ane_hwx
-
-#     ...
-#     cwd='/Users/freedom/work/coreml_to_ane_hwx'
-# )
-```
-
-### Issue 5: Model Doesn't Run on ANE
-
-**Check ANE compatibility in MIL:**
-```bash
-# Search for CPU/GPU annotations
-grep -i "compute_unit" /tmp/ResNet50.mlmodelc/model.mil
-
-# Check for unsupported ops
-cat /tmp/ResNet50.mlmodelc/model.mil | grep -E "= [a-z_]+\(" | \
-    sed 's/.*= //' | sed 's/(.*//' | sort -u
-```
-
-**Ensure model uses ANE-compatible operations:**
-- Convolutions (2D, depthwise)
-- Element-wise ops (add, mul, sub, div)
-- Activation functions (relu, relu6, prelu, sigmoid, tanh)
-- Pooling (max, average, global average)
-- Normalization (batch norm, instance norm)
-
-**Unsupported operations (CPU/GPU fallback):**
-- 3D convolutions
-- Recurrent layers (LSTM, GRU)
-- Some custom layers
-- Very large tensors (> 16384 in any dimension)
-
 ---
 
 ## Advanced Topics

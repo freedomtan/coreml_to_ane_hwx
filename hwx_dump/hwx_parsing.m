@@ -1008,7 +1008,6 @@ void print_common_h16(const hwx_state_t *state) {
     uint32_t dim_w = state->values[REG_COMMON_IN_WIDTH] & 0x1FFFF;
     uint32_t dim_h = state->values[REG_COMMON_IN_HEIGHT] & 0x1FFFF;
     uint32_t dim_c = state->values[REG_COMMON_IN_CHANNELS] & 0x1FFFF;
-    int common_offset = 0;  // Offset where Common block actually starts
 
     // If dimensions at standard location don't look valid, search for them
     // Specifically check if alternative register contains a value that could be width (e.g., 1001 = 0x3e9)
@@ -1023,7 +1022,6 @@ void print_common_h16(const hwx_state_t *state) {
       if (test_w > 0 && test_w < 10000 && test_h <= test_w && test_h < 10000 &&
           test_c > 0 && test_c < 10000) {
         // Use registers starting at 0xa (ch_cfg before width)
-        common_offset = 0xa;
         dim_w = test_w;
         dim_h = test_h;
         dim_c = test_c;

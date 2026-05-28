@@ -1,5 +1,14 @@
 ## Object-to-Hardware Mapping Blocks
 
+**⚠️ H14 PACKED DIMENSION FORMAT**
+
+H14 uses **packed dimensions** similar to H13, where Width and Height are combined into a single 32-bit register:
+- **InDim** (0x0004): [31] Pad | [30:16] H (15 bits) | [15] Pad | [14:0] W (15 bits)
+- **OutDim** (0x0010): [31] Pad | [30:16] H (15 bits) | [15] Pad | [14:0] W (15 bits)
+- **Channels and Depth** use 17-bit fields in separate registers
+
+This differs from H16+ which uses **unpacked dimensions** (separate registers for W, H, C, D).
+
 The `ZinAneTd<11u>` object maps internal offsets to hardware register blocks as follows:
 
 | Source Offset (`this`) | Reg Count (Words) | HW Start (OLD) | HW End (OLD) | HW Start (Modern) | Primary Feature Area |
@@ -47,18 +56,16 @@ Word Index is computed as `HW Addr (OLD) / 4`.
 | Word Index | OLD HW Addr | Modern HW Addr | Name | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | **0** | `0x0000` | `0x0000` | **ChannelCfg** | **InFmt**: 0-1, **Src2InFmt**: 2-3, **OutFmt**: 4-5. |
-| **1** | `0x0004` | `0x0004` | **InWidth** | **Win**: 0-13. |
-| **2** | `0x0008` | `0x0008` | **InHeight** | **Hin**: 0-13. |
-| **3** | `0x000C` | `0x000C` | **InChannels** | **Cin**: 0-13. |
-| **4** | `0x0010` | `0x0010` | **InDepth** | **Din**: 0-13. |
-| **5** | `0x0014` | `0x0014` | **OutWidth** | **Wout**: 0-13. |
-| **6** | `0x0018` | `0x0018` | **OutHeight** | **Hout**: 0-13. |
-| **7** | `0x001C` | `0x001C` | **OutChannels** | **Cout**: 0-13. |
-| **8** | `0x0020` | `0x0020` | **OutDepth** | **Dout**: 0-13. |
-| **9** | `0x0024` | `0x0024` | **NumGroups** | Batch size / Number of groups. |
-| **10** | `0x0028` | `0x0028` | **ConvCfg** | **KW**: 0-5, **KH**: 6-11, **SX**: 13-14, **SY**: 15-16, **PX**: 17-21, **PY**: 22-26, **OX**: 28-29, **OY**: 30-31. |
-| **11** | `0x002C` | `0x002C` | **ConvCfg3d** | **Kd**: 0-5, **Sz**: 6-11, **Pz**: 12-16, **Oz**: 17-21. |
-| **12** | `0x0030` | `0x0030` | **MacCfg** | **TaskType**: 0-3, **ActiveNE**: 4-6, **SmallSrc**: 7, **ReluType**: 8-10. |
+| **1** | `0x0004` | `0x0004` | **InDim (packed W+H)** | **Win**: 0-14 (15 bits), **Pad**: 15, **Hin**: 16-30 (15 bits), **Pad**: 31. |
+| **2** | `0x0008` | `0x0008` | **InChannels** | **Cin**: 0-16 (17 bits). |
+| **3** | `0x000C` | `0x000C` | **InDepth** | **Din**: 0-16 (17 bits). |
+| **4** | `0x0010` | `0x0010` | **OutDim (packed W+H)** | **Wout**: 0-14 (15 bits), **Pad**: 15, **Hout**: 16-30 (15 bits), **Pad**: 31. |
+| **5** | `0x0014` | `0x0014` | **OutChannels** | **Cout**: 0-16 (17 bits). |
+| **6** | `0x0018` | `0x0018` | **OutDepth** | **Dout**: 0-16 (17 bits). |
+| **7** | `0x001C` | `0x001C` | **NumGroups** | Batch size / Number of groups. |
+| **8** | `0x0020` | `0x0020` | **ConvCfg** | **KW**: 0-5, **KH**: 6-11, **SX**: 13-14, **SY**: 15-16, **PX**: 17-21, **PY**: 22-26, **OX**: 28-29, **OY**: 30-31. |
+| **9** | `0x0024` | `0x0024` | **ConvCfg3d** | **Kd**: 0-5, **Sz**: 6-11, **Pz**: 12-16, **Oz**: 17-21. |
+| **10** | `0x0028` | `0x0028` | **MacCfg** | **TaskType**: 0-3, **ActiveNE**: 4-6, **SmallSrc**: 7, **ReluType**: 8-10. |
 | ... | ... | ... | ... | ... |
 | **0x240** | `0x0900` | `0x4500` | **PEConfig** | **PoolMode**: 0-1, **Operation**: 2-4, **NLMode**: 12-13. |
 | **0x350** | `0x0D00` | `0x4900` | **KernelCfg** | **Fmt**: 0-1, **PalettizedEn**: 2, **SparseEn**: 8. |
@@ -159,30 +166,53 @@ The `ZinAneTd<11u>` object (descriptor) is divided into these hardware-mapped re
 ### Common (0x0000 block, Object `+0x1ec`)
 - **Count**: 19 registers (`0x13` words, `0x4C` bytes).
 - **Object Layout**: Starts at `+0x1ec` of the `ZinAneTd` object.
+- **⚠️ CRITICAL**: H14 uses **H13-style packed dimensions** (W+H combined in single 32-bit registers), NOT separate words like H16.
+- **⚠️ VERIFIED VIA DISASSEMBLY**: Register offsets confirmed by analyzing `ZinAneTd<11u>::SetOrReturn*` methods in ANECompiler binary.
 
-| OLD HW Addr | Modern HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
+| OLD HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping | Verification Method |
 | :--- | :--- | :--- | :--- | :--- |
-| **0x0000** | `0x0000` | `+0x1ec` | **ChannelCfg** | **InFmt**: 0-1, **Src2InFmt**: 2-3, **OutFmt**: 4-5. (Verified via `SetCommonSrc1InFmt`, `SetCommonSrc2InFmt`) |
-| **0x0004** | `0x0004` | `+0x1f0` | **InWidth** | **Win**: 0-13. |
-| **0x0008** | `0x0008` | `+0x1f4` | **InHeight** | **Hin**: 0-13. |
-| **0x000C** | `0x000C` | `+0x1f8` | **InChannels** | **Cin**: 0-13. |
-| **0x0010** | `0x0010` | `+0x1fc` | **InDepth** | **Din**: 0-13. |
-| **0x0014** | `0x0014` | `+0x200` | **OutWidth** | **Wout**: 0-13. |
-| **0x0018** | `0x0018` | `+0x204` | **OutHeight** | **Hout**: 0-13. |
-| **0x001C** | `0x001C` | `+0x208` | **OutChannels** | **Cout**: 0-13. |
-| **0x0020** | `0x0020` | `+0x20c` | **OutDepth** | **Dout**: 0-13. |
-| **0x0024** | `0x0024` | `+0x210` | **NumGroups** | **NumGroups**: 0-13. |
-| **0x0028** | `0x0028` | `+0x214` | **ConvCfg** | **KW**: 0-5, **KH**: 6-11, **SX**: 13-14, **SY**: 15-16, **PadLeft**: 17-21, **PadTop**: 22-26, **OX**: 28-29, **OY**: 30-31. |
-| **0x002C** | `0x002C` | `+0x218` | **ConvCfg3d** | **Kd**: 0-5, **Sz**: 6-11, **Pz**: 12-16, **Oz**: 17-21. |
-| **0x0030** | `0x0030` | `+0x21c` | **MacCfg** | **TaskType**: 0-3, **ActiveNE**: 4-6, **SmallSrc**: 7, **ReluType**: 8-10. (Verified via `SetCommonTaskType`, `SetCommonMacCfgActiveNE`) |
-| **0x0034** | `0x0034` | `+0x220` | **TileHeight** | **TileHeight**: 0-13. |
-| **0x0038** | `0x0038` | `+0x224` | **TileOverlap** | **Overlap**: 0-5, **PadTop**: 6-10. |
-| **0x003C** | `0x003C` | `+0x228` | **NECfg** | **OCGSize**: 0-2, **FatTileEnable**: 3, **WUStackLog2**: 4-5. |
-| **0x0040** | `0x0040` | `+0x22c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
-| **0x0044** | `0x0044` | `+0x230` | **NID** | Network ID / Layer Trace ID. |
-| **0x0048** | `0x0048` | `+0x234` | **DPE** | Distributed Processing Element config. |
+| **0x0000** | `+0x1ec` | **InDim (packed W+H)** | **Win**: 0-14 (15 bits), **Pad**: 15, **Hin**: 16-30 (15 bits), **Pad**: 31. Example: `0x00e000e0` = W:224, H:224. | `SetOrReturnWin` [0:14], `SetOrReturnHin` [16:30] |
+| **0x0004** | `+0x1f0` | **InDepth** | **Din**: 0-14 (15 bits). | `SetOrReturnDin` writes to 0x1f0 |
+| **0x0008** | `+0x1f4` | **ChannelCfg** | **InFmt**: 0-1, **Src2InFmt**: 2-3, **OutFmt**: 4-5. | `SetCommonInFmt` writes to 0x1f4 |
+| **0x000C** | `+0x1f8` | **InChannels** | **Cin**: 0-16 (17 bits). | `SetOrReturnCin` writes to 0x1f8 |
+| **0x0010** | `+0x1fc` | **OutChannels** | **Cout**: 0-16 (17 bits). | `SetOrReturnCout` writes to 0x1fc |
+| **0x0014** | `+0x200` | **OutDim (packed W+H)** | **Wout**: 0-14 (15 bits), **Pad**: 15, **Hout**: 16-30 (15 bits), **Pad**: 31. Example: `0x00380038` = W:56, H:56. | `SetOrReturnWout` [0:14], `SetOrReturnHout` [16:30] |
+| **0x0018** | `+0x204` | **OutDepth** | **Dout**: 0-14 (15 bits). | `SetOrReturnDout` writes to 0x204 |
+| **0x001C** | `+0x208` | **ConvCfg?** | Unknown. | |
+| **0x0020** | `+0x20c` | **ConvCfg** | **KW**: 0-5, **KH**: 6-11, **SX**: 13-14, **SY**: 15-16, **PadLeft**: 17-21, **PadTop**: 22-26, **OX**: 28-29, **OY**: 30-31. | `SetCommonConvCfgKw` [0:5], `SetCommonConvCfgKh` [6:11] write to 0x20c |
+| **0x0024** | `+0x210` | **ConvCfg3d** | **Kd**: 0-5, **Sz**: 6-11, **Pz**: 12-16, **Oz**: 17-21. | |
+| **0x0028** | `+0x214` | **NumGroups / MacCfg?** | **NumGroups**: 0-12 (13 bits). | `SetOrReturnNumGroups` writes to 0x214 [0:12] |
+| **0x002C** | `+0x218` | **TileHeight** | **TileHeight**: 0-16 (17 bits). | |
+| **0x0030** | `+0x21c` | **TileOverlap** | **Overlap**: 0-5, **PadTop**: 6-10. | |
+| **0x0034** | `+0x220` | **NECfg** | **OCGSize**: 0-2, **FatTileEnable**: 3, **WUStackLog2**: 4-5. | |
+| **0x0038** | `+0x224` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. | `SetPatchWidth`, `SetPatchHeight` |
+| **0x003C** | `+0x228` | **NID** | Network ID / Layer Trace ID. | |
+| **0x0040** | `+0x22c` | **DPE** | Distributed Processing Element config. | |
+| **0x0044** | `+0x230` | **Reserved** | Reserved register. | |
+| **0x0048** | `+0x234` | **Reserved** | Reserved register. | |
 
-*Note: H14 Common block is narrower than H16 (19 vs 23 registers). H16 adds `UnicastCfg` and `PECfg`.*
+*Note: H14 Common block is narrower than H16 (19 vs 23 registers). H16 adds `UnicastCfg` and `PECfg`, and unpacks dimensions into separate words (W, H, C, D each get their own register).*
+
+**Decoding H14 Packed Dimensions Example:**
+
+For ResNet50 Task 0 input (224×224×3):
+```
+0x0000: 0x00000015    ChannelCfg: InFmt=FP16, OutFmt=FP16
+0x0004: 0x00e000e0    InDim: W = 0x00E0 (224), H = 0x00E0 (224)
+0x0008: 0x00000003    InChannels: C = 3
+0x000C: 0x00000000    InDepth: D = 0
+0x0010: 0x00380038    OutDim: W = 0x0038 (56), H = 0x0038 (56)
+0x0014: 0x00000040    OutChannels: C = 64
+0x0018: 0x00000000    OutDepth: D = 0
+0x001C: 0x00000001    NumGroups: 1
+0x0020: 0x09c6c307    ConvCfg: K=7×7, S=2×2, P=3×3
+```
+
+Bit extraction for 0x00e000e0:
+- Bits [14:0] = 0x00E0 = 224 (Width)
+- Bit [15] = 0 (padding)
+- Bits [30:16] = 0x00E0 = 224 (Height)
+- Bit [31] = 0 (padding)
 
 ### TileDMA Source (0x1100 OLD / 0x4D00 Modern, Object `+0x240`)
 - **Count**: 53 registers (`0x35` words, `0xD4` bytes).

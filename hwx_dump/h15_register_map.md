@@ -47,7 +47,7 @@ Despite being a chronological successor to H14 (ISA V11), H15 regresses in ISA v
 | **Common** | 0x0000 ✅ | `+0x1F4` ✅ | 19 ✅ | 130 | Same |
 | **TileDmaSrc** | 0x4D00 ✅ | `+0x248` ✅ | 69 ✅ | 83 | **+5** |
 | **L2 Cache** | 0x4100 ✅ | `+0x364` ✅ | 30 ✅ | 45 | -4 |
-| **PE** | 0x4500 ✅ | `+0x3E4` ✅ | 14 ✅ | 12 | Same |
+| **PE** | 0x4500 ✅ | `+0x3E4` ✅ | 15 ✅ | 12 | Same |
 | **NE** | 0x4900 ✅ | `+0x424` ✅ | 11 ✅ | 6 | Same |
 | **TileDmaDst** | 0x5100 ✅ | `+0x458` ✅ | 21 ✅ | - | **+16 words** |
 | **CacheDMA** | 0x5900 ✅ | `+0x4B4` ✅ | 12 ✅ | 18 | Same |
@@ -122,11 +122,26 @@ H15 uses a **hybrid approach**, mixing `ZinAneTd<8u>` and `ZinAneTd<11u>` method
 - **Key Features:** Dual-source configuration (Src1, Src2), result/destination buffering, FIFO streaming modes, compression support, double rate mode.
 
 ### PE Block (0x4500)
+- **Count**: 15 registers (`0x0f` words, `0x3c` bytes).
+- **Object Layout**: Starts at `+0x3E4` of the `ZinAneTd` object.
 
-- **HW Address:** `0x4500` ✅
-- **Object Offset:** `+0x3E4` ✅
-- **Register Count:** 14 words ✅
-- **Methods:** 12 (identical to H13/H14)
+| HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
+| :--- | :--- | :--- | :--- |
+| **0x4500** | `+0x3E4` | **Config** | [0:1] PoolMode: 0:None, 1:Avg, 2:Max, 3:Min; [2:4] Operation: 0:Add, 1:Mul, 2:Max, 3:Min; [6:9] Condition: 0:None, 1:Abs, 2:Equal, 3:Greater, 4:GreaterEqual, 5:LessEqual, 6:Less, 7:NotEqual; [12:13] NLMode: 0:None, 1:ReLU, 2:Clamp, 3:Abs; [16] Src1Sel: 0:PrimarySource, 1:TextureSource; [18:19] Src2Sel: 0:PrimarySource, 1:TextureSource, 2:L2Source, 3:RegSource |
+| **0x4504** | `+0x3E8` | **Bias** | 19-bit Floating Point (F19) bias value. |
+| **0x4508** | `+0x3EC` | **Scale** | 19-bit Floating Point (F19) scale value. |
+| **0x450c** | `+0x3F0` | **FinalScaleEpsilon** | 19-bit Floating Point (F19) epsilon value. |
+| **0x4510** | `+0x3F4` | **PreScale** | 19-bit Floating Point (F19) pre-scale value. |
+| **0x4514** | `+0x3F8` | **FinalScale** | 19-bit Floating Point (F19) final scale value. |
+| **0x4518** | `+0x3FC` | **LUT1** | Piecewise Linear LUT Parameter. |
+| **0x451c** | `+0x400` | **LUT2** | Piecewise Linear LUT Parameter. |
+| **0x4520** | `+0x404` | **LUT3** | Piecewise Linear LUT Parameter. |
+| **0x4524** | `+0x408` | **LUT4** | Piecewise Linear LUT Parameter. |
+| **0x4528** | `+0x40C` | **LUT5** | Piecewise Linear LUT Parameter. |
+| **0x452c** | `+0x410` | **LUT6** | Piecewise Linear LUT Parameter. |
+| **0x4530** | `+0x414` | **LUT7** | Piecewise Linear LUT Parameter. |
+| **0x4534** | `+0x418` | **LUT8** | Piecewise Linear LUT Parameter. |
+| **0x4538** | `+0x41C` | **Quant** | **Src1InputOffset**: 0-7, **Src2InputOffset**: 8-15, **OutputZeroPoint**: 16-23. |
 
 ### NE Block (0x4900)
 

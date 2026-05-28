@@ -110,7 +110,7 @@ h14_l2_names = [
     "SrcAndResultWrapCfg", "Src1WrapStart", "Src2WrapStart", "L2Reserved0", "ResultWrapIndex", "ResultWrapStartOffset"
 ]
 h14_pe_names = [
-    "PEConfig", "Bias", "Scale", "PreScale", "Quant"
+    "PEConfig", "BiasScale", "PreScale", "FinalScale", "Quant"
 ]
 h14_ne_names = [
     "KernelCfg", "MacCfg", "NEBias", "NEPostScale", "RoundModeCfg"
@@ -411,7 +411,7 @@ h14_ranges = [
 h15_ranges = [
     (H16_COMMON_START, 19, h14_common_names),
     (H16_L2_START, 25, h14_l2_names),
-    (H16_PE_START, 5, h14_pe_names),
+    (H16_PE_START, 15, h16_pe_names),
     (H16_NE_START, 5, h14_ne_names),
     (H16_TILEDMA_SRC_START, 53, h14_tdma_src_names),
     (H16_TILEDMA_DST_START, 9, h14_tdma_dst_names),
@@ -484,10 +484,10 @@ def get_instruction_set_version(subtype):
     }.get(subtype, 0)
 
 def get_ch_fmt_name(fmt_val):
-    if fmt_val == 0: return "INT8"
+    if fmt_val in (0, 5): return "INT8"
     if fmt_val == 1: return "UINT8"
     if fmt_val == 2: return "FLOAT16"
-    return "Unknown"
+    return f"Unknown({fmt_val})"
 
 def get_l2_dma_fmt_name(fmt_val):
     if fmt_val == 0: return "8b"
@@ -827,17 +827,67 @@ def print_l2_h14(state):
 
 def print_pe_h14(state):
     base = H14_PE_START // 4
-    if not state.valid[base]:
+    # Check if any of the 5 PE registers was written
+    any_pe = False
+    for i in range(H14_PE_COUNT):
+        if state.valid[base + i]:
+            any_pe = True
+            break
+    if not any_pe:
         return
+
     print("        --- Planar Engine (0x0900) ---")
-    cfg = state.values[base + 0]
-    bias = state.values[base + 1]
-    scale = state.values[base + 2]
-    pre = state.values[base + 3]
-    quant = state.values[base + 4]
-    print(f"        PECfg: PoolMode={(cfg>>0)&3} Operation={(cfg>>2)&7} NLMode={(cfg>>12)&3}")
-    print(f"        Bias=0x{bias:05x} Scale=0x{scale:05x} PreScale=0x{pre:05x}")
-    print(f"        Quant: Src1ZP={(quant>>0)&0xFF} Src2ZP={(quant>>8)&0xFF} OutZP={(quant>>16)&0xFF}")
+    if state.valid[base]:
+        cfg = state.values[base]
+        print(f"        PECfg: PoolMode={(cfg>>0)&3} Operation={(cfg>>2)&7} NLMode={(cfg>>12)&3}")
+    
+    if state.valid[base + 1]:
+        # 0x0904: packed BiasScale: Bias=low16, Scale=high16
+        val = state.values[base + 1]
+        bias_f16 = val & 0xFFFF
+        scale_f16 = val >> 16
+        bias = fp16_to_fp32(bias_f16)
+        scale = fp16_to_fp32(scale_f16)
+        print(f"        BiasScale: Bias=0x{bias_f16:04x} ({bias:.6f}) Scale=0x{scale_f16:04x} ({scale:.6f})")
+        
+    if state.valid[base + 2]:
+        val = state.values[base + 2]
+        ps_f16 = val >> 16
+        ps = fp16_to_fp32(ps_f16)
+        print(f"        PreScale: 0x{ps_f16:04x} ({ps:.6f})")
+        
+    if state.valid[base + 3]:
+        val = state.values[base + 3]
+        f_val = struct.unpack('f', struct.pack('<I', val))[0]
+        print(f"        FinalScale: 0x{val:08x} ({f_val:.6f})")
+        
+    if state.valid[base + 4]:
+        quant = state.values[base + 4]
+        print(f"        Quant: Src1ZP={(quant>>0)&0xFF} Src2ZP={(quant>>8)&0xFF} OutZP={(quant>>16)&0xFF}")
+
+def print_pe_h15(state):
+    base = H16_PE_START // 4
+    if not any(state.valid[base:base+16]):
+        return
+    print("        --- Planar Engine (0x4500) ---")
+    if state.valid[base]:
+        cfg = state.values[base]
+        print(f"        PECfg: PoolMode={(cfg>>0)&3} Operation={(cfg>>2)&7} NLMode={(cfg>>12)&3}")
+    
+    if state.valid[base + 1]:
+        print_float_reg("PE Bias", state.values[base + 1])
+    if state.valid[base + 2]:
+        print_float_reg("PE Scale", state.values[base + 2])
+    if state.valid[base + 3]:
+        print_float_reg("PE Final Scale Epsilon", state.values[base + 3])
+    if state.valid[base + 4]:
+        print_float_reg("PE PreScale", state.values[base + 4])
+    if state.valid[base + 5]:
+        print_float_reg("PE Final Scale", state.values[base + 5])
+    
+    if state.valid[base + 14]:
+        quant = state.values[base + 14]
+        print(f"        Quant: Src1ZP={(quant>>0)&0xFF} Src2ZP={(quant>>8)&0xFF} OutZP={(quant>>16)&0xFF}")
 
 def print_ne_h14(state):
     print("        --- Neural Engine (0x0D00) ---")
@@ -934,19 +984,6 @@ def print_l2_h15(state):
     print(f"        ResultCfg: Type={(rcfg>>0)&3} DMAFmt={get_l2_dma_fmt_name((rcfg>>6)&3)} Intrlv={(rcfg>>8)&0xF}")
     print(f"        ResultBase: 0x{rbase:05x}")
 
-def print_pe_h15(state):
-    base = H16_PE_START // 4
-    if not state.valid[base]:
-        return
-    print("        --- Planar Engine (0x4500) ---")
-    cfg = state.values[base + 0]
-    bias = state.values[base + 1]
-    scale = state.values[base + 2]
-    pre = state.values[base + 3]
-    quant = state.values[base + 4]
-    print(f"        PECfg: PoolMode={(cfg>>0)&3} Operation={(cfg>>2)&7} NLMode={(cfg>>12)&3}")
-    print(f"        Bias=0x{bias:05x} Scale=0x{scale:05x} PreScale=0x{pre:05x}")
-    print(f"        Quant: Src1ZP={(quant>>0)&0xFF} Src2ZP={(quant>>8)&0xFF} OutZP={(quant>>16)&0xFF}")
 
 def print_ne_h15(state):
     print("        --- Neural Engine (0x4900) ---")
@@ -2435,7 +2472,7 @@ def decode_ane_td_m4(section_data, subtype, dump_reg_blocks, dump_json):
         words = struct.unpack_from(f"<{task_size}I", section_data, offset)
         num_words = task_size
         
-        i = 8 if subtype in (5, 6) else 10
+        i = 8 if subtype in (5, 6) else 9
         while i < num_words:
             header = words[i]
             i += 1

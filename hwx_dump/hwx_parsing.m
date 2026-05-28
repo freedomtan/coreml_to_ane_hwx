@@ -150,7 +150,7 @@ const char *get_h15_reg_name(uint32_t addr) {
   static const hwx_reg_range_t h15_ranges[] = {
       {H16_COMMON_START,      19,  h14_common_names},
       {H16_L2_START,          25,  h14_l2_names},
-      {H16_PE_START,          5,   h14_pe_names},
+      {H16_PE_START,          15,  h16_pe_names},
       {H16_NE_START,          5,   h14_ne_names},
       {H16_TILEDMA_SRC_START, 53,  h14_tdma_src_names},
       {H16_TILEDMA_DST_START, 9,   h14_tdma_dst_names},
@@ -283,15 +283,32 @@ uint32_t get_instruction_set_version(uint32_t subtype) {
 static float decode_f19(uint32_t val) {
   uint32_t bits = (val & 0x7FFFF) << 13;
   return *(float *)&bits;
-
-  uint32_t sign = (val >> 18) & 0x1;
-  uint32_t exponent = (val >> 10) & 0xFF;  // Preserved 8-bit dynamic range
-  uint32_t mantissa = (val & 0x3FF) << 13; // Padding to 23-bit precision
-
-  uint32_t f32_bits = (sign << 31) | (exponent << 23) | mantissa;
-
-  return (float)(f32_bits);
 }
+
+static float fp16_to_fp32(uint16_t h) {
+  uint32_t sign = (h & 0x8000) << 16;
+  uint32_t exp = (h & 0x7C00) >> 10;
+  uint32_t mant = (h & 0x03FF);
+  if (exp == 0) {
+    if (mant == 0) {
+      uint32_t f = sign;
+      return *(float *)&f;
+    } else {
+      exp = 1;
+      while ((mant & 0x400) == 0) {
+        mant <<= 1;
+        exp--;
+      }
+      mant &= 0x3FF;
+    }
+  } else if (exp == 0x1F) {
+    uint32_t f = sign | 0x7F800000 | (mant << 13);
+    return *(float *)&f;
+  }
+  uint32_t f = sign | ((exp + 127 - 15) << 23) | (mant << 13);
+  return *(float *)&f;
+}
+
 
 static void print_float_reg(const char *name, uint32_t val) {
   if (val & 0xFFF80000) {
@@ -335,13 +352,12 @@ const char *get_hw_tensor_format_name_v17(uint32_t mode, uint32_t mem_fmt,
 const char *get_ch_fmt_name(uint32_t fmt) {
   switch (fmt) {
   case 0:
+  case 5:
     return "INT8";
   case 1:
     return "UINT8";
   case 2:
     return "FLOAT16";
-  case 3:
-    return "Unknown";
   default:
     return "Unknown";
   }
@@ -720,14 +736,18 @@ void print_pe_h14(const hwx_state_t *state) {
            (cfg >> 0) & 3, (cfg >> 2) & 7, (cfg >> 12) & 3);
   if (state->valid[H14_PE_START/4 + 1]) {
     // 0x0904: packed BiasScale (same as H13): Bias=low16, Scale=high16
-    uint16_t bias  = biasscale & 0xFFFF;
-    uint16_t scale = biasscale >> 16;
-    printf("        BiasScale: Bias=0x%04x Scale=0x%04x\n", bias, scale);
+    uint16_t bias_f16  = biasscale & 0xFFFF;
+    uint16_t scale_f16 = biasscale >> 16;
+    printf("        BiasScale: Bias=0x%04x (%f) Scale=0x%04x (%f)\n",
+           bias_f16, fp16_to_fp32(bias_f16), scale_f16, fp16_to_fp32(scale_f16));
   }
-  if (state->valid[H14_PE_START/4 + 2])
-    printf("        PreScale=0x%04x\n", (uint16_t)(prescale_w >> 16));
-  if (state->valid[H14_PE_START/4 + 3])
-    printf("        FinalScale=0x%08x\n", finalscale);
+  if (state->valid[H14_PE_START/4 + 2]) {
+    uint16_t ps_f16 = (uint16_t)(prescale_w >> 16);
+    printf("        PreScale: 0x%04x (%f)\n", ps_f16, fp16_to_fp32(ps_f16));
+  }
+  if (state->valid[H14_PE_START/4 + 3]) {
+    printf("        FinalScale: 0x%08x (%f)\n", finalscale, *(float *)&finalscale);
+  }
   if (state->valid[H14_PE_START/4 + 4])
     printf("        Quant: Src1ZP=%u Src2ZP=%u OutZP=%u\n",
            (quant >> 0) & 0xFF, (quant >> 8) & 0xFF, (quant >> 16) & 0xFF);
@@ -855,19 +875,35 @@ void print_l2_h15(const hwx_state_t *state) {
 }
 
 void print_pe_h15(const hwx_state_t *state) {
-  if (!state->valid[H16_PE_START/4])
+  bool any_pe = false;
+  for (int i = 0; i < 16; i++)
+    if (state->valid[H16_PE_START/4 + i]) { any_pe = true; break; }
+  if (!any_pe)
     return;
+
   printf("        --- Planar Engine (0x4500) ---\n");
-  uint32_t cfg   = state->values[H16_PE_START/4 + 0]; // PEConfig
-  uint32_t bias  = state->values[H16_PE_START/4 + 1]; // Bias
-  uint32_t scale = state->values[H16_PE_START/4 + 2]; // Scale
-  uint32_t pre   = state->values[H16_PE_START/4 + 3]; // PreScale
-  uint32_t quant = state->values[H16_PE_START/4 + 4]; // Quant
-  printf("        PECfg: PoolMode=%u Operation=%u NLMode=%u\n",
-         (cfg >> 0) & 3, (cfg >> 2) & 7, (cfg >> 12) & 3);
-  printf("        Bias=0x%05x Scale=0x%05x PreScale=0x%05x\n", bias, scale, pre);
-  printf("        Quant: Src1ZP=%u Src2ZP=%u OutZP=%u\n",
-         (quant >> 0) & 0xFF, (quant >> 8) & 0xFF, (quant >> 16) & 0xFF);
+  if (state->valid[H16_PE_START/4]) {
+    uint32_t cfg = state->values[H16_PE_START/4];
+    printf("        PECfg: PoolMode=%u Operation=%u NLMode=%u\n",
+           (cfg >> 0) & 3, (cfg >> 2) & 7, (cfg >> 12) & 3);
+  }
+
+  if (state->valid[H16_PE_START/4 + 1])
+    print_float_reg("PE Bias", state->values[H16_PE_START/4 + 1]);
+  if (state->valid[H16_PE_START/4 + 2])
+    print_float_reg("PE Scale", state->values[H16_PE_START/4 + 2]);
+  if (state->valid[H16_PE_START/4 + 3])
+    print_float_reg("PE Final Scale Epsilon", state->values[H16_PE_START/4 + 3]);
+  if (state->valid[H16_PE_START/4 + 4])
+    print_float_reg("PE PreScale", state->values[H16_PE_START/4 + 4]);
+  if (state->valid[H16_PE_START/4 + 5])
+    print_float_reg("PE Final Scale", state->values[H16_PE_START/4 + 5]);
+
+  if (state->valid[H16_PE_START/4 + 14]) {
+    uint32_t quant = state->values[H16_PE_START/4 + 14];
+    printf("        Quant: Src1ZP=%u Src2ZP=%u OutZP=%u\n",
+           (quant >> 0) & 0xFF, (quant >> 8) & 0xFF, (quant >> 16) & 0xFF);
+  }
 }
 
 void print_ne_h15(const hwx_state_t *state) {
@@ -965,11 +1001,37 @@ void print_kerneldmasrc_h15(const hwx_state_t *state) {
 
 // Helper function to recover dimensions from L2 Cache registers
 // Used for operations (Add, ReLU, etc.) that don't write Common block dimensions
+#define REG_TILEDMA_SRC_START       (0x4D00 / 4)
+#define REG_TILEDMA_SRC1_ROW_STRIDE  (REG_TILEDMA_SRC_START + 6)
+#define REG_TILEDMA_SRC1_PLANE_STRIDE (REG_TILEDMA_SRC_START + 7)
+#define REG_TILEDMA_SRC1_FMT         (REG_TILEDMA_SRC_START + 26)
+
 static void recover_dimensions_from_l2_cache(const hwx_state_t *state,
                                              uint32_t *inw, uint32_t *inh, uint32_t *inc) {
   // Only attempt recovery if dimensions are not already set
   if (*inw != 0 || *inh != 0 || *inc != 0) {
     return;
+  }
+
+  // Try TileDMA Source strides first (most reliable for input dimensions)
+  if (state->valid[REG_TILEDMA_SRC1_ROW_STRIDE] && state->valid[REG_TILEDMA_SRC1_FMT]) {
+      uint32_t row_stride = state->values[REG_TILEDMA_SRC1_ROW_STRIDE];
+      uint32_t fmt = state->values[REG_TILEDMA_SRC1_FMT];
+      uint32_t mem_fmt = (fmt >> 12) & 3;
+      uint32_t bytes_per_pixel = (mem_fmt == 3) ? 4 : (mem_fmt == 2 ? 2 : 1);
+      
+      if (row_stride > 0 && bytes_per_pixel > 0) {
+          uint32_t w = row_stride / bytes_per_pixel;
+          if (w >= 7 && w <= 4096) {
+              *inw = w;
+              if (state->valid[REG_TILEDMA_SRC1_PLANE_STRIDE]) {
+                  uint32_t plane_stride = state->values[REG_TILEDMA_SRC1_PLANE_STRIDE];
+                  if (plane_stride > 0) {
+                      *inh = plane_stride / row_stride;
+                  }
+              }
+          }
+      }
   }
 
   // Decide which register to use based on operation discriminator pattern
@@ -1073,9 +1135,27 @@ void print_common_h16(const hwx_state_t *state) {
   uint32_t pw = 0, ph = 0;
   uint32_t s1br = 0, s2br = 0, s1t = 0, s2t = 0, ot = 0, nid = 0, dpe = 0;
 
+  // First, attempt dimension recovery from L2 Cache registers
+  // We use this to help locate the common block if it's shifted
+  uint32_t l2_inw = 0, l2_inh = 0, l2_inc = 0;
+  recover_dimensions_from_l2_cache(state, &l2_inw, &l2_inh, &l2_inc);
+
+  // Common block can be shifted (e.g., to Reg 1 or 2) in some models
+  int offset = 0;
+  if (l2_inw > 0 && l2_inh > 0) {
+      for (int i = 0; i <= 4; i++) {
+          uint32_t tw = state->values[i+1] & 0x1FFFF;
+          uint32_t th = state->values[i+2] & 0x1FFFF;
+          if (tw == l2_inw && th == l2_inh) {
+              offset = i;
+              break;
+          }
+      }
+  }
+
   if (state->instr_ver >= 20) {
     ane_common_h18_t c =
-        *(ane_common_h18_t *)&state->values[H16_COMMON_START / 4];
+        *(ane_common_h18_t *)&state->values[offset];
     infmt = c.ch_cfg.infmt;
     src2infmt = c.ch_cfg.src2infmt;
     outfmt = c.ch_cfg.outfmt;
@@ -1124,7 +1204,7 @@ void print_common_h16(const hwx_state_t *state) {
     dpe = c.dpe;
   } else if (state->instr_ver >= 19) {
     ane_common_h17_t c =
-        *(ane_common_h17_t *)&state->values[H16_COMMON_START / 4];
+        *(ane_common_h17_t *)&state->values[offset];
     infmt = c.ch_cfg.infmt;
     src2infmt = c.ch_cfg.src2infmt;
     outfmt = c.ch_cfg.outfmt;
@@ -1172,61 +1252,8 @@ void print_common_h16(const hwx_state_t *state) {
     nid = c.nid;
     dpe = c.dpe;
   } else {
-    // For H16, handle two different dimension encoding schemes:
-    // 1. Normal: Dimensions written as VALUES to Reg[0x0001-0x0008]
-    // 2. Sparse hash: Dimensions appear as ADDRESSES (e.g., addr=0x03e9 for dim=1001)
     uint32_t hybrid_values[sizeof(ane_common_h16_t) / 4];
-    memcpy(hybrid_values, &state->values[H16_COMMON_START / 4], sizeof(ane_common_h16_t));
-
-    // Check if dimension values (not just valid flags) look reasonable
-    // Even if state->valid[] doesn't mark them, the actual values may be correct
-    // Note: Some H16 tasks write ANE header to registers 0x0-0x9, shifting Common block.
-    // The exact offset varies, so we check multiple possible locations.
-    uint32_t dim_w = state->values[REG_COMMON_IN_WIDTH] & 0x1FFFF;
-    uint32_t dim_h = state->values[REG_COMMON_IN_HEIGHT] & 0x1FFFF;
-    uint32_t dim_c = state->values[REG_COMMON_IN_CHANNELS] & 0x1FFFF;
-
-    // If dimensions at standard location don't look valid, search for them
-    // Specifically check if alternative register contains a value that could be width (e.g., 1001 = 0x3e9)
-    if (dim_w == 0 || dim_w >= 65536 || dim_h >= 65536 || dim_c >= 65536 ||
-        state->values[REG_COMMON_CH_CFG] == 0) {
-
-      // Try shifted location (common for tasks with header in register space)
-      uint32_t test_w = state->values[REG_COMMON_ALT_IN_WIDTH] & 0x1FFFF;
-      uint32_t test_h = state->values[REG_COMMON_ALT_IN_HEIGHT] & 0x1FFFF;
-      uint32_t test_c = state->values[REG_COMMON_ALT_IN_CHANNELS] & 0x1FFFF;
-
-      if (test_w > 0 && test_w < 10000 && test_h <= test_w && test_h < 10000 &&
-          test_c > 0 && test_c < 10000) {
-        // Use registers starting at 0xa (ch_cfg before width)
-        dim_w = test_w;
-        dim_h = test_h;
-        dim_c = test_c;
-        // Copy from offset 0xa
-        for (int i = 0; i < (int)(sizeof(ane_common_h16_t) / 4) && 0xa + i < HW_MAX_REGS; i++) {
-          hybrid_values[i] = state->values[0xa + i];
-        }
-      }
-    }
-
-    bool dims_look_reasonable = false;
-
-    // Dimensions look reasonable if:
-    // - Width and height are sensible (both > 0 and < 3000, or one is 0/1)
-    // - Channels is reasonable (< 2048)
-    // - Height is not suspiciously large (H > 3000 indicates garbage)
-    if (dim_h < 3000 && dim_c < 2048) {
-      if ((dim_w > 0 && dim_w < 3000 && dim_h > 0) ||
-          (dim_w > 0 && dim_w < 3000 && (dim_h == 0 || dim_h == 1)) ||
-          (dim_h > 0 && (dim_w == 0 || dim_w == 1))) {
-        dims_look_reasonable = true;
-      }
-    }
-
-    // Note: Disabled address-as-dimension heuristic for H16 as it causes false positives
-    // The search-based approach above should find dimensions reliably
-    (void)dims_look_reasonable;  // Suppress unused variable warning
-
+    memcpy(hybrid_values, &state->values[offset], sizeof(ane_common_h16_t));
     ane_common_h16_t c = *(ane_common_h16_t *)hybrid_values;
     infmt = c.ch_cfg.infmt;
     src2infmt = c.ch_cfg.src2infmt;
@@ -1275,10 +1302,13 @@ void print_common_h16(const hwx_state_t *state) {
     ot = c.pe_cfg.out_trans;
     nid = c.nid;
     dpe = c.dpe;
+  }
 
-    // Attempt dimension recovery from L2 Cache registers
-    // (for operations that don't write Common block dimensions)
-    recover_dimensions_from_l2_cache(state, &inw, &inh, &inc);
+  // If L2 found valid dimensions but block was invalid, use them as fallback
+  if (inw == 0 && l2_inw > 0) {
+      inw = l2_inw;
+      inh = l2_inh;
+      inc = l2_inc;
   }
 
   if (!state->valid[H16_COMMON_START / 4]) {
@@ -2108,35 +2138,6 @@ void print_tiledmadst_h16(const hwx_state_t *state) {
 // ============================================================================
 
 // Convert FP16 to FP32
-static float fp16_to_fp32(uint16_t h) {
-  uint32_t sign = (h & 0x8000) << 16;
-  uint32_t exp = (h & 0x7C00) >> 10;
-  uint32_t mant = (h & 0x03FF);
-
-  if (exp == 0) {
-    if (mant == 0) {
-      // Zero
-      uint32_t f = sign;
-      return *(float *)&f;
-    } else {
-      // Denormalized
-      exp = 1;
-      while ((mant & 0x400) == 0) {
-        mant <<= 1;
-        exp--;
-      }
-      mant &= 0x3FF;
-    }
-  } else if (exp == 0x1F) {
-    // Inf or NaN
-    uint32_t f = sign | 0x7F800000 | (mant << 13);
-    return *(float *)&f;
-  }
-
-  // Normalized: adjust exponent bias from 15 to 127
-  uint32_t f = sign | ((exp + 127 - 15) << 23) | (mant << 13);
-  return *(float *)&f;
-}
 
 // Decode and print LUT coefficients
 static void decode_lut_coefficients(const uint8_t *data, size_t size,
@@ -2660,8 +2661,8 @@ static void parse_instruction_stream_h16(const uint8_t *ptr, uint32_t offset,
   int num_words = (hdr->task_size * 4) / 4;
 
   // H14 (subtype 5) and H15 (subtype 6) task descriptor instruction stream starts at Word 8 (offset 32)
-  // H16 task descriptor instruction stream starts at Word 10 (offset 40)
-  int i = (state->subtype == 5 || state->subtype == 6) ? 8 : 10;
+  // H16+ task descriptor instruction stream starts at Word 9 (offset 36)
+  int i = (state->subtype == 5 || state->subtype == 6) ? 8 : 9;
 
   while (i < num_words) {
     uint32_t header = words[i++];

@@ -64,6 +64,26 @@ typedef struct {
   int block_count;
 } arch_descriptor_t;
 
+// Register address constants for dimension extraction in print_common_h16()
+// These are word offsets (not byte addresses) into the hwx_state_t->values[] array
+#define REG_COMMON_CH_CFG           0x0     // Channel format config (Common+0x0)
+#define REG_COMMON_IN_WIDTH         0x1     // Input width (Common+0x4)
+#define REG_COMMON_IN_HEIGHT        0x2     // Input height (Common+0x8)
+#define REG_COMMON_IN_CHANNELS      0x3     // Input channels (Common+0xc)
+#define REG_COMMON_ALT_IN_WIDTH     0xb     // Alternative width location (shifted header)
+#define REG_COMMON_ALT_IN_HEIGHT    0xc     // Alternative height location (shifted header)
+#define REG_COMMON_ALT_IN_CHANNELS  0xd     // Alternative channels location (shifted header)
+
+// L2 Cache register offsets (for dimension recovery heuristics)
+#define REG_L2_POOL_STRIDE          0x1045  // L2+0x14: Pooling stride register
+#define REG_L2_OP_DISCRIMINATOR     0x1046  // L2+0x18: Operation type discriminator
+#define REG_L2_CACHE_STRIDE         0x1047  // L2+0x1c: Cache stride (width × factor)
+#define REG_L2_PACKED_CHANNELS_1    0x1044  // L2+0x10: Packed value with channels in high 16 bits
+#define REG_L2_PACKED_CHANNELS_2    0x1053  // L2+0x4c: Alternative packed channels location
+
+// TileDMA Destination register offsets
+#define REG_TDMA_DST_CHANNELS       0x1442  // TileDMA Dst+0x8: Destination channels (high 16 bits)
+
 static const char *lookup_reg_name(uint32_t addr, const hwx_reg_range_t *ranges,
                                    int range_count) {
   for (int i = 0; i < range_count; i++) {
@@ -880,20 +900,20 @@ void print_common_h16(const hwx_state_t *state) {
     // Even if state->valid[] doesn't mark them, the actual values may be correct
     // Note: Some H16 tasks write ANE header to registers 0x0-0x9, shifting Common block.
     // The exact offset varies, so we check multiple possible locations.
-    uint32_t dim_w = state->values[0x1] & 0x1FFFF;
-    uint32_t dim_h = state->values[0x2] & 0x1FFFF;
-    uint32_t dim_c = state->values[0x3] & 0x1FFFF;
+    uint32_t dim_w = state->values[REG_COMMON_IN_WIDTH] & 0x1FFFF;
+    uint32_t dim_h = state->values[REG_COMMON_IN_HEIGHT] & 0x1FFFF;
+    uint32_t dim_c = state->values[REG_COMMON_IN_CHANNELS] & 0x1FFFF;
     int common_offset = 0;  // Offset where Common block actually starts
 
-    // If dimensions at standard location (0x1-0x3) don't look valid, search for them
-    // Specifically check if register 0xb contains a value that could be width (e.g., 1001 = 0x3e9)
+    // If dimensions at standard location don't look valid, search for them
+    // Specifically check if alternative register contains a value that could be width (e.g., 1001 = 0x3e9)
     if (dim_w == 0 || dim_w >= 65536 || dim_h >= 65536 || dim_c >= 65536 ||
-        state->values[0x0] == 0) {
+        state->values[REG_COMMON_CH_CFG] == 0) {
 
-      // Try shifted location 0xb-0xd (common for tasks with header in register space)
-      uint32_t test_w = state->values[0xb] & 0x1FFFF;
-      uint32_t test_h = state->values[0xc] & 0x1FFFF;
-      uint32_t test_c = state->values[0xd] & 0x1FFFF;
+      // Try shifted location (common for tasks with header in register space)
+      uint32_t test_w = state->values[REG_COMMON_ALT_IN_WIDTH] & 0x1FFFF;
+      uint32_t test_h = state->values[REG_COMMON_ALT_IN_HEIGHT] & 0x1FFFF;
+      uint32_t test_c = state->values[REG_COMMON_ALT_IN_CHANNELS] & 0x1FFFF;
 
       if (test_w > 0 && test_w < 10000 && test_h <= test_w && test_h < 10000 &&
           test_c > 0 && test_c < 10000) {
@@ -982,22 +1002,22 @@ void print_common_h16(const hwx_state_t *state) {
       // Decide which register to use based on Reg[0x1046] pattern
       // 0x1046 = 0xe10 (3600) → pooling, use 0x1045
       // 0x1046 = 0xe20 (3616) → normalization, use 0x1047 with factor 16
-      bool use_1045 = false;
+      bool use_pool_stride = false;
 
-      if (state->valid[0x1046]) {
-        uint32_t r1046 = state->values[0x1046];
-        // Pooling pattern: 0x1046 ends in 0x10
-        if ((r1046 & 0xF0) == 0x10) {
-          use_1045 = true;
+      if (state->valid[REG_L2_OP_DISCRIMINATOR]) {
+        uint32_t op_disc = state->values[REG_L2_OP_DISCRIMINATOR];
+        // Pooling pattern: discriminator ends in 0x10
+        if ((op_disc & 0xF0) == 0x10) {
+          use_pool_stride = true;
         }
-      } else if (state->valid[0x1045] && !state->valid[0x1047]) {
-        // Only 0x1045 exists → likely pooling
-        use_1045 = true;
+      } else if (state->valid[REG_L2_POOL_STRIDE] && !state->valid[REG_L2_CACHE_STRIDE]) {
+        // Only pool stride exists → likely pooling
+        use_pool_stride = true;
       }
 
-      // Try smaller stride register 0x1045 (for pooling operations)
-      if (use_1045 && state->valid[0x1045]) {
-        uint32_t small_stride = state->values[0x1045];
+      // Try pooling stride register (for pooling operations)
+      if (use_pool_stride && state->valid[REG_L2_POOL_STRIDE]) {
+        uint32_t small_stride = state->values[REG_L2_POOL_STRIDE];
         uint32_t candidate = small_stride / 4;
         if (candidate >= 7 && candidate <= 224) {
           inw = candidate;
@@ -1005,10 +1025,10 @@ void print_common_h16(const hwx_state_t *state) {
         }
       }
 
-      // Check L2 Cache stride register 0x1047 (for other operations)
-      // Register 0x1047 (L2+0x1c) contains width × stride_factor
-      if (inw == 0 && state->valid[0x1047]) {
-        uint32_t stride = state->values[0x1047];
+      // Check L2 Cache stride register (for other operations)
+      // This register contains width × stride_factor
+      if (inw == 0 && state->valid[REG_L2_CACHE_STRIDE]) {
+        uint32_t stride = state->values[REG_L2_CACHE_STRIDE];
 
         // Common neural network dimensions in order of preference
         uint32_t common_dims[] = {224, 112, 56, 28, 14, 7};
@@ -1038,27 +1058,27 @@ void print_common_h16(const hwx_state_t *state) {
       }
 
       // Try to extract channels from packed register values
-      // Check L2 Cache register 0x1053 (high 16 bits often contain channels)
-      if (inc == 0 && state->valid[0x1053]) {
-        uint32_t packed = state->values[0x1053];
+      // Check L2 Cache register (high 16 bits often contain channels)
+      if (inc == 0 && state->valid[REG_L2_PACKED_CHANNELS_2]) {
+        uint32_t packed = state->values[REG_L2_PACKED_CHANNELS_2];
         uint32_t candidate_c = (packed >> 16) & 0xFFFF;
         if (candidate_c > 0 && candidate_c < 512) {
           inc = candidate_c;
         }
       }
 
-      // Alternative: check 0x1044
-      if (inc == 0 && state->valid[0x1044]) {
-        uint32_t packed = state->values[0x1044];
+      // Alternative: check alternative L2 packed channels register
+      if (inc == 0 && state->valid[REG_L2_PACKED_CHANNELS_1]) {
+        uint32_t packed = state->values[REG_L2_PACKED_CHANNELS_1];
         uint32_t candidate_c = (packed >> 16) & 0xFFFF;
         if (candidate_c > 0 && candidate_c < 512) {
           inc = candidate_c;
         }
       }
 
-      // Alternative: check TileDMA destination 0x1442
-      if (inc == 0 && state->valid[0x1442]) {
-        uint32_t packed = state->values[0x1442];
+      // Alternative: check TileDMA destination register
+      if (inc == 0 && state->valid[REG_TDMA_DST_CHANNELS]) {
+        uint32_t packed = state->values[REG_TDMA_DST_CHANNELS];
         uint32_t candidate_c = (packed >> 16) & 0xFFFF;
         if (candidate_c > 0 && candidate_c < 512) {
           inc = candidate_c;

@@ -93,6 +93,68 @@ h13_tdma_dst_names = [
 ]
 h13_kdma_names = ["Unknown", "Unknown", "CoeffDMAConfig", "CoeffBaseAddr", "CoeffBfrSize"]
 
+# ============================================================================
+# H14 Register Names
+# ============================================================================
+
+h14_common_names = [
+    "InDim", "InDepth", "ChannelCfg", "InChannels", "OutChannels", "OutDim",
+    "OutDepth", "pad0", "ConvCfg", "ConvCfg3d", "NumGroups", "TileHeight",
+    "TileOverlap", "NECfg", "PatchCfg", "NID", "DPE", "pad1", "pad2"
+]
+h14_l2_names = [
+    "Control", "Src1Cfg", "Src2Cfg", "Src1Base",
+    "Src1ChannelStride", "Src1RowStride", "Src1DepthStride", "Src1GroupStride",
+    "Src2Base", "Src2ChannelStride", "Src2RowStride", "Src2DepthStride", "Src2GroupStride",
+    "ResultCfg", "ResultBase", "ResultChannelStride", "ResultRowStride", "ResultDepthStride", "ResultGroupStride",
+    "SrcAndResultWrapCfg", "Src1WrapStart", "Src2WrapStart", "L2Reserved0", "ResultWrapIndex", "ResultWrapStartOffset"
+]
+h14_pe_names = [
+    "PEConfig", "Bias", "Scale", "PreScale", "Quant"
+]
+h14_ne_names = [
+    "KernelCfg", "MacCfg", "NEBias", "NEPostScale", "RoundModeCfg"
+]
+h14_tdma_src_names = [
+    "Src1DMAConfig", "Src2DMAConfig", "Src1WrapCfg", "Src2WrapCfg", "Src1BaseAddr",
+    "Src1RowStride", "Src1ChannelStride", "Src1DepthStride", "Src1GroupStride",
+    "Src2BaseAddr", "Src2RowStride", "Src2ChannelStride", "Src2DepthStride", "Src2GroupStride",
+    "Src1Fmt", "Src2Fmt", "Src1CacheHint2", "Src2CacheHint2", "Src1PixelOffsetX",
+    "Src1PixelOffsetY", "Src1PixelOffsetZ", "Src1PixelOffsetW", "Src2PixelOffsetX",
+    "Src2PixelOffsetY", "Src2PixelOffsetZ", "Src2PixelOffsetW", "Src1CompressedInfo",
+    "Src1CompressedSizeLo", "Src1CompressedSizeHi", "Src2CompressedInfo", "Src2CompressedSizeLo",
+    "Src2CompressedSizeHi", "Src1CropOffset", "Src2CropOffset", "Src1WrapDynamic",
+    "Src2WrapDynamic", "Src1DependencyOffset", "Src2DependencyOffset", "TileDmaSrcReserved0",
+    "TileDmaSrcReserved1", "TileDmaSrcReserved2", "TileDmaSrcReserved3", "TileDmaSrcReserved4",
+    "TileDmaSrcReserved5", "TileDmaSrcReserved6", "TileDmaSrcReserved7", "TileDmaSrcReserved8",
+    "TileDmaSrcReserved9", "TileDmaSrcReserved10", "TileDmaSrcReserved11", "TileDmaSrcReserved12",
+    "TileDmaSrcReserved13", "TileDmaSrcReserved14"
+]
+h14_tdma_dst_names = [
+    "DstDMAConfig", "DstBaseAddr", "DstRowStride", "DstPlaneStride",
+    "DstDepthStride", "DstGroupStride", "DstFmt", "DstPixelOffset", "DstReserved"
+]
+h14_kdma_names = [
+    "MasterConfig", "AlignedCoeffSizePerCh", "Prefetch", "Reserved0",
+    "Reserved1", "Reserved2", "KernelGroupStride", "KernelOCGStride",
+    "CoeffDMAConfig0", "CoeffDMAConfig1", "CoeffDMAConfig2", "CoeffDMAConfig3",
+    "CoeffDMAConfig4", "CoeffDMAConfig5", "CoeffDMAConfig6", "CoeffDMAConfig7",
+    "CoeffDMAConfig8", "CoeffDMAConfig9", "CoeffDMAConfig10", "CoeffDMAConfig11",
+    "CoeffDMAConfig12", "CoeffDMAConfig13", "CoeffDMAConfig14", "CoeffDMAConfig15",
+    "CoeffBaseAddr0", "CoeffBaseAddr1", "CoeffBaseAddr2", "CoeffBaseAddr3",
+    "CoeffBaseAddr4", "CoeffBaseAddr5", "CoeffBaseAddr6", "CoeffBaseAddr7",
+    "CoeffBaseAddr8", "CoeffBaseAddr9", "CoeffBaseAddr10", "CoeffBaseAddr11",
+    "CoeffBaseAddr12", "CoeffBaseAddr13", "CoeffBaseAddr14", "CoeffBaseAddr15",
+    "CoeffBfrSize0", "CoeffBfrSize1", "CoeffBfrSize2", "CoeffBfrSize3",
+    "CoeffBfrSize4", "CoeffBfrSize5", "CoeffBfrSize6", "CoeffBfrSize7",
+    "CoeffBfrSize8", "CoeffBfrSize9", "CoeffBfrSize10", "CoeffBfrSize11",
+    "CoeffBfrSize12", "CoeffBfrSize13", "CoeffBfrSize14", "CoeffBfrSize15",
+    "BiasDMAConfig", "BiasBaseAddr", "BiasReserved0", "BiasReserved1",
+    "PostScaleDMAConfig", "PostScaleBaseAddr", "PostScaleReserved0", "PostScaleReserved1",
+    "SparseBlockSizeCfg", "Reserved3", "Reserved4", "Reserved5",
+    "Reserved6", "Reserved7"
+]
+
 h16_common_names = [
     "ChannelCfg", "InWidth", "InHeight", "InChannels", "InDepth",
     "OutWidth", "OutHeight", "OutChannels", "OutDepth", "NumGroups",
@@ -338,13 +400,23 @@ m1_ranges = [
     (H13_KERNELDMA_START, 5, h13_kdma_names),
 ]
 h14_ranges = [
-    (H14_COMMON_START, 16, h13_common_names),
-    (H14_L2_START, 16, h13_l2_names),
-    (H14_PE_START, 4, h13_pe_names),
-    (H14_NE_START, 5, h13_ne_names),
-    (H14_TILEDMA_SRC_START, 24, h13_tdma_src_names),
-    (H14_TILEDMA_DST_START, 7, h13_tdma_dst_names),
-    (H14_KERNELDMA_START, 5, h13_kdma_names),
+    (H14_COMMON_START, H14_COMMON_COUNT, h14_common_names),
+    (H14_L2_START, H14_L2_COUNT, h14_l2_names),
+    (H14_PE_START, H14_PE_COUNT, h14_pe_names),
+    (H14_NE_START, H14_NE_COUNT, h14_ne_names),
+    (H14_TILEDMA_SRC_START, H14_TILEDMA_SRC_COUNT, h14_tdma_src_names),
+    (H14_TILEDMA_DST_START, H14_TILEDMA_DST_COUNT, h14_tdma_dst_names),
+    (H14_KERNELDMA_START, H14_KERNELDMA_COUNT, h14_kdma_names),
+]
+h15_ranges = [
+    (H16_COMMON_START, 19, h14_common_names),
+    (H16_L2_START, 25, h14_l2_names),
+    (H16_PE_START, 5, h14_pe_names),
+    (H16_NE_START, 5, h14_ne_names),
+    (H16_TILEDMA_SRC_START, 53, h14_tdma_src_names),
+    (H16_TILEDMA_DST_START, 9, h14_tdma_dst_names),
+    (H16_KERNELDMA_START, 70, h14_kdma_names),
+    (H16_CACHEDMA_START, 12, h16_cdma_names),
 ]
 m4_ranges = [
     (H16_COMMON_START, 23, h16_common_names),
@@ -522,7 +594,9 @@ def get_reg_name(addr, subtype):
         return lookup_reg_name(addr, m1_ranges)
     elif subtype == 5:
         return lookup_reg_name(addr, h14_ranges)
-    elif subtype in (6, 7):
+    elif subtype == 6:
+        return lookup_reg_name(addr, h15_ranges)
+    elif subtype == 7:
         return lookup_reg_name(addr, m4_ranges)
     elif subtype == 9:
         return lookup_reg_name(addr, h17_ranges)
@@ -691,36 +765,46 @@ def print_kerneldmasrc_h13(state):
 def print_common_h14(state):
     print("        --- Common (0x0000) ---")
     base = H14_COMMON_START // 4
-    w0 = state.values[base + 0]
-    w1 = state.values[base + 1]
-    w2 = state.values[base + 2]
-    w3 = state.values[base + 3]
-    w5 = state.values[base + 5]
-    w6 = state.values[base + 6]
-    w7 = state.values[base + 7]
-    w10 = state.values[base + 10]
-    w12 = state.values[base + 12]
+    indim  = state.values[base + 0]
+    indep  = state.values[base + 1]
+    chcfg  = state.values[base + 2]
+    inch   = state.values[base + 3]
+    outch  = state.values[base + 4]
+    outdim = state.values[base + 5]
+    outdep = state.values[base + 6]
+    conv   = state.values[base + 8]
+    mac    = state.values[base + 10]
     
-    infmt = (w0 >> 0) & 0x3
-    outfmt = (w0 >> 4) & 0x3
-    inw, inh, inc = w1 & 0x3FFF, w2 & 0x3FFF, w3 & 0x3FFF
-    outw, outh, outc = w5 & 0x3FFF, w6 & 0x3FFF, w7 & 0x3FFF
-    print(f"        InDim : W={inw} H={inh} C={inc} Type={get_ch_fmt_name(infmt)}")
-    print(f"        OutDim: W={outw} H={outh} C={outc} Type={get_ch_fmt_name(outfmt)}")
+    infmt  = (chcfg >> 0) & 0x3
+    outfmt = (chcfg >> 4) & 0x3
     
-    kw = (w10 >> 0) & 0x3F
-    kh = (w10 >> 6) & 0x3F
-    sx = (w10 >> 13) & 0x3
-    sy = (w10 >> 15) & 0x3
-    pl = (w10 >> 17) & 0x1F
-    pt = (w10 >> 22) & 0x1F
+    inw = indim & 0x7FFF
+    inh = (indim >> 16) & 0x7FFF
+    inc = inch & 0x1FFFF
+    ind = indep & 0x7FFF
+    
+    outw = outdim & 0x7FFF
+    outh = (outdim >> 16) & 0x7FFF
+    outc = outch & 0x1FFFF
+    outd = outdep & 0x7FFF
+    
+    print(f"        InDim : W={inw} H={inh} C={inc} D={ind} Type={get_ch_fmt_name(infmt)}")
+    print(f"        OutDim: W={outw} H={outh} C={outc} D={outd} Type={get_ch_fmt_name(outfmt)}")
+    
+    kw = (conv >> 0) & 0x3F
+    kh = (conv >> 6) & 0x3F
+    sx = (conv >> 13) & 0x3
+    sy = (conv >> 15) & 0x3
+    pl = (conv >> 17) & 0x1F
+    pt = (conv >> 22) & 0x1F
     if kw or kh:
         print(f"        ConvCfg: K={kw}x{kh} S={sx}x{sy} P(left/top)={pl}x{pt}")
         
-    task_type = (w12 >> 0) & 0xF
-    active_ne = (w12 >> 4) & 0x7
-    small_src = (w12 >> 7) & 0x1
-    print(f"        MacCfg: TaskType={task_type} ActiveNE={active_ne} SmallSrc={small_src}")
+    task_type = (mac >> 0) & 0xF
+    active_ne = (mac >> 4) & 0x7
+    small_src = (mac >> 7) & 0x1
+    relu_type = (mac >> 8) & 0x7
+    print(f"        MacCfg: TaskType={task_type} ActiveNE={active_ne} SmallSrc={small_src} ReluType={relu_type}")
 
 def print_l2_h14(state):
     print("        --- L2 Cache (0x0500) ---")
@@ -815,6 +899,115 @@ def print_tiledmadst_h14(state):
 def print_kerneldmasrc_h14(state):
     print("        --- KernelDMA Source (0x1900) ---")
     base = H14_KERNELDMA_START // 4
+    master = state.values[base + 0]
+    kgstr = state.values[base + 6]
+    kogstr = state.values[base + 7]
+    
+    print(f"        MasterCfg: GroupKernelReuse={(master>>4)&1} SparseFmt={(master>>5)&1} MasterEn={(master>>6)&1}")
+    if kgstr or kogstr:
+        print(f"        KernelStride: GroupStride={kgstr>>6} OCGStride={kogstr>>6}")
+        
+    for i in range(16):
+        ccfg = state.values[base + 8 + i]
+        cbase = state.values[base + 24 + i]
+        csz = state.values[base + 40 + i]
+        if (ccfg >> 0) & 1:
+            print(f"        Coeff[{i}]: En=1 DataSetId={(ccfg>>8)&0xFF} CacheHint={(ccfg>>4)&0xF} Base=0x{cbase>>6:08x} Size=0x{csz>>6:08x}")
+
+# H15 decoders
+def print_l2_h15(state):
+    print("        --- L2 Cache (0x4100) ---")
+    base = H16_L2_START // 4
+    if not state.valid[base] and not state.valid[base + 1]:
+        return
+    ctrl = state.values[base + 0]
+    scfg1 = state.values[base + 1]
+    scfg2 = state.values[base + 2]
+    sbase = state.values[base + 3]
+    rcfg = state.values[base + 13]
+    rbase = state.values[base + 14]
+    
+    print(f"        L2Ctrl: Src1ReLU={(ctrl>>0)&1} PaddingMode={(ctrl>>2)&3} Src2ReLU={(ctrl>>4)&1}")
+    print(f"        Src1Cfg: Type={(scfg1>>0)&3} DMAFmt={get_l2_dma_fmt_name((scfg1>>6)&3)} Intrlv={(scfg1>>8)&0xF} AliasConvSrc={(scfg1>>4)&1}")
+    print(f"        Src2Cfg: Type={(scfg2>>0)&3} DMAFmt={get_l2_dma_fmt_name((scfg2>>6)&3)} Intrlv={(scfg2>>8)&0xF}")
+    print(f"        Src1Base: 0x{sbase:05x}")
+    print(f"        ResultCfg: Type={(rcfg>>0)&3} DMAFmt={get_l2_dma_fmt_name((rcfg>>6)&3)} Intrlv={(rcfg>>8)&0xF}")
+    print(f"        ResultBase: 0x{rbase:05x}")
+
+def print_pe_h15(state):
+    base = H16_PE_START // 4
+    if not state.valid[base]:
+        return
+    print("        --- Planar Engine (0x4500) ---")
+    cfg = state.values[base + 0]
+    bias = state.values[base + 1]
+    scale = state.values[base + 2]
+    pre = state.values[base + 3]
+    quant = state.values[base + 4]
+    print(f"        PECfg: PoolMode={(cfg>>0)&3} Operation={(cfg>>2)&7} NLMode={(cfg>>12)&3}")
+    print(f"        Bias=0x{bias:05x} Scale=0x{scale:05x} PreScale=0x{pre:05x}")
+    print(f"        Quant: Src1ZP={(quant>>0)&0xFF} Src2ZP={(quant>>8)&0xFF} OutZP={(quant>>16)&0xFF}")
+
+def print_ne_h15(state):
+    print("        --- Neural Engine (0x4900) ---")
+    base = H16_NE_START // 4
+    kcfg = state.values[base + 0]
+    mcfg = state.values[base + 1]
+    bias = state.values[base + 2]
+    ps = state.values[base + 3]
+    rmode = state.values[base + 4]
+    
+    print(f"        KernelCfg: Fmt={get_ch_fmt_name((kcfg>>0)&3)} PalEn={(kcfg>>2)&1} SparseEn={(kcfg>>8)&1} Reuse={(kcfg>>10)&1}")
+    print(f"        MacCfg: OpMode={get_ne_op_mode_name((mcfg>>0)&7)} KMode={(mcfg>>3)&1} BiasEn={(mcfg>>4)&1} BinPoint={(mcfg>>8)&0x3F} NLMode={(mcfg>>16)&3}")
+    if state.valid[base + 2]:
+        print(f"        NEBias: 0x{bias:08x}")
+    if state.valid[base + 3]:
+        print(f"        NEPostScale: 0x{ps:08x}")
+    if state.valid[base + 4]:
+        print(f"        RoundMode: Mode={(rmode>>0)&3} IntBits={(rmode>>4)&0x1F}")
+
+def print_tiledmasrc_h15(state):
+    print("        --- TileDMA Source (0x4D00) ---")
+    base = H16_TILEDMA_SRC_START // 4
+    s1cfg = state.values[base + 0]
+    s1base = state.values[base + 4]
+    s1row = state.values[base + 5]
+    s1ch = state.values[base + 6]
+    s1fmt = state.values[base + 14]
+    s2cfg = state.values[base + 1]
+    s2base = state.values[base + 9]
+    s2row = state.values[base + 10]
+    s2fmt = state.values[base + 15]
+    
+    print(f"        Src1: En={(s1cfg>>0)&1} DataSetId={(s1cfg>>8)&0xFF} CacheHint={(s1cfg>>4)&0xF} Base=0x{s1base>>6:06x} Row=0x{s1row>>6:06x} Ch=0x{s1ch>>6:06x}")
+    print(f"        Src1Fmt: Mode={(s1fmt>>0)&3} MemFmt={(s1fmt>>12)&3} Intrlv={(s1fmt>>24)&0xF}")
+    if state.valid[base + 1]:
+        print(f"        Src2: En={(s2cfg>>0)&1} DataSetId={(s2cfg>>8)&0xFF} Base=0x{s2base>>6:06x} Row=0x{s2row>>6:06x}")
+        print(f"        Src2Fmt: Mode={(s2fmt>>0)&3} MemFmt={(s2fmt>>12)&3} Intrlv={(s2fmt>>24)&0xF}")
+
+def print_tiledmadst_h15(state):
+    print("        --- TileDMA Destination (0x5100) ---")
+    base = H16_TILEDMA_DST_START // 4
+    cfg = state.values[base + 0]
+    base_val = state.values[base + 1]
+    row = state.values[base + 2]
+    plane = state.values[base + 3]
+    depth = state.values[base + 4]
+    group = state.values[base + 5]
+    fmt = state.values[base + 6]
+    pxoff = state.values[base + 7]
+    
+    print(f"        DstCfg: En={(cfg>>0)&1} DataSetId={(cfg>>8)&0xFF} CacheHint={(cfg>>4)&0xF}")
+    print(f"        DstBase: 0x{base_val>>6:06x} RowStride=0x{row>>6:06x} PlaneStride=0x{plane>>6:06x}")
+    if depth or group:
+        print(f"        DstDepthStride=0x{depth>>6:06x} GroupStride=0x{group>>6:06x}")
+    print(f"        DstFmt: Mode={(fmt>>0)&3} MemFmt={(fmt>>12)&3}")
+    if pxoff:
+        print(f"        DstPixelOffset: 0x{pxoff&0xFFFF:04x}")
+
+def print_kerneldmasrc_h15(state):
+    print("        --- KernelDMA Source (0x5500) ---")
+    base = H16_KERNELDMA_START // 4
     master = state.values[base + 0]
     kgstr = state.values[base + 6]
     kogstr = state.values[base + 7]
@@ -2007,7 +2200,28 @@ def report_hwx_state(state, dump_reg_blocks):
                 ("[0x1900] KernelDMA Source", H14_KERNELDMA_START, H14_KERNELDMA_COUNT),
             ]
             dump_hw_blocks(state, blocks, lambda addr: get_reg_name(addr, state.subtype))
-    elif state.instr_ver > 11 or state.subtype == 6:
+    elif state.subtype == 6:
+        print_common_h14(state)
+        print_ne_h15(state)
+        print_pe_h15(state)
+        print_l2_h15(state)
+        print_tiledmasrc_h15(state)
+        print_tiledmadst_h15(state)
+        print_kerneldmasrc_h15(state)
+        print_cachedma_h16(state)
+        if dump_reg_blocks:
+            blocks = [
+                ("[0x0000] Common Module", H16_COMMON_START, 19),
+                ("[0x4100] L2 Cache Control", H16_L2_START, 30),
+                ("[0x4500] Planar Engine (PE)", H16_PE_START, 14),
+                ("[0x4900] Neural Engine Core (NE)", H16_NE_START, 11),
+                ("[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START, 69),
+                ("[0x5100] TileDMA Destination", H16_TILEDMA_DST_START, 21),
+                ("[0x5500] KernelDMA Source", H16_KERNELDMA_START, 72),
+                ("[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START, 12),
+            ]
+            dump_hw_blocks(state, blocks, lambda addr: get_reg_name(addr, state.subtype))
+    elif state.instr_ver > 11:
         print_common_h16(state)
         print_ne_h16(state)
         print_pe_index_h16(state)
@@ -2221,7 +2435,7 @@ def decode_ane_td_m4(section_data, subtype, dump_reg_blocks, dump_json):
         words = struct.unpack_from(f"<{task_size}I", section_data, offset)
         num_words = task_size
         
-        i = 9
+        i = 8 if subtype in (5, 6) else 10
         while i < num_words:
             header = words[i]
             i += 1

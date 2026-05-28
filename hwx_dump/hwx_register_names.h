@@ -53,6 +53,74 @@ static const char *h13_kdma_names[] = {"Unknown", "Unknown", "CoeffDMAConfig",
                                        "CoeffBaseAddr", "CoeffBfrSize"};
 
 // ============================================================================
+// H14 Register Names
+// ============================================================================
+
+static const char *h14_common_names[] = {
+    "InDim", "InDepth", "ChannelCfg", "InChannels", "OutChannels", "OutDim",
+    "OutDepth", "pad0", "ConvCfg", "ConvCfg3d", "NumGroups", "TileHeight",
+    "TileOverlap", "NECfg", "PatchCfg", "NID", "DPE", "pad1", "pad2"
+};
+
+static const char *h14_l2_names[] = {
+    "Control", "Src1Cfg", "Src2Cfg", "Src1Base",
+    "Src1ChannelStride", "Src1RowStride", "Src1DepthStride", "Src1GroupStride",
+    "Src2Base", "Src2ChannelStride", "Src2RowStride", "Src2DepthStride", "Src2GroupStride",
+    "ResultCfg", "ResultBase", "ResultChannelStride", "ResultRowStride", "ResultDepthStride", "ResultGroupStride",
+    "SrcAndResultWrapCfg", "Src1WrapStart", "Src2WrapStart", "L2Reserved0", "ResultWrapIndex", "ResultWrapStartOffset"
+};
+
+static const char *h14_pe_names[] = {
+    "PEConfig", "Bias", "Scale", "PreScale", "Quant"
+};
+
+static const char *h14_ne_names[] = {
+    "KernelCfg", "MacCfg", "NEBias", "NEPostScale", "RoundModeCfg"
+};
+
+static const char *h14_tdma_src_names[] = {
+    "Src1DMAConfig", "Src2DMAConfig", "Src1WrapCfg", "Src2WrapCfg", "Src1BaseAddr",
+    "Src1RowStride", "Src1ChannelStride", "Src1DepthStride", "Src1GroupStride",
+    "Src2BaseAddr", "Src2RowStride", "Src2ChannelStride", "Src2DepthStride", "Src2GroupStride",
+    "Src1Fmt", "Src2Fmt", "Src1CacheHint2", "Src2CacheHint2", "Src1PixelOffsetX",
+    "Src1PixelOffsetY", "Src1PixelOffsetZ", "Src1PixelOffsetW", "Src2PixelOffsetX",
+    "Src2PixelOffsetY", "Src2PixelOffsetZ", "Src2PixelOffsetW", "Src1CompressedInfo",
+    "Src1CompressedSizeLo", "Src1CompressedSizeHi", "Src2CompressedInfo", "Src2CompressedSizeLo",
+    "Src2CompressedSizeHi", "Src1CropOffset", "Src2CropOffset", "Src1WrapDynamic",
+    "Src2WrapDynamic", "Src1DependencyOffset", "Src2DependencyOffset", "TileDmaSrcReserved0",
+    "TileDmaSrcReserved1", "TileDmaSrcReserved2", "TileDmaSrcReserved3", "TileDmaSrcReserved4",
+    "TileDmaSrcReserved5", "TileDmaSrcReserved6", "TileDmaSrcReserved7", "TileDmaSrcReserved8",
+    "TileDmaSrcReserved9", "TileDmaSrcReserved10", "TileDmaSrcReserved11", "TileDmaSrcReserved12",
+    "TileDmaSrcReserved13", "TileDmaSrcReserved14"
+};
+
+static const char *h14_tdma_dst_names[] = {
+    "DstDMAConfig", "DstBaseAddr", "DstRowStride", "DstPlaneStride",
+    "DstDepthStride", "DstGroupStride", "DstFmt", "DstPixelOffset", "DstReserved"
+};
+
+static const char *h14_kdma_names[] = {
+    "MasterConfig", "AlignedCoeffSizePerCh", "Prefetch", "Reserved0",
+    "Reserved1", "Reserved2", "KernelGroupStride", "KernelOCGStride",
+    "CoeffDMAConfig0", "CoeffDMAConfig1", "CoeffDMAConfig2", "CoeffDMAConfig3",
+    "CoeffDMAConfig4", "CoeffDMAConfig5", "CoeffDMAConfig6", "CoeffDMAConfig7",
+    "CoeffDMAConfig8", "CoeffDMAConfig9", "CoeffDMAConfig10", "CoeffDMAConfig11",
+    "CoeffDMAConfig12", "CoeffDMAConfig13", "CoeffDMAConfig14", "CoeffDMAConfig15",
+    "CoeffBaseAddr0", "CoeffBaseAddr1", "CoeffBaseAddr2", "CoeffBaseAddr3",
+    "CoeffBaseAddr4", "CoeffBaseAddr5", "CoeffBaseAddr6", "CoeffBaseAddr7",
+    "CoeffBaseAddr8", "CoeffBaseAddr9", "CoeffBaseAddr10", "CoeffBaseAddr11",
+    "CoeffBaseAddr12", "CoeffBaseAddr13", "CoeffBaseAddr14", "CoeffBaseAddr15",
+    "CoeffBfrSize0", "CoeffBfrSize1", "CoeffBfrSize2", "CoeffBfrSize3",
+    "CoeffBfrSize4", "CoeffBfrSize5", "CoeffBfrSize6", "CoeffBfrSize7",
+    "CoeffBfrSize8", "CoeffBfrSize9", "CoeffBfrSize10", "CoeffBfrSize11",
+    "CoeffBfrSize12", "CoeffBfrSize13", "CoeffBfrSize14", "CoeffBfrSize15",
+    "BiasDMAConfig", "BiasBaseAddr", "BiasReserved0", "BiasReserved1",
+    "PostScaleDMAConfig", "PostScaleBaseAddr", "PostScaleReserved0", "PostScaleReserved1",
+    "SparseBlockSizeCfg", "Reserved3", "Reserved4", "Reserved5",
+    "Reserved6", "Reserved7"
+};
+
+// ============================================================================
 // H16/H17/H18/M4 Common Register Names (shared across all M4+ versions)
 // ============================================================================
 

@@ -701,19 +701,36 @@ void print_l2_h14(const hwx_state_t *state) {
 }
 
 void print_pe_h14(const hwx_state_t *state) {
-  if (!state->valid[H14_PE_START/4])
+  // Check if any of the 5 PE registers was written (not just PEConfig).
+  // e.g. neg only writes BiasScale (0x0904) without touching PEConfig (0x0900).
+  bool any_pe = false;
+  for (int i = 0; i < H14_PE_COUNT; i++)
+    if (state->valid[H14_PE_START/4 + i]) { any_pe = true; break; }
+  if (!any_pe)
     return;
+
   printf("        --- Planar Engine (0x0900) ---\n");
-  uint32_t cfg   = state->values[H14_PE_START/4 + 0]; // 0x0900 PEConfig
-  uint32_t bias  = state->values[H14_PE_START/4 + 1]; // 0x0904 Bias (F19)
-  uint32_t scale = state->values[H14_PE_START/4 + 2]; // 0x0908 Scale (F19)
-  uint32_t pre   = state->values[H14_PE_START/4 + 3]; // 0x090C PreScale (F19)
-  uint32_t quant = state->values[H14_PE_START/4 + 4]; // 0x0910 Quant
-  printf("        PECfg: PoolMode=%u Operation=%u NLMode=%u\n",
-         (cfg >> 0) & 3, (cfg >> 2) & 7, (cfg >> 12) & 3);
-  printf("        Bias=0x%05x Scale=0x%05x PreScale=0x%05x\n", bias, scale, pre);
-  printf("        Quant: Src1ZP=%u Src2ZP=%u OutZP=%u\n",
-         (quant >> 0) & 0xFF, (quant >> 8) & 0xFF, (quant >> 16) & 0xFF);
+  uint32_t cfg        = state->values[H14_PE_START/4 + 0]; // 0x0900 PEConfig
+  uint32_t biasscale  = state->values[H14_PE_START/4 + 1]; // 0x0904: Bias F16[15:0], Scale F16[31:16]
+  uint32_t prescale_w = state->values[H14_PE_START/4 + 2]; // 0x0908: pad[15:0], PreScale F16[31:16]
+  uint32_t finalscale = state->values[H14_PE_START/4 + 3]; // 0x090c: FinalScale F32
+  uint32_t quant      = state->values[H14_PE_START/4 + 4]; // 0x0910: Quant
+  if (state->valid[H14_PE_START/4 + 0])
+    printf("        PECfg: PoolMode=%u Operation=%u NLMode=%u\n",
+           (cfg >> 0) & 3, (cfg >> 2) & 7, (cfg >> 12) & 3);
+  if (state->valid[H14_PE_START/4 + 1]) {
+    // 0x0904: packed BiasScale (same as H13): Bias=low16, Scale=high16
+    uint16_t bias  = biasscale & 0xFFFF;
+    uint16_t scale = biasscale >> 16;
+    printf("        BiasScale: Bias=0x%04x Scale=0x%04x\n", bias, scale);
+  }
+  if (state->valid[H14_PE_START/4 + 2])
+    printf("        PreScale=0x%04x\n", (uint16_t)(prescale_w >> 16));
+  if (state->valid[H14_PE_START/4 + 3])
+    printf("        FinalScale=0x%08x\n", finalscale);
+  if (state->valid[H14_PE_START/4 + 4])
+    printf("        Quant: Src1ZP=%u Src2ZP=%u OutZP=%u\n",
+           (quant >> 0) & 0xFF, (quant >> 8) & 0xFF, (quant >> 16) & 0xFF);
 }
 
 void print_ne_h14(const hwx_state_t *state) {

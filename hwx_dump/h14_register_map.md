@@ -317,9 +317,9 @@ Bit extraction for 0x00e000e0:
 | OLD HW Addr | Modern HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- | :--- |
 | **0x0900** | `0x4500` | `+0x388` | **PEConfig** | **PoolMode**: 0-1, **Operation**: 2-4, **NLMode**: 12-13. |
-| **0x0904** | `0x4504` | `+0x38c` | **Bias** | 19-bit Floating Point (F19) bias value. |
-| **0x0908** | `0x4508` | `+0x390` | **Scale** | 19-bit Floating Point (F19) scale value. |
-| **0x090C** | `0x450C` | `+0x394` | **PreScale** | 19-bit Floating Point (F19) pre-scale value. |
+| **0x0904** | `0x4504` | `+0x38c` | **BiasScale** | **Bias** F16: 0-15 (`SetPEBias` → `str h0, [x0, #0x38c]`), **Scale** F16: 16-31 (`SetPEScale` → `str h0, [x0, #0x38e]`). Packed in one word, same as H13. |
+| **0x0908** | `0x4508` | `+0x390` | **PreScale** | **pad**: 0-15, **PreScale** F16: 16-31 (`SetPEPreScale` → `str h0, [x0, #0x392]`). |
+| **0x090C** | `0x450C` | `+0x394` | **FinalScale** | **FinalScale** F32 (`SetPEFinalScale` → `str s0, [x0, #0x394]`). |
 | **0x0910** | `0x4510` | `+0x398` | **Quant** | **Src1InputOffset**: 0-7, **Src2InputOffset**: 8-15, **OutputZeroPoint**: 16-23. |
 
 ### Neural Engine (NE) (0x0D00 OLD / 0x4900 Modern, Object `+0x3a4`)

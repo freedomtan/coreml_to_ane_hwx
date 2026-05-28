@@ -70,8 +70,13 @@ static const char *h14_l2_names[] = {
     "SrcAndResultWrapCfg", "Src1WrapStart", "Src2WrapStart", "L2Reserved0", "ResultWrapIndex", "ResultWrapStartOffset"
 };
 
+// 0x0900: PEConfig
+// 0x0904: BiasScale — Bias F16 in [15:0], Scale F16 in [31:16] (packed, like H13)
+// 0x0908: pad[15:0] + PreScale F16 in [31:16]
+// 0x090c: FinalScale F32
+// 0x0910: Quant (Src1ZP, Src2ZP, OutZP)
 static const char *h14_pe_names[] = {
-    "PEConfig", "Bias", "Scale", "PreScale", "Quant"
+    "PEConfig", "BiasScale", "PreScale", "FinalScale", "Quant"
 };
 
 static const char *h14_ne_names[] = {

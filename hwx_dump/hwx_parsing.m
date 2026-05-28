@@ -10,6 +10,10 @@
 
 // Forward declarations
 const char *get_l2_dma_fmt_name(uint32_t val);
+// Helper function declarations
+static void recover_dimensions_from_l2_cache(const hwx_state_t *state,
+                                             uint32_t *inw, uint32_t *inh, uint32_t *inc);
+
 void print_common_h13(const hwx_state_t *state);
 void print_common_h14(const hwx_state_t *state);
 void print_common_h16(const hwx_state_t *state);
@@ -776,6 +780,101 @@ void print_kerneldmasrc_h14(const hwx_state_t *state) {
   }
 }
 
+// Helper function to recover dimensions from L2 Cache registers
+// Used for operations (Add, ReLU, etc.) that don't write Common block dimensions
+static void recover_dimensions_from_l2_cache(const hwx_state_t *state,
+                                             uint32_t *inw, uint32_t *inh, uint32_t *inc) {
+  // Only attempt recovery if dimensions are not already set
+  if (*inw != 0 || *inh != 0 || *inc != 0) {
+    return;
+  }
+
+  // Decide which register to use based on operation discriminator pattern
+  // Pooling pattern: discriminator ends in 0x10
+  // Other operations: use cache stride register
+  bool use_pool_stride = false;
+
+  if (state->valid[REG_L2_OP_DISCRIMINATOR]) {
+    uint32_t op_disc = state->values[REG_L2_OP_DISCRIMINATOR];
+    if ((op_disc & 0xF0) == 0x10) {
+      use_pool_stride = true;
+    }
+  } else if (state->valid[REG_L2_POOL_STRIDE] && !state->valid[REG_L2_CACHE_STRIDE]) {
+    // Only pool stride exists → likely pooling
+    use_pool_stride = true;
+  }
+
+  // Try pooling stride register (for pooling operations)
+  if (use_pool_stride && state->valid[REG_L2_POOL_STRIDE]) {
+    uint32_t small_stride = state->values[REG_L2_POOL_STRIDE];
+    uint32_t candidate = small_stride / 4;
+    if (candidate >= 7 && candidate <= 224) {
+      *inw = candidate;
+      *inh = candidate;
+    }
+  }
+
+  // Check L2 Cache stride register (for other operations)
+  // This register contains width × stride_factor
+  if (*inw == 0 && state->valid[REG_L2_CACHE_STRIDE]) {
+    uint32_t stride = state->values[REG_L2_CACHE_STRIDE];
+
+    // Common neural network dimensions in order of preference
+    uint32_t common_dims[] = {224, 112, 56, 28, 14, 7};
+    int factors[] = {16, 32, 64, 128, 256, 512};  // Corresponding factors
+
+    // First pass: Try to match common dimensions exactly
+    for (int i = 0; i < 6; i++) {
+      if (stride % factors[i] == 0 && stride / factors[i] == common_dims[i]) {
+        *inw = common_dims[i];
+        *inh = common_dims[i];
+        break;
+      }
+    }
+
+    // Second pass: If no exact match, try all factors and accept reasonable range
+    if (*inw == 0) {
+      int all_factors[] = {4, 8, 16, 32, 64, 128};
+      for (int i = 0; i < 6; i++) {
+        uint32_t candidate = stride / all_factors[i];
+        if (candidate >= 7 && candidate <= 224) {  // Accept common dimension range
+          *inw = candidate;
+          *inh = candidate;
+          break;
+        }
+      }
+    }
+  }
+
+  // Try to extract channels from packed register values
+  // Check L2 Cache register (high 16 bits often contain channels)
+  if (*inc == 0 && state->valid[REG_L2_PACKED_CHANNELS_2]) {
+    uint32_t packed = state->values[REG_L2_PACKED_CHANNELS_2];
+    uint32_t candidate_c = (packed >> 16) & 0xFFFF;
+    if (candidate_c > 0 && candidate_c < 512) {
+      *inc = candidate_c;
+    }
+  }
+
+  // Alternative: check alternative L2 packed channels register
+  if (*inc == 0 && state->valid[REG_L2_PACKED_CHANNELS_1]) {
+    uint32_t packed = state->values[REG_L2_PACKED_CHANNELS_1];
+    uint32_t candidate_c = (packed >> 16) & 0xFFFF;
+    if (candidate_c > 0 && candidate_c < 512) {
+      *inc = candidate_c;
+    }
+  }
+
+  // Alternative: check TileDMA destination register
+  if (*inc == 0 && state->valid[REG_TDMA_DST_CHANNELS]) {
+    uint32_t packed = state->values[REG_TDMA_DST_CHANNELS];
+    uint32_t candidate_c = (packed >> 16) & 0xFFFF;
+    if (candidate_c > 0 && candidate_c < 512) {
+      *inc = candidate_c;
+    }
+  }
+}
+
 void print_common_h16(const hwx_state_t *state) {
   printf("        --- Common (0x0000) ---\n");
   uint32_t infmt = 0, src2infmt = 0, outfmt = 0;
@@ -996,95 +1095,9 @@ void print_common_h16(const hwx_state_t *state) {
     nid = c.nid;
     dpe = c.dpe;
 
-    // Additional heuristic for operations that don't write Common block dimensions
-    // Try to extract from L2 Cache stride registers
-    if (inw == 0 && inh == 0 && inc == 0) {
-      // Decide which register to use based on Reg[0x1046] pattern
-      // 0x1046 = 0xe10 (3600) → pooling, use 0x1045
-      // 0x1046 = 0xe20 (3616) → normalization, use 0x1047 with factor 16
-      bool use_pool_stride = false;
-
-      if (state->valid[REG_L2_OP_DISCRIMINATOR]) {
-        uint32_t op_disc = state->values[REG_L2_OP_DISCRIMINATOR];
-        // Pooling pattern: discriminator ends in 0x10
-        if ((op_disc & 0xF0) == 0x10) {
-          use_pool_stride = true;
-        }
-      } else if (state->valid[REG_L2_POOL_STRIDE] && !state->valid[REG_L2_CACHE_STRIDE]) {
-        // Only pool stride exists → likely pooling
-        use_pool_stride = true;
-      }
-
-      // Try pooling stride register (for pooling operations)
-      if (use_pool_stride && state->valid[REG_L2_POOL_STRIDE]) {
-        uint32_t small_stride = state->values[REG_L2_POOL_STRIDE];
-        uint32_t candidate = small_stride / 4;
-        if (candidate >= 7 && candidate <= 224) {
-          inw = candidate;
-          inh = candidate;
-        }
-      }
-
-      // Check L2 Cache stride register (for other operations)
-      // This register contains width × stride_factor
-      if (inw == 0 && state->valid[REG_L2_CACHE_STRIDE]) {
-        uint32_t stride = state->values[REG_L2_CACHE_STRIDE];
-
-        // Common neural network dimensions in order of preference
-        uint32_t common_dims[] = {224, 112, 56, 28, 14, 7};
-        int factors[] = {16, 32, 64, 128, 256, 512};  // Corresponding factors
-
-        // First pass: Try to match common dimensions exactly
-        for (int i = 0; i < 6; i++) {
-          if (stride % factors[i] == 0 && stride / factors[i] == common_dims[i]) {
-            inw = common_dims[i];
-            inh = common_dims[i];
-            break;
-          }
-        }
-
-        // Second pass: If no exact match, try all factors and accept reasonable range
-        if (inw == 0) {
-          int all_factors[] = {4, 8, 16, 32, 64, 128};
-          for (int i = 0; i < 6; i++) {
-            uint32_t candidate = stride / all_factors[i];
-            if (candidate >= 7 && candidate <= 224) {  // Accept common dimension range
-              inw = candidate;
-              inh = candidate;
-              break;
-            }
-          }
-        }
-      }
-
-      // Try to extract channels from packed register values
-      // Check L2 Cache register (high 16 bits often contain channels)
-      if (inc == 0 && state->valid[REG_L2_PACKED_CHANNELS_2]) {
-        uint32_t packed = state->values[REG_L2_PACKED_CHANNELS_2];
-        uint32_t candidate_c = (packed >> 16) & 0xFFFF;
-        if (candidate_c > 0 && candidate_c < 512) {
-          inc = candidate_c;
-        }
-      }
-
-      // Alternative: check alternative L2 packed channels register
-      if (inc == 0 && state->valid[REG_L2_PACKED_CHANNELS_1]) {
-        uint32_t packed = state->values[REG_L2_PACKED_CHANNELS_1];
-        uint32_t candidate_c = (packed >> 16) & 0xFFFF;
-        if (candidate_c > 0 && candidate_c < 512) {
-          inc = candidate_c;
-        }
-      }
-
-      // Alternative: check TileDMA destination register
-      if (inc == 0 && state->valid[REG_TDMA_DST_CHANNELS]) {
-        uint32_t packed = state->values[REG_TDMA_DST_CHANNELS];
-        uint32_t candidate_c = (packed >> 16) & 0xFFFF;
-        if (candidate_c > 0 && candidate_c < 512) {
-          inc = candidate_c;
-        }
-      }
-    }
+    // Attempt dimension recovery from L2 Cache registers
+    // (for operations that don't write Common block dimensions)
+    recover_dimensions_from_l2_cache(state, &inw, &inh, &inc);
   }
 
   if (!state->valid[H16_COMMON_START / 4]) {

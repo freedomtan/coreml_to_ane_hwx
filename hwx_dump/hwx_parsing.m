@@ -8,7 +8,61 @@
 #import "ane_hwx_regs.h"
 #import "hwx_register_names.h"
 
+// Forward declarations
 const char *get_l2_dma_fmt_name(uint32_t val);
+void print_common_h13(const hwx_state_t *state);
+void print_common_h14(const hwx_state_t *state);
+void print_common_h16(const hwx_state_t *state);
+void print_l2_h13(const hwx_state_t *state);
+void print_l2_h14(const hwx_state_t *state);
+void print_l2_h16(const hwx_state_t *state);
+void print_l2_h17(const hwx_state_t *state);
+void print_l2_h18(const hwx_state_t *state);
+void print_pe_h13(const hwx_state_t *state);
+void print_pe_h14(const hwx_state_t *state);
+void print_pe_h16(const hwx_state_t *state);
+void print_pe_h17(const hwx_state_t *state);
+void print_pe_h18(const hwx_state_t *state);
+void print_pe_index_h16(const hwx_state_t *state);
+void print_ne_h13(const hwx_state_t *state);
+void print_ne_h14(const hwx_state_t *state);
+void print_ne_h16(const hwx_state_t *state);
+void print_tiledmasrc_h13(const hwx_state_t *state);
+void print_tiledmasrc_h14(const hwx_state_t *state);
+void print_tiledmasrc_h16(const hwx_state_t *state);
+void print_tiledmadst_h13(const hwx_state_t *state);
+void print_tiledmadst_h14(const hwx_state_t *state);
+void print_tiledmadst_h16(const hwx_state_t *state);
+void print_kerneldmasrc_h13(const hwx_state_t *state);
+void print_kerneldmasrc_h14(const hwx_state_t *state);
+void print_kerneldmasrc_h16(const hwx_state_t *state);
+void print_kerneldmasrc_h17(const hwx_state_t *state);
+void print_kerneldmasrc_h18(const hwx_state_t *state);
+void print_cachedma_h16(const hwx_state_t *state);
+
+// Architecture printer function table
+typedef struct {
+  void (*print_common)(const hwx_state_t *state);
+  void (*print_l2)(const hwx_state_t *state);
+  void (*print_pe_index)(const hwx_state_t *state);  // H16+ only
+  void (*print_pe)(const hwx_state_t *state);
+  void (*print_ne)(const hwx_state_t *state);
+  void (*print_tiledmasrc)(const hwx_state_t *state);
+  void (*print_tiledmadst)(const hwx_state_t *state);
+  void (*print_kerneldmasrc)(const hwx_state_t *state);
+  void (*print_cachedma)(const hwx_state_t *state);  // H16+ only
+} arch_printers_t;
+
+// Architecture descriptor
+typedef struct {
+  uint32_t instr_ver;
+  uint32_t subtype;
+  const char *name;
+  const char *(*get_reg_name)(uint32_t);
+  const arch_printers_t *printers;
+  const hwx_block_info_t *blocks;
+  int block_count;
+} arch_descriptor_t;
 
 static const char *lookup_reg_name(uint32_t addr, const hwx_reg_range_t *ranges,
                                    int range_count) {
@@ -2081,153 +2135,214 @@ void print_cachedma_h16(const hwx_state_t *state) {
   }
 }
 
+// Architecture printer tables
+static const arch_printers_t h13_printers = {
+  .print_common = print_common_h13,
+  .print_l2 = print_l2_h13,
+  .print_pe_index = NULL,
+  .print_pe = print_pe_h13,
+  .print_ne = print_ne_h13,
+  .print_tiledmasrc = print_tiledmasrc_h13,
+  .print_tiledmadst = print_tiledmadst_h13,
+  .print_kerneldmasrc = print_kerneldmasrc_h13,
+  .print_cachedma = NULL,
+};
+
+static const arch_printers_t h14_printers = {
+  .print_common = print_common_h14,
+  .print_l2 = print_l2_h14,
+  .print_pe_index = NULL,
+  .print_pe = print_pe_h14,
+  .print_ne = print_ne_h14,
+  .print_tiledmasrc = print_tiledmasrc_h14,
+  .print_tiledmadst = print_tiledmadst_h14,
+  .print_kerneldmasrc = print_kerneldmasrc_h14,
+  .print_cachedma = NULL,
+};
+
+static const arch_printers_t h16_printers = {
+  .print_common = print_common_h16,
+  .print_l2 = print_l2_h16,
+  .print_pe_index = print_pe_index_h16,
+  .print_pe = print_pe_h16,
+  .print_ne = print_ne_h16,
+  .print_tiledmasrc = print_tiledmasrc_h16,
+  .print_tiledmadst = print_tiledmadst_h16,
+  .print_kerneldmasrc = print_kerneldmasrc_h16,
+  .print_cachedma = print_cachedma_h16,
+};
+
+static const arch_printers_t h17_printers = {
+  .print_common = print_common_h16,  // H17 uses H16 common
+  .print_l2 = print_l2_h17,
+  .print_pe_index = print_pe_index_h16,
+  .print_pe = print_pe_h17,
+  .print_ne = print_ne_h16,  // H17 uses H16 NE
+  .print_tiledmasrc = print_tiledmasrc_h16,  // H17 uses H16 TileDMA
+  .print_tiledmadst = print_tiledmadst_h16,
+  .print_kerneldmasrc = print_kerneldmasrc_h17,
+  .print_cachedma = print_cachedma_h16,
+};
+
+static const arch_printers_t h18_printers = {
+  .print_common = print_common_h16,  // H18 uses H16 common
+  .print_l2 = print_l2_h18,
+  .print_pe_index = print_pe_index_h16,
+  .print_pe = print_pe_h18,
+  .print_ne = print_ne_h16,  // H18 uses H16 NE
+  .print_tiledmasrc = print_tiledmasrc_h16,  // H18 uses H16 TileDMA
+  .print_tiledmadst = print_tiledmadst_h16,
+  .print_kerneldmasrc = print_kerneldmasrc_h18,
+  .print_cachedma = print_cachedma_h16,
+};
+
+// Architecture block definitions
+static const hwx_block_info_t h13_blocks[] = {
+  {"[0x00000] Common Module", H13_COMMON_START, 16},
+  {"[0x04800] L2 Cache Control", H13_L2_START, 16},
+  {"[0x08800] Planar Engine (PE)", H13_PE_START, 4},
+  {"[0x0C800] Neural Engine Core (NE)", H13_NE_START, 5},
+  {"[0x13800] TileDMA Source", H13_TILEDMA_SRC_START, 24},
+  {"[0x17800] TileDMA Destination", H13_TILEDMA_DST_START, 7},
+  {"[0x1F800] KernelDMA Source", H13_KERNELDMA_START, 5},
+};
+
+static const hwx_block_info_t h14_blocks[] = {
+  {"[0x0000] Common Module", H14_COMMON_START, H14_COMMON_COUNT},
+  {"[0x0500] L2 Cache Control", H14_L2_START, H14_L2_COUNT},
+  {"[0x0900] Planar Engine (PE)", H14_PE_START, H14_PE_COUNT},
+  {"[0x0D00] Neural Engine (NE)", H14_NE_START, H14_NE_COUNT},
+  {"[0x1100] TileDMA Source", H14_TILEDMA_SRC_START, H14_TILEDMA_SRC_COUNT},
+  {"[0x1500] TileDMA Destination", H14_TILEDMA_DST_START, H14_TILEDMA_DST_COUNT},
+  {"[0x1900] KernelDMA Source", H14_KERNELDMA_START, H14_KERNELDMA_COUNT},
+};
+
+static const hwx_block_info_t h16_blocks[] = {
+  {"[0x0000] Common Module", H16_COMMON_START, 23},
+  {"[0x4100] L2 Cache Control", H16_L2_START, 41},
+  {"[0x4500] Planar Engine (PE)", H16_PE_START, 16},
+  {"[0x4900] Neural Engine Core (NE)", H16_NE_START, 12},
+  {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START, 81},
+  {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START, 21},
+  {"[0x5500] KernelDMA Source", H16_KERNELDMA_START, 72},
+  {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START, 12},
+};
+
+static const hwx_block_info_t h17_blocks[] = {
+  {"[0x0000] Common Module", H16_COMMON_START, H17_COMMON_COUNT},
+  {"[0x4100] L2 Cache Control", H16_L2_START, H17_L2_COUNT},
+  {"[0x4500] Planar Engine (PE)", H16_PE_START, H17_PE_COUNT},
+  {"[0x4900] Neural Engine Core (NE)", H16_NE_START, H17_NE_COUNT},
+  {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START, H17_TILEDMA_SRC_COUNT},
+  {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START, H17_TILEDMA_DST_COUNT},
+  {"[0x5500] KernelDMA Source", H16_KERNELDMA_START, H17_KERNELDMA_COUNT},
+  {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START, H17_CACHEDMA_COUNT},
+};
+
+static const hwx_block_info_t h18_blocks[] = {
+  {"[0x0000] Common Module", H16_COMMON_START, H18_COMMON_COUNT},
+  {"[0x4100] L2 Cache Control", H16_L2_START, H18_L2_COUNT},
+  {"[0x4500] Planar Engine (PE)", H16_PE_START, H18_PE_COUNT},
+  {"[0x4900] Neural Engine Core (NE)", H16_NE_START, H18_NE_COUNT},
+  {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START, H18_TILEDMA_SRC_COUNT},
+  {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START, H18_TILEDMA_DST_COUNT},
+  {"[0x5500] KernelDMA Source", H16_KERNELDMA_START, H18_KERNELDMA_COUNT},
+  {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START, H18_CACHEDMA_COUNT},
+};
+
+// Get architecture descriptor based on instruction version and subtype
+static const arch_descriptor_t *get_arch_descriptor(uint32_t instr_ver, uint32_t subtype) {
+  static const arch_descriptor_t descriptors[] = {
+    // H13 (A14/M1) - ISA v7, subtype 4
+    {7, 4, "H13 (A14/M1)", get_m1_reg_name, &h13_printers, h13_blocks, 7},
+
+    // H14 (A15/M2) - ISA v11, subtype 5
+    {11, 5, "H14 (A15/M2)", get_h14_reg_name, &h14_printers, h14_blocks, 7},
+
+    // H15 (A16/M3) - ISA v8, subtype 6
+    {8, 6, "H15 (A16/M3)", get_m4_reg_name, &h16_printers, h16_blocks, 8},
+
+    // H16 (A17 Pro/M4) - ISA v17, subtype 7
+    {17, 7, "H16 (A17 Pro/M4)", get_m4_reg_name, &h16_printers, h16_blocks, 8},
+
+    // H17 (A18 Pro/M5) - ISA v19, subtype 9
+    {19, 9, "H17 (A18 Pro/M5)", get_h17_reg_name, &h17_printers, h17_blocks, 8},
+
+    // H18 (A19) - ISA v20, subtype 10
+    {20, 10, "H18 (A19)", get_h18_reg_name, &h18_printers, h18_blocks, 8},
+  };
+
+  const int desc_count = sizeof(descriptors) / sizeof(descriptors[0]);
+
+  // Match by instruction version first, then by subtype if ambiguous
+  for (int i = 0; i < desc_count; i++) {
+    if (descriptors[i].instr_ver == instr_ver && descriptors[i].subtype == subtype) {
+      return &descriptors[i];
+    }
+  }
+
+  // Fallback: match by instruction version only
+  for (int i = 0; i < desc_count; i++) {
+    if (descriptors[i].instr_ver == instr_ver) {
+      return &descriptors[i];
+    }
+  }
+
+  // Default to H13 if no match
+  return &descriptors[0];
+}
+
 void report_hwx_state(const hwx_state_t *state, BOOL dump_reg_blocks) {
-  if (state->instr_ver == 11) {
-    // H14 (ISA v11 / subtype 5): OLD hardware addresses
-    // PE=0x0900, NE=0x0D00, TileDmaDst=0x1500, no CacheDMA.
-    print_common_h14(state);
-    print_l2_h14(state);
-    print_pe_h14(state);
-    print_ne_h14(state);
-    print_tiledmasrc_h14(state);
-    print_tiledmadst_h14(state);
-    print_kerneldmasrc_h14(state);
+  const arch_descriptor_t *arch = get_arch_descriptor(state->instr_ver, state->subtype);
+  const arch_printers_t *printers = arch->printers;
 
-    if (dump_reg_blocks) {
-      hwx_block_info_t blocks[] = {
-          {"[0x0000] Common Module",       H14_COMMON_START,      H14_COMMON_COUNT},
-          {"[0x0500] L2 Cache Control",    H14_L2_START,          H14_L2_COUNT},
-          {"[0x0900] Planar Engine (PE)",  H14_PE_START,          H14_PE_COUNT},
-          {"[0x0D00] Neural Engine (NE)",  H14_NE_START,          H14_NE_COUNT},
-          {"[0x1100] TileDMA Source",      H14_TILEDMA_SRC_START, H14_TILEDMA_SRC_COUNT},
-          {"[0x1500] TileDMA Destination", H14_TILEDMA_DST_START, H14_TILEDMA_DST_COUNT},
-          {"[0x1900] KernelDMA Source",    H14_KERNELDMA_START,   H14_KERNELDMA_COUNT},
-      };
-      dump_hw_blocks(state, blocks, 7, get_h14_reg_name);
-    }
-  } else if (state->instr_ver > 11 || state->subtype == 6) {
-    print_common_h16(state);
-    print_ne_h16(state);
-    print_pe_index_h16(state);
-    if (state->subtype == 9)
-      print_pe_h17(state);
-    else if (state->subtype == 10)
-      print_pe_h18(state);
-    else
-      print_pe_h16(state);
+  // Call all printer functions in order
+  if (printers->print_common)
+    printers->print_common(state);
 
-    if (state->subtype == 9)
-      print_l2_h17(state);
-    else if (state->subtype == 10)
-      print_l2_h18(state);
-    else
-      print_l2_h16(state);
+  if (printers->print_ne)
+    printers->print_ne(state);
 
-    print_tiledmasrc_h16(state);
-    print_tiledmadst_h16(state);
+  if (printers->print_pe_index)
+    printers->print_pe_index(state);
 
-    if (state->subtype == 9)
-      print_kerneldmasrc_h17(state);
-    else if (state->subtype == 10)
-      print_kerneldmasrc_h18(state);
-    else
-      print_kerneldmasrc_h16(state);
+  if (printers->print_pe)
+    printers->print_pe(state);
 
-    print_cachedma_h16(state);
+  if (printers->print_l2)
+    printers->print_l2(state);
 
-    if (dump_reg_blocks) {
-      if (state->instr_ver == 20) {
-        hwx_block_info_t blocks[] = {
-            {"[0x0000] Common Module", H16_COMMON_START, H18_COMMON_COUNT},
-            {"[0x4100] L2 Cache Control", H16_L2_START, H18_L2_COUNT},
-            {"[0x4500] Planar Engine (PE)", H16_PE_START, H18_PE_COUNT},
-            {"[0x4900] Neural Engine Core (NE)", H16_NE_START, H18_NE_COUNT},
-            {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START,
-             H18_TILEDMA_SRC_COUNT},
-            {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START,
-             H18_TILEDMA_DST_COUNT},
-            {"[0x5500] KernelDMA Source", H16_KERNELDMA_START,
-             H18_KERNELDMA_COUNT},
-            {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START,
-             H18_CACHEDMA_COUNT},
-        };
-        dump_hw_blocks(state, blocks, 8, get_h18_reg_name);
-      } else if (state->instr_ver == 19) {
-        hwx_block_info_t blocks[] = {
-            {"[0x0000] Common Module", H16_COMMON_START, H17_COMMON_COUNT},
-            {"[0x4100] L2 Cache Control", H16_L2_START, H17_L2_COUNT},
-            {"[0x4500] Planar Engine (PE)", H16_PE_START, H17_PE_COUNT},
-            {"[0x4900] Neural Engine Core (NE)", H16_NE_START, H17_NE_COUNT},
-            {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START,
-             H17_TILEDMA_SRC_COUNT},
-            {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START,
-             H17_TILEDMA_DST_COUNT},
-            {"[0x5500] KernelDMA Source", H16_KERNELDMA_START,
-             H17_KERNELDMA_COUNT},
-            {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START,
-             H17_CACHEDMA_COUNT},
-        };
-        dump_hw_blocks(state, blocks, 8, get_h17_reg_name);
-      } else {
-        hwx_block_info_t blocks[] = {
-            {"[0x0000] Common Module", H16_COMMON_START, 23},
-            {"[0x4100] L2 Cache Control", H16_L2_START, 41},
-            {"[0x4500] Planar Engine (PE)", H16_PE_START, 16},
-            {"[0x4900] Neural Engine Core (NE)", H16_NE_START, 12},
-            {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START, 81},
-            {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START, 21},
-            {"[0x5500] KernelDMA Source", H16_KERNELDMA_START, 72},
-            {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START, 12},
-        };
-        dump_hw_blocks(state, blocks, 8, get_m4_reg_name);
-      }
-    }
-  } else {
-    print_common_h13(state);
-    print_l2_h13(state);
-    print_pe_h13(state);
-    print_ne_h13(state);
-    print_tiledmasrc_h13(state);
-    print_tiledmadst_h13(state);
-    print_kerneldmasrc_h13(state);
+  if (printers->print_tiledmasrc)
+    printers->print_tiledmasrc(state);
 
-    if (dump_reg_blocks) {
-      hwx_block_info_t blocks[] = {
-          {"[0x00000] Common Module", H13_COMMON_START, 16},
-          {"[0x04800] L2 Cache Control", H13_L2_START, 16},
-          {"[0x08800] Planar Engine (PE)", H13_PE_START, 4},
-          {"[0x0C800] Neural Engine Core (NE)", H13_NE_START, 5},
-          {"[0x13800] TileDMA Source", H13_TILEDMA_SRC_START, 24},
-          {"[0x17800] TileDMA Destination", H13_TILEDMA_DST_START, 7},
-          {"[0x1F800] KernelDMA Source", H13_KERNELDMA_START, 5},
-      };
-      dump_hw_blocks(state, blocks, 7, get_m1_reg_name);
-    }
+  if (printers->print_tiledmadst)
+    printers->print_tiledmadst(state);
+
+  if (printers->print_kerneldmasrc)
+    printers->print_kerneldmasrc(state);
+
+  if (printers->print_cachedma)
+    printers->print_cachedma(state);
+
+  // Dump raw register blocks if requested
+  if (dump_reg_blocks) {
+    dump_hw_blocks(state, arch->blocks, arch->block_count, arch->get_reg_name);
   }
 }
 
 void report_hwx_state_json(const hwx_state_t *state) {
+  const arch_descriptor_t *arch = get_arch_descriptor(state->instr_ver, state->subtype);
+
   NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-  [dict setObject:(state->instr_ver > 11 || state->subtype == 6 ? @"M4" : state->instr_ver == 11 ? @"H14" : @"M1") forKey:@"arch"];
+  [dict setObject:[NSString stringWithUTF8String:arch->name] forKey:@"arch"];
   [dict setObject:@(state->subtype) forKey:@"subtype"];
+  [dict setObject:@(state->instr_ver) forKey:@"instr_ver"];
 
   NSMutableArray *regs = [NSMutableArray array];
-  const char *(*name_lookup)(uint32_t) = NULL;
-  if (state->instr_ver == 20)
-    name_lookup = get_h18_reg_name;
-  else if (state->instr_ver == 19)
-    name_lookup = get_h17_reg_name;
-  else if (state->instr_ver > 11 || state->subtype == 6)
-    name_lookup = get_m4_reg_name;
-  else if (state->instr_ver == 11)
-    name_lookup = get_h14_reg_name;
-  else
-    name_lookup = get_m1_reg_name;
-
   for (uint32_t r = 0; r < HW_MAX_REGS; r++) {
     if (state->valid[r]) {
       uint32_t addr = r * 4;
-      const char *name = name_lookup(addr);
+      const char *name = arch->get_reg_name(addr);
       NSMutableDictionary *reg = [NSMutableDictionary dictionary];
       [reg setObject:[NSString stringWithFormat:@"0x%05x", addr]
               forKey:@"addr"];

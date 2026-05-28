@@ -13,6 +13,12 @@ const char *get_l2_dma_fmt_name(uint32_t val);
 // Helper function declarations
 static void recover_dimensions_from_l2_cache(const hwx_state_t *state,
                                              uint32_t *inw, uint32_t *inh, uint32_t *inc);
+static void parse_instruction_stream_h13(const uint8_t *ptr, size_t total_len,
+                                         uint32_t offset, const ane_header_h13_t *td,
+                                         hwx_state_t *state);
+static void parse_instruction_stream_h16(const uint8_t *ptr, uint32_t offset,
+                                         const ane_header_h16_t *hdr,
+                                         hwx_state_t *state);
 
 void print_common_h13(const hwx_state_t *state);
 void print_common_h14(const hwx_state_t *state);
@@ -2400,6 +2406,116 @@ void report_hwx_state_json(const hwx_state_t *state) {
   }
 }
 
+// Parse H13 (older) instruction stream format
+static void parse_instruction_stream_h13(const uint8_t *ptr, size_t total_len,
+                                         uint32_t offset, const ane_header_h13_t *td,
+                                         hwx_state_t *state) {
+  if (offset + sizeof(ane_header_h13_t) > total_len) {
+    return;
+  }
+
+  const uint32_t *words = (const uint32_t *)(td + 1);
+  uint32_t max_payload_bytes =
+      (total_len > offset + sizeof(ane_header_h13_t))
+          ? (uint32_t)(total_len - offset - sizeof(ane_header_h13_t))
+          : 0;
+  uint32_t num_words = max_payload_bytes / 4;
+
+  if (td->next_pointer > offset + sizeof(ane_header_h13_t)) {
+    uint32_t td_words =
+        (td->next_pointer - offset - sizeof(ane_header_h13_t)) / 4;
+    if (td_words < num_words) {
+      num_words = td_words;
+    }
+  }
+
+  int w_idx = 0;
+  while (w_idx < num_words) {
+    uint32_t hdr = words[w_idx++];
+
+    // Skip padding words
+    if (hdr == 0)
+      continue;
+
+    uint32_t count = (hdr >> 26) & 0x3f;
+    uint32_t addr = (hdr & 0x3ffffff) >> 2;
+    uint32_t num_vals = count + 1;
+
+    for (uint32_t i = 0; i < num_vals; i++) {
+      if (w_idx >= num_words)
+        break;
+      // Mask addr to prevent buffer overflow
+      if (addr + i < HW_MAX_REGS) {
+        state->values[addr + i] = words[w_idx];
+        state->valid[addr + i] = true;
+      }
+      w_idx++;
+    }
+  }
+}
+
+// Parse H16 (newer) instruction stream format with sparse mask support
+static void parse_instruction_stream_h16(const uint8_t *ptr, uint32_t offset,
+                                         const ane_header_h16_t *hdr,
+                                         hwx_state_t *state) {
+  const uint32_t *words = (const uint32_t *)(ptr + offset);
+  int num_words = (hdr->task_size * 4) / 4;
+
+  // H16 task descriptor instruction stream starts at Word 9 (offset 36)
+  int i = 9;
+
+  while (i < num_words) {
+    uint32_t header = words[i++];
+    uint32_t word_addr = header & 0x7FFF;
+
+    if ((header >> 31) == 0) {
+      // Dense format: consecutive registers
+      uint16_t num_regs = (header >> 15) & 0x3F;
+      for (int j = 0; j <= num_regs && i < num_words; j++) {
+        if (word_addr + j < HW_MAX_REGS) {
+          // Track first write for dimension registers
+          if (!state->first_written[word_addr + j]) {
+            state->first_values[word_addr + j] = words[i];
+            state->first_written[word_addr + j] = true;
+          }
+          state->values[word_addr + j] = words[i];
+          state->valid[word_addr + j] = true;
+        }
+        i++;
+      }
+    } else {
+      // Sparse format: mask-based register selection
+      uint32_t mask = (header >> 15) & 0xFFFF;
+      if (i < num_words) {
+        if (word_addr < HW_MAX_REGS) {
+          // Track first write
+          if (!state->first_written[word_addr]) {
+            state->first_values[word_addr] = words[i];
+            state->first_written[word_addr] = true;
+          }
+          state->values[word_addr] = words[i];
+          state->valid[word_addr] = true;
+        }
+        i++;
+      }
+      for (int bit = 0; bit < 16 && i < num_words; bit++) {
+        if ((mask >> bit) & 1) {
+          if (word_addr + bit + 1 < HW_MAX_REGS) {
+            // Track first write
+            if (!state->first_written[word_addr + bit + 1]) {
+              state->first_values[word_addr + bit + 1] = words[i];
+              state->first_written[word_addr + bit + 1] = true;
+            }
+            state->values[word_addr + bit + 1] = words[i];
+            state->valid[word_addr + bit + 1] = true;
+          }
+          i++;
+        }
+      }
+    }
+  }
+}
+
 void decode_ane_td(const uint8_t *ptr, size_t total_len, uint32_t subtype,
                    BOOL dump_reg_blocks, BOOL dump_json) {
   uint32_t offset = 0;
@@ -2434,45 +2550,8 @@ void decode_ane_td(const uint8_t *ptr, size_t total_len, uint32_t subtype,
     state.instr_ver = 7;
     state.subtype = subtype;
 
-    // Modern Stream Parse
-    if (offset + sizeof(ane_header_h13_t) <= total_len) {
-      const uint32_t *words = (const uint32_t *)(td + 1);
-      uint32_t max_payload_bytes =
-          (total_len > offset + sizeof(ane_header_h13_t))
-              ? (uint32_t)(total_len - offset - sizeof(ane_header_h13_t))
-              : 0;
-      uint32_t num_words = max_payload_bytes / 4;
-
-      if (td->next_pointer > offset + sizeof(ane_header_h13_t)) {
-        uint32_t td_words =
-            (td->next_pointer - offset - sizeof(ane_header_h13_t)) / 4;
-        if (td_words < num_words) {
-          num_words = td_words;
-        }
-      }
-
-      int w_idx = 0;
-      while (w_idx < num_words) {
-        uint32_t hdr = words[w_idx++];
-
-        // skip padding words
-        if (hdr == 0)
-          continue;
-        uint32_t count = (hdr >> 26) & 0x3f;
-        uint32_t addr = (hdr & 0x3ffffff) >> 2;
-        uint32_t num_vals = count + 1;
-        for (uint32_t i = 0; i < num_vals; i++) {
-          if (w_idx >= num_words)
-            break;
-          // Mask addr just in case it exceeds our struct buffer logic
-          if (addr + i < HW_MAX_REGS) {
-            state.values[addr + i] = words[w_idx];
-            state.valid[addr + i] = true;
-          }
-          w_idx++;
-        }
-      }
-    }
+    // Parse instruction stream
+    parse_instruction_stream_h13(ptr, total_len, offset, td, &state);
 
     if (offset + sizeof(ane_header_h13_t) <= total_len) {
       if (dump_json) {
@@ -2532,60 +2611,8 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
     state.instr_ver = get_instruction_set_version(subtype);
     state.subtype = subtype;
 
-    const uint32_t *words = (const uint32_t *)(ptr + offset);
-    int num_words = (m4h->task_size * 4) / 4;
-    // H16 task descriptor instruction stream starts at Word 9 (offset 36).
-    // The 10th header word (dtid) is actually the first instruction header.
-    int i = 9;
-
-    while (i < num_words) {
-      uint32_t header = words[i++];
-      uint32_t word_addr = header & 0x7FFF;
-
-      if ((header >> 31) == 0) {
-        uint16_t num_regs = (header >> 15) & 0x3F;
-        for (int j = 0; j <= num_regs && i < num_words; j++) {
-          if (word_addr + j < HW_MAX_REGS) {
-            // Track first write for dimension registers
-            if (!state.first_written[word_addr + j]) {
-              state.first_values[word_addr + j] = words[i];
-              state.first_written[word_addr + j] = true;
-            }
-            state.values[word_addr + j] = words[i];
-            state.valid[word_addr + j] = true;
-          }
-          i++;
-        }
-      } else {
-        uint32_t mask = (header >> 15) & 0xFFFF;
-        if (i < num_words) {
-          if (word_addr < HW_MAX_REGS) {
-            // Track first write for dimension registers
-            if (!state.first_written[word_addr]) {
-              state.first_values[word_addr] = words[i];
-              state.first_written[word_addr] = true;
-            }
-            state.values[word_addr] = words[i];
-            state.valid[word_addr] = true;
-          }
-          i++;
-        }
-        for (int bit = 0; bit < 16 && i < num_words; bit++) {
-          if ((mask >> bit) & 1) {
-            if (word_addr + bit + 1 < HW_MAX_REGS) {
-              // Track first write for dimension registers
-              if (!state.first_written[word_addr + bit + 1]) {
-                state.first_values[word_addr + bit + 1] = words[i];
-                state.first_written[word_addr + bit + 1] = true;
-              }
-              state.values[word_addr + bit + 1] = words[i];
-              state.valid[word_addr + bit + 1] = true;
-            }
-            i++;
-          }
-        }
-      }
-    }
+    // Parse instruction stream
+    parse_instruction_stream_h16(ptr, offset, m4h, &state);
 
     if (dump_json) {
       report_hwx_state_json(&state);

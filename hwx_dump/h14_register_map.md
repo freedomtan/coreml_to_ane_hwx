@@ -41,13 +41,15 @@ SetDefaultValuesToRegisters((uint *)(this + 0x31c), 0x19, 0x0500, puVar2);
 
 | Source Offset (`this`) | Name | Description | Note |
 | :--- | :--- | :--- | :--- |
-| `+0x008` | `TID / TaskSize` | **TID**: 0-15, **TaskSize**: 16-26. | Headers[0] |
-| `+0x00c` | `ExeCycles` | **ExeCycles**: 0-16. | Headers[1] |
-| `+0x010` | `LogEvents` | **LogEvents**: 0-23. | Headers[2] |
-| `+0x014` | `Exceptions` | **Exceptions**: 0-23. | Headers[3] |
-| `+0x018` | `LiveOuts` | **LiveOuts**: 0-31. | Headers[4] |
-| `+0x01c` | `Control Flags` | **TSR**: 0, **TDE**: 1, **ENE**: 16-18. | Headers[5] |
-| `+0x020` | `DTID` | **DTID**: 0-15. | Headers[6] |
+| `+0x008` | `TID / TaskSize` | **TID**: 0-15, **TaskSize**: 16-26. | Header[0] |
+| `+0x00c` | `ExeCycles` | **ExeCycles**: 0-16. | Header[1] |
+| `+0x010` | `LogEvents` | **LogEvents**: 0-23. | Header[2] |
+| `+0x014` | `Exceptions` | **Exceptions**: 0-23. | Header[3] |
+| `+0x018` | `DebugLogEvents` | **DebugLogEvents**: 0-23. | Header[4] |
+| `+0x01c` | `DebugExceptions` | **DebugExceptions**: 0-23. | Header[5] |
+| `+0x020` | `LiveOuts` | **LiveOuts**: 0-31. | Header[6] |
+| `+0x024` | `Control Flags` | **TSR**: 0, **TDE**: 1, **ENE**: 16-18. | Header[7] |
+| `+0x028` | `DTID` | **DTID**: 0-15. | Header[8] |
 
 ## Register Offsets and Meanings
 
@@ -97,71 +99,70 @@ The `ZinAneTd<11u>` object (descriptor) is divided into these hardware-mapped re
 | **0x190C** | `0x550C` | `+0x038` | **Reserved0** | Reserved. |
 | **0x1910** | `0x5510` | `+0x03c` | **Reserved1** | Reserved. |
 | **0x1914** | `0x5514` | `+0x040` | **Reserved2** | Reserved. |
-| **0x1918** | `0x5518` | `+0x044` | **KernelGroupStride** | **Stride**: 6-31. (NEW in H14; arg1 of `SetKernelStrideRegisters`) |
-| **0x191C** | `0x551C` | `+0x048` | **KernelOCGStride** | **Stride**: 6-31. (NEW in H14; arg2 of `SetKernelStrideRegisters`) |
-| **0x1920** | `0x5520` | `+0x04c` | **CoeffDMAConfig0** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x1924** | `0x5524` | `+0x050` | **CoeffDMAConfig1** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x1928** | `0x5528` | `+0x054` | **CoeffDMAConfig2** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x192C** | `0x552C` | `+0x058` | **CoeffDMAConfig3** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x1930** | `0x5530` | `+0x05c` | **CoeffDMAConfig4** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x1934** | `0x5534` | `+0x060` | **CoeffDMAConfig5** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x1938** | `0x5538` | `+0x064` | **CoeffDMAConfig6** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x193C** | `0x553C` | `+0x068` | **CoeffDMAConfig7** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x1940** | `0x5540` | `+0x06c` | **CoeffDMAConfig8** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x1944** | `0x5544` | `+0x070` | **CoeffDMAConfig9** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x1948** | `0x5548` | `+0x074` | **CoeffDMAConfig10** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x194C** | `0x554C` | `+0x078` | **CoeffDMAConfig11** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x1950** | `0x5550` | `+0x07c` | **CoeffDMAConfig12** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x1954** | `0x5554` | `+0x080` | **CoeffDMAConfig13** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x1958** | `0x5558` | `+0x084` | **CoeffDMAConfig14** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x195C** | `0x555C` | `+0x088` | **CoeffDMAConfig15** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x1960** | `0x5560` | `+0x08c` | **CoeffBaseAddr0** | **Addr**: 6-31. |
-| **0x1964** | `0x5564` | `+0x090` | **CoeffBaseAddr1** | **Addr**: 6-31. |
-| **0x1968** | `0x5568` | `+0x094` | **CoeffBaseAddr2** | **Addr**: 6-31. |
-| **0x196C** | `0x556C` | `+0x098` | **CoeffBaseAddr3** | **Addr**: 6-31. |
-| **0x1970** | `0x5570` | `+0x09c` | **CoeffBaseAddr4** | **Addr**: 6-31. |
-| **0x1974** | `0x5574` | `+0x0a0` | **CoeffBaseAddr5** | **Addr**: 6-31. |
-| **0x1978** | `0x5578` | `+0x0a4` | **CoeffBaseAddr6** | **Addr**: 6-31. |
-| **0x197C** | `0x557C` | `+0x0a8` | **CoeffBaseAddr7** | **Addr**: 6-31. |
-| **0x1980** | `0x5580` | `+0x0ac` | **CoeffBaseAddr8** | **Addr**: 6-31. |
-| **0x1984** | `0x5584` | `+0x0b0` | **CoeffBaseAddr9** | **Addr**: 6-31. |
-| **0x1988** | `0x5588` | `+0x0b4` | **CoeffBaseAddr10** | **Addr**: 6-31. |
-| **0x198C** | `0x558C` | `+0x0b8` | **CoeffBaseAddr11** | **Addr**: 6-31. |
-| **0x1990** | `0x5590` | `+0x0bc` | **CoeffBaseAddr12** | **Addr**: 6-31. |
-| **0x1994** | `0x5594` | `+0x0c0` | **CoeffBaseAddr13** | **Addr**: 6-31. |
-| **0x1998** | `0x5598` | `+0x0c4` | **CoeffBaseAddr14** | **Addr**: 6-31. |
-| **0x199C** | `0x559C` | `+0x0c8` | **CoeffBaseAddr15** | **Addr**: 6-31. |
-| **0x19A0** | `0x55A0` | `+0x0cc` | **CoeffBfrSize0** | **Size**: 6-31. |
-| **0x19A4** | `0x55A4` | `+0x0d0` | **CoeffBfrSize1** | **Size**: 6-31. |
-| **0x19A8** | `0x55A8` | `+0x0d4` | **CoeffBfrSize2** | **Size**: 6-31. |
-| **0x19AC** | `0x55AC` | `+0x0d8` | **CoeffBfrSize3** | **Size**: 6-31. |
-| **0x19B0** | `0x55B0` | `+0x0dc` | **CoeffBfrSize4** | **Size**: 6-31. |
-| **0x19B4** | `0x55B4` | `+0x0e0` | **CoeffBfrSize5** | **Size**: 6-31. |
-| **0x19B8** | `0x55B8` | `+0x0e4` | **CoeffBfrSize6** | **Size**: 6-31. |
-| **0x19BC** | `0x55BC` | `+0x0e8` | **CoeffBfrSize7** | **Size**: 6-31. |
-| **0x19C0** | `0x55C0` | `+0x0ec` | **CoeffBfrSize8** | **Size**: 6-31. |
-| **0x19C4** | `0x55C4` | `+0x0f0` | **CoeffBfrSize9** | **Size**: 6-31. |
-| **0x19C8** | `0x55C8` | `+0x0f4` | **CoeffBfrSize10** | **Size**: 6-31. |
-| **0x19CC** | `0x55CC` | `+0x0f8` | **CoeffBfrSize11** | **Size**: 6-31. |
-| **0x19D0** | `0x55D0` | `+0x0fc` | **CoeffBfrSize12** | **Size**: 6-31. |
-| **0x19D4** | `0x55D4` | `+0x100` | **CoeffBfrSize13** | **Size**: 6-31. |
-| **0x19D8** | `0x55D8` | `+0x104` | **CoeffBfrSize14** | **Size**: 6-31. |
-| **0x19DC** | `0x55DC` | `+0x108` | **CoeffBfrSize15** | **Size**: 6-31. |
-| **0x19E0** | `0x55E0` | `+0x10c` | **BiasDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x19E4** | `0x55E4` | `+0x110` | **BiasBaseAddr** | **Addr**: 6-31. |
-| **0x19E8** | `0x55E8` | `+0x114` | **BiasReserved0** | Reserved. |
-| **0x19EC** | `0x55EC` | `+0x118` | **BiasReserved1** | Reserved. |
-| **0x19F0** | `0x55F0` | `+0x11c` | **PostScaleDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
-| **0x19F4** | `0x55F4` | `+0x120` | **PostScaleBaseAddr** | **Addr**: 6-31. |
-| **0x19F8** | `0x55F8` | `+0x124` | **PostScaleReserved0** | Reserved. |
-| **0x19FC** | `0x55FC` | `+0x128` | **PostScaleReserved1** | Reserved. |
-| **0x1A00** | `0x5600` | `+0x12c` | **SparseBlockSizeCfg** | **BlockSize**: 0-7. (NEW in H14; `SetKernelSparseBlockSize`) |
-| **0x1A04** | `0x5604` | `+0x130` | **Reserved** | Reserved. |
-| **0x1A08** | `0x5608` | `+0x134` | **Reserved** | Reserved. |
-| **0x1A0C** | `0x560C` | `+0x138` | **Reserved** | Reserved. |
-| **0x1A10** | `0x5610` | `+0x13c` | **Reserved** | Reserved. |
-| **0x1A14** | `0x5614` | `+0x140` | **Reserved** | Reserved. |
-| **0x1A18** | `0x5618` | `+0x144` | **Reserved** | Reserved. |
+| **0x1918** | `0x5518` | `+0x044` | **CoeffDMAConfig0** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x191C** | `0x551C` | `+0x048` | **CoeffDMAConfig1** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x1920** | `0x5520` | `+0x04c` | **CoeffDMAConfig2** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x1924** | `0x5524` | `+0x050` | **CoeffDMAConfig3** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x1928** | `0x5528` | `+0x054` | **CoeffDMAConfig4** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x192C** | `0x552C` | `+0x058` | **CoeffDMAConfig5** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x1930** | `0x5530` | `+0x05c` | **CoeffDMAConfig6** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x1934** | `0x5534` | `+0x060` | **CoeffDMAConfig7** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x1938** | `0x5538` | `+0x064` | **CoeffDMAConfig8** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x193C** | `0x553C` | `+0x068` | **CoeffDMAConfig9** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x1940** | `0x5540` | `+0x06c` | **CoeffDMAConfig10** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x1944** | `0x5544` | `+0x070` | **CoeffDMAConfig11** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x1948** | `0x5548` | `+0x074` | **CoeffDMAConfig12** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x194C** | `0x554C` | `+0x078` | **CoeffDMAConfig13** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x1950** | `0x5550` | `+0x080` | **CoeffDMAConfig14** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x1954** | `0x5554` | `+0x084` | **CoeffDMAConfig15** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x1958** | `0x5558` | `+0x088` | **CoeffBaseAddr0** | **Addr**: 6-31. |
+| **0x195C** | `0x555C` | `+0x08c` | **CoeffBaseAddr1** | **Addr**: 6-31. |
+| **0x1960** | `0x5560` | `+0x090` | **CoeffBaseAddr2** | **Addr**: 6-31. |
+| **0x1964** | `0x5564` | `+0x094` | **CoeffBaseAddr3** | **Addr**: 6-31. |
+| **0x1968** | `0x5568` | `+0x098` | **CoeffBaseAddr4** | **Addr**: 6-31. |
+| **0x196C** | `0x556C` | `+0x09c` | **CoeffBaseAddr5** | **Addr**: 6-31. |
+| **0x1970** | `0x5570` | `+0x0a0` | **CoeffBaseAddr6** | **Addr**: 6-31. |
+| **0x1974** | `0x5574` | `+0x0a4` | **CoeffBaseAddr7** | **Addr**: 6-31. |
+| **0x1978** | `0x5578` | `+0x0a8` | **CoeffBaseAddr8** | **Addr**: 6-31. |
+| **0x197C** | `0x557C` | `+0x0ac` | **CoeffBaseAddr9** | **Addr**: 6-31. |
+| **0x1980** | `0x5580` | `+0x0b0` | **CoeffBaseAddr10** | **Addr**: 6-31. |
+| **0x1984** | `0x5584` | `+0x0b4` | **CoeffBaseAddr11** | **Addr**: 6-31. |
+| **0x1988** | `0x5588` | `+0x0b8` | **CoeffBaseAddr12** | **Addr**: 6-31. |
+| **0x198C** | `0x558C` | `+0x0bc` | **CoeffBaseAddr13** | **Addr**: 6-31. |
+| **0x1990** | `0x5590` | `+0x0c0` | **CoeffBaseAddr14** | **Addr**: 6-31. |
+| **0x1994** | `0x5594` | `+0x0c4` | **CoeffBaseAddr15** | **Addr**: 6-31. |
+| **0x1998** | `0x5598` | `+0x0c8` | **CoeffBfrSize0** | **Size**: 6-31. |
+| **0x199C** | `0x559C` | `+0x0cc` | **CoeffBfrSize1** | **Size**: 6-31. |
+| **0x19A0** | `0x55A0` | `+0x0d0` | **CoeffBfrSize2** | **Size**: 6-31. |
+| **0x19A4** | `0x55A4` | `+0x0d4` | **CoeffBfrSize3** | **Size**: 6-31. |
+| **0x19A8** | `0x55A8` | `+0x0d8` | **CoeffBfrSize4** | **Size**: 6-31. |
+| **0x19AC** | `0x55AC` | `+0x0dc` | **CoeffBfrSize5** | **Size**: 6-31. |
+| **0x19B0** | `0x55B0` | `+0x0e0` | **CoeffBfrSize6** | **Size**: 6-31. |
+| **0x19B4** | `0x55B4` | `+0x0e4` | **CoeffBfrSize7** | **Size**: 6-31. |
+| **0x19B8** | `0x55B8` | `+0x0e8` | **CoeffBfrSize8** | **Size**: 6-31. |
+| **0x19BC** | `0x55BC` | `+0x0ec` | **CoeffBfrSize9** | **Size**: 6-31. |
+| **0x19C0** | `0x55C0` | `+0x0f0` | **CoeffBfrSize10** | **Size**: 6-31. |
+| **0x19C4** | `0x55C4` | `+0x0f4` | **CoeffBfrSize11** | **Size**: 6-31. |
+| **0x19C8** | `0x55C8` | `+0x0f8` | **CoeffBfrSize12** | **Size**: 6-31. |
+| **0x19CC** | `0x55CC` | `+0x0fc` | **CoeffBfrSize13** | **Size**: 6-31. |
+| **0x19D0** | `0x55D0` | `+0x100` | **CoeffBfrSize14** | **Size**: 6-31. |
+| **0x19D4** | `0x55D4` | `+0x104` | **CoeffBfrSize15** | **Size**: 6-31. |
+| **0x19D8** | `0x55D8` | `+0x108` | **BiasDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x19DC** | `0x55DC` | `+0x10c` | **BiasBaseAddr** | **Addr**: 6-31. |
+| **0x19E0** | `0x55E0` | `+0x110` | **BiasReserved0** | Reserved. |
+| **0x19E4** | `0x55E4` | `+0x114` | **BiasReserved1** | Reserved. |
+| **0x19E8** | `0x55E8` | `+0x118` | **PostScaleDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. |
+| **0x19EC** | `0x55EC` | `+0x11c` | **PostScaleBaseAddr** | **Addr**: 6-31. |
+| **0x19F0** | `0x55F0` | `+0x120` | **PostScaleReserved0** | Reserved. |
+| **0x19F4** | `0x55F4` | `+0x124` | **PostScaleReserved1** | Reserved. |
+| **0x19F8** | `0x55F8` | `+0x128` | **SparseBlockSizeCfg** | **BlockSize**: 0-7. (NEW in H14; `SetKernelSparseBlockSize`) |
+| **0x19FC** | `0x55FC` | `+0x12c` | **Reserved** | Reserved. |
+| **0x1A00** | `0x5600` | `+0x130` | **Reserved** | Reserved. |
+| **0x1A04** | `0x5604` | `+0x134` | **Reserved** | Reserved. |
+| **0x1A08** | `0x5608` | `+0x138` | **Spare0** | KernelDMASrc Spare 0 register. |
+| **0x1A0C** | `0x560C` | `+0x13c` | **Spare1** | KernelDMASrc Spare 1 register. |
+| **0x1A10** | `0x5610` | `+0x140` | **Reserved** | Reserved. |
+| **0x1A14** | `0x5614` | `+0x144` | **Reserved** | Reserved. |
 
 ### Common (0x0000 block, Object `+0x1ec`)
 - **Count**: 19 registers (`0x13` words, `0x4C` bytes).
@@ -171,25 +172,25 @@ The `ZinAneTd<11u>` object (descriptor) is divided into these hardware-mapped re
 
 | OLD HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping | Verification Method |
 | :--- | :--- | :--- | :--- | :--- |
-| **0x0000** | `+0x1ec` | **InDim (packed W+H)** | **Win**: 0-14 (15 bits), **Pad**: 15, **Hin**: 16-30 (15 bits), **Pad**: 31. Example: `0x00e000e0` = W:224, H:224. | `SetOrReturnWin` [0:14], `SetOrReturnHin` [16:30] |
-| **0x0004** | `+0x1f0` | **InDepth** | **Din**: 0-14 (15 bits). | `SetOrReturnDin` writes to 0x1f0 |
-| **0x0008** | `+0x1f4` | **ChannelCfg** | **InFmt**: 0-1, **Src2InFmt**: 2-3, **OutFmt**: 4-5. | `SetCommonInFmt` writes to 0x1f4 |
-| **0x000C** | `+0x1f8` | **InChannels** | **Cin**: 0-16 (17 bits). | `SetOrReturnCin` writes to 0x1f8 |
-| **0x0010** | `+0x1fc` | **OutChannels** | **Cout**: 0-16 (17 bits). | `SetOrReturnCout` writes to 0x1fc |
-| **0x0014** | `+0x200` | **OutDim (packed W+H)** | **Wout**: 0-14 (15 bits), **Pad**: 15, **Hout**: 16-30 (15 bits), **Pad**: 31. Example: `0x00380038` = W:56, H:56. | `SetOrReturnWout` [0:14], `SetOrReturnHout` [16:30] |
-| **0x0018** | `+0x204` | **OutDepth** | **Dout**: 0-14 (15 bits). | `SetOrReturnDout` writes to 0x204 |
-| **0x001C** | `+0x208` | **ConvCfg?** | Unknown. | |
-| **0x0020** | `+0x20c` | **ConvCfg** | **KW**: 0-5, **KH**: 6-11, **SX**: 13-14, **SY**: 15-16, **PadLeft**: 17-21, **PadTop**: 22-26, **OX**: 28-29, **OY**: 30-31. | `SetCommonConvCfgKw` [0:5], `SetCommonConvCfgKh` [6:11] write to 0x20c |
-| **0x0024** | `+0x210` | **ConvCfg3d** | **Kd**: 0-5, **Sz**: 6-11, **Pz**: 12-16, **Oz**: 17-21. | |
-| **0x0028** | `+0x214` | **NumGroups / MacCfg?** | **NumGroups**: 0-12 (13 bits). | `SetOrReturnNumGroups` writes to 0x214 [0:12] |
-| **0x002C** | `+0x218` | **TileHeight** | **TileHeight**: 0-16 (17 bits). | |
-| **0x0030** | `+0x21c` | **TileOverlap** | **Overlap**: 0-5, **PadTop**: 6-10. | |
-| **0x0034** | `+0x220` | **NECfg** | **OCGSize**: 0-2, **FatTileEnable**: 3, **WUStackLog2**: 4-5. | |
-| **0x0038** | `+0x224` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. | `SetPatchWidth`, `SetPatchHeight` |
-| **0x003C** | `+0x228` | **NID** | Network ID / Layer Trace ID. | |
-| **0x0040** | `+0x22c` | **DPE** | Distributed Processing Element config. | |
-| **0x0044** | `+0x230` | **Reserved** | Reserved register. | |
-| **0x0048** | `+0x234` | **Reserved** | Reserved register. | |
+| **0x0000** | `+0x1ec` | **InDim (packed W+H)** | **Win**: 0-14 (15 bits), **Hin**: 16-30 (15 bits). | `ZinIrRegBitPrintOutDebug` +0x1ec |
+| **0x0004** | `+0x1f0` | **InDepth** | **Din**: 0-14 (15 bits). | Matches struct mapping |
+| **0x0008** | `+0x1f4` | **ChannelCfg** | **InFmt**: 0-1, **Src2InFmt**: 2-3, **OutFmt**: 4-5. | `ZinIrRegBitPrintOutDebug` +0x1f4 |
+| **0x000C** | `+0x1f8` | **InChannels** | **Cin**: 0-16 (17 bits). | `ZinIrRegBitPrintOutDebug` +0x1f8 |
+| **0x0010** | `+0x1fc` | **OutChannels** | **Cout**: 0-16 (17 bits). | `ZinIrRegBitPrintOutDebug` +0x1fc |
+| **0x0014** | `+0x200` | **OutDim (packed W+H)** | **Wout**: 0-14 (15 bits), **Hout**: 16-30 (15 bits). | `ZinIrRegBitPrintOutDebug` +0x200 |
+| **0x0018** | `+0x204` | **OutDepth** | **Dout**: 0-14 (15 bits). | Matches struct mapping |
+| **0x001C** | `+0x208` | **OCGSize** | **OCGSize**: 0-2. (Previously guessed as ConvCfg?) | `ZinIrRegBitPrintOutDebug` +0x208 |
+| **0x0020** | `+0x20c` | **ConvCfg** | **KW**: 0-5, **KH**: 6-11, **SX**: 13-14, **SY**: 15-16, **PX**: 17-21, **PY**: 22-26, **OX**: 28-29, **OY**: 30-31. | `ZinIrRegBitPrintOutDebug` +0x20c |
+| **0x0024** | `+0x210` | **ConvCfg3d** | **Kd**: 0-5, **Sz**: 6-11, **Pz**: 12-16, **Oz**: 17-21. | Matches struct mapping |
+| **0x0028** | `+0x214` | **GroupConvCfg** | **NumGroups**: 0-12, **UnicastEn**: 14, **ElemMultMode**: 15-16, **UnicastCin**: 16-31. | `ZinIrRegBitPrintOutDebug` +0x214 |
+| **0x002C** | `+0x218` | **TileCfg** | **TileHeight**: 0-14. | `ZinIrRegBitPrintOutDebug` +0x218 |
+| **0x0030** | `+0x21c` | **TileOverlap** | **Overlap**: 0-5, **PadTop**: 6-10. | Matches struct mapping |
+| **0x0034** | `+0x220` | **NECfg** | **OCGSize**: 0-2, **FatTileEnable**: 3, **WUStackLog2**: 4-5. | Matches struct mapping |
+| **0x0038** | `+0x224` | **Cfg** | **ActiveNE**: 19-21, **ShMax**: 16-18 (upper halfword), **ShMin**: 12-14, **ShPref**: 8-10, **SmallSourceMode**: 2-3. | `ZinIrRegBitPrintOutDebug` +0x224 |
+| **0x003C** | `+0x228` | **TaskInfo** | **TaskID**: 0-15, **TaskQ**: 16-19, **NID**: 20-31. | `ZinIrRegBitPrintOutDebug` +0x228 |
+| **0x0040** | `+0x22c` | **DPE** | **Category**: 0-3. | `ZinIrRegBitPrintOutDebug` +0x22c |
+| **0x0044** | `+0x230` | **Spare0** | Generic Spare 0 register. | `ZinIrRegBitPrintOutDebug` +0x238 |
+| **0x0048** | `+0x234` | **Spare1** | Generic Spare 1 register. | `ZinIrRegBitPrintOutDebug` +0x23c |
 
 *Note: H14 Common block is narrower than H16 (19 vs 23 registers). H16 adds `UnicastCfg` and `PECfg`, and unpacks dimensions into separate words (W, H, C, D each get their own register).*
 
@@ -220,59 +221,40 @@ Bit extraction for 0x00e000e0:
 
 | OLD HW Addr | Modern HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- | :--- |
-| **0x1100** | `0x4D00` | `+0x240` | **Src1DMAConfig** | **Enable**: 0, **CacheHint0**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. (NEW: DataSetId in H14) |
-| **0x1104** | `0x4D04` | `+0x244` | **Src2DMAConfig** | **Enable**: 0, **CacheHint0**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. (NEW: DataSetId in H14) |
-| **0x1108** | `0x4D08` | `+0x248` | **Src1WrapCfg** | **CacheHint1**: 0-7 (triple hint), **WrapCfg**: 8-10, **WrapStatic**: 16-31. |
-| **0x110C** | `0x4D0C` | `+0x24c` | **Src2WrapCfg** | **CacheHint1**: 0-7 (triple hint), **WrapCfg**: 8-10, **WrapStatic**: 16-31. |
-| **0x1110** | `0x4D10` | `+0x250` | **Src1BaseAddr** | **Addr**: 6-31. |
-| **0x1114** | `0x4D14` | `+0x254` | **Src1RowStride** | **Stride**: 6-31. |
-| **0x1118** | `0x4D18` | `+0x258` | **Src1ChannelStride** | **Stride**: 6-31. |
-| **0x111C** | `0x4D1C` | `+0x25c` | **Src1DepthStride** | **Stride**: 6-31. |
-| **0x1120** | `0x4D20` | `+0x260` | **Src1GroupStride** | **Stride**: 6-31. |
-| **0x1124** | `0x4D24` | `+0x264` | **Src2BaseAddr** | **Addr**: 6-31. |
-| **0x1128** | `0x4D28` | `+0x268` | **Src2RowStride** | **Stride**: 6-31. |
-| **0x112C** | `0x4D2C` | `+0x26c` | **Src2ChannelStride** | **Stride**: 6-31. |
-| **0x1130** | `0x4D30` | `+0x270` | **Src2DepthStride** | **Stride**: 6-31. |
-| **0x1134** | `0x4D34` | `+0x274` | **Src2GroupStride** | **Stride**: 6-31. |
-| **0x1138** | `0x4D38` | `+0x278` | **Src1Fmt** | **FormatMode**: 0-1, **Truncate**: 4-5, **MemFmt**: 12-13, **OffsetCh**: 16-18, **Interleave**: 24-27. |
-| **0x113C** | `0x4D3C` | `+0x27c` | **Src2Fmt** | **FormatMode**: 0-1, **Truncate**: 4-5, **MemFmt**: 12-13, **OffsetCh**: 16-18, **Interleave**: 24-27. |
-| **0x1140** | `0x4D40` | `+0x280` | **Src1CacheHint2** | **CacheHint2**: 0-7 (triple hint, 3rd field). |
-| **0x1144** | `0x4D44` | `+0x284` | **Src2CacheHint2** | **CacheHint2**: 0-7 (triple hint, 3rd field). |
-| **0x1148** | `0x4D48` | `+0x288` | **Src1PixelOffsetX** | **PixelOffsetX**: 0-15. (H14 preserves 4D pixel offsets from H13) |
-| **0x114C** | `0x4D4C` | `+0x28c` | **Src1PixelOffsetY** | **PixelOffsetY**: 0-15. |
-| **0x1150** | `0x4D50` | `+0x290` | **Src1PixelOffsetZ** | **PixelOffsetZ**: 0-15. |
-| **0x1154** | `0x4D54` | `+0x294` | **Src1PixelOffsetW** | **PixelOffsetW**: 0-15. |
-| **0x1158** | `0x4D58` | `+0x298` | **Src2PixelOffsetX** | **PixelOffsetX**: 0-15. |
-| **0x115C** | `0x4D5C` | `+0x29c` | **Src2PixelOffsetY** | **PixelOffsetY**: 0-15. |
-| **0x1160** | `0x4D60` | `+0x2a0` | **Src2PixelOffsetZ** | **PixelOffsetZ**: 0-15. |
-| **0x1164** | `0x4D64` | `+0x2a4` | **Src2PixelOffsetW** | **PixelOffsetW**: 0-15. |
-| **0x1168** | `0x4D68` | `+0x2a8` | **Src1CompressedInfo** | **CompressedEnable**: 0, **MacroblockSize**: 2, **PackingIdx**: 4-9, **LossyEnable**: 13. |
-| **0x116C** | `0x4D6C` | `+0x2ac` | **Src1CompressedSizeLo** | **SizeLo**: 0-31. |
-| **0x1170** | `0x4D70` | `+0x2b0` | **Src1CompressedSizeHi** | **SizeHi**: 0-31. |
-| **0x1174** | `0x4D74` | `+0x2b4` | **Src2CompressedInfo** | **CompressedEnable**: 0, **MacroblockSize**: 2, **PackingIdx**: 4-9, **LossyEnable**: 13. |
-| **0x1178** | `0x4D78` | `+0x2b8` | **Src2CompressedSizeLo** | **SizeLo**: 0-31. |
-| **0x117C** | `0x4D7C` | `+0x2bc` | **Src2CompressedSizeHi** | **SizeHi**: 0-31. |
-| **0x1180** | `0x4D80` | `+0x2c0` | **Src1CropOffset** | **OffsetY**: 0-15, **CropOffset**: 16-31. |
-| **0x1184** | `0x4D84` | `+0x2c4` | **Src2CropOffset** | **OffsetY**: 0-15, **CropOffset**: 16-31. |
-| **0x1188** | `0x4D88` | `+0x2c8` | **Src1WrapDynamic** | **WrapNumBlocks**: 0-11, **WrapLen**: 12-31. |
-| **0x118C** | `0x4D8C` | `+0x2cc` | **Src2WrapDynamic** | **WrapNumBlocks**: 0-11, **WrapLen**: 12-31. |
-| **0x1190** | `0x4D90` | `+0x2d0` | **Src1DependencyOffset** | **Offset**: 0-31. |
-| **0x1194** | `0x4D94` | `+0x2d4` | **Src2DependencyOffset** | **Offset**: 0-31. |
-| **0x1198** | `0x4D98` | `+0x2d8` | **TileDmaSrcReserved** | |
-| **0x119C** | `0x4D9C` | `+0x2dc` | **TileDmaSrcReserved** | |
-| **0x11A0** | `0x4DA0` | `+0x2e0` | **TileDmaSrcReserved** | |
-| **0x11A4** | `0x4DA4` | `+0x2e4` | **TileDmaSrcReserved** | |
-| **0x11A8** | `0x4DA8` | `+0x2e8` | **TileDmaSrcReserved** | |
-| **0x11AC** | `0x4DAC` | `+0x2ec` | **TileDmaSrcReserved** | |
-| **0x11B0** | `0x4DB0` | `+0x2f0` | **TileDmaSrcReserved** | |
-| **0x11B4** | `0x4DB4` | `+0x2f4` | **TileDmaSrcReserved** | |
-| **0x11B8** | `0x4DB8` | `+0x2f8` | **TileDmaSrcReserved** | |
-| **0x11BC** | `0x4DBC` | `+0x2fc` | **TileDmaSrcReserved** | |
-| **0x11C0** | `0x4DC0` | `+0x300` | **TileDmaSrcReserved** | |
-| **0x11C4** | `0x4DC4` | `+0x304` | **TileDmaSrcReserved** | |
-| **0x11C8** | `0x4DC8` | `+0x308` | **TileDmaSrcReserved** | |
-| **0x11CC** | `0x4DCC` | `+0x30c` | **TileDmaSrcReserved** | |
-| **0x11D0** | `0x4DD0` | `+0x310` | **TileDmaSrcReserved** | |
+| **0x1100** | `0x4D00` | `+0x240` | **Src1DMAConfig** | **Enable**: bit 0, **CrH**: bits 2-3, **CacheHint**: bits 4-7, **DependencyMode**: bits 28-31. |
+| **0x1104** | `0x4D04` | `+0x244` | **Src2DMAConfig** | **Enable**: bit 0, **CrH**: bits 2-3, **CacheHint**: bits 4-7, **DependencyMode**: bits 28-31. |
+| **0x1108** | `0x4D08` | `+0x248` | **Src1DMAConfigExt** | **CacheHintReuse**: bits 0-3, **CacheHintNoReuse**: bits 4-7. |
+| **0x110C** | `0x4D0C` | `+0x24c` | **Src2DMAConfigExt** | **CacheHintReuse**: bits 0-3, **CacheHintNoReuse**: bits 4-7. |
+| **0x1110** | `0x4D10` | `+0x250` | **Src1BaseAddrLo** | **Addr**: 6-31. (Lower 32-bits shifted by 6) |
+| **0x1114** | `0x4D14` | `+0x254` | **Src1BaseAddrHi** | **Addr**: 0-9. (Upper 10-bits of 42-bit address) |
+| **0x1118** | `0x4D18` | `+0x258` | **Src1RowStride** | **Stride**: 6-31. (Shifted by 6) |
+| **0x111C** | `0x4D1C` | `+0x25c` | **Src1PlaneStride** | **Stride**: 6-31. (Shifted by 6) |
+| **0x1120** | `0x4D20` | `+0x260` | **Src1DepthStride** | **Stride**: 6-31. (Shifted by 6) |
+| **0x1124** | `0x4D24` | `+0x264` | **Src1GroupStride** | **Stride**: 6-31. (Shifted by 6) |
+| **0x1128** | `0x4D28` | `+0x268` | **Src2BaseAddrLo** | **Addr**: 6-31. (Lower 32-bits shifted by 6) |
+| **0x112C** | `0x4D2C` | `+0x26c` | **Src2BaseAddrHi** | **Addr**: 0-9. (Upper 10-bits of 42-bit address) |
+| **0x1130** | `0x4D30` | `+0x270` | **Src2RowStride** | **Stride**: 6-31. (Shifted by 6) |
+| **0x1134** | `0x4D34` | `+0x274` | **Src2PlaneStride** | **Stride**: 6-31. (Shifted by 6) |
+| **0x1138** | `0x4D38` | `+0x278` | **Src2DepthStride** | **Stride**: 6-31. (Shifted by 6) |
+| **0x113C** | `0x4D3C` | `+0x27c` | **Src2GroupStride** | **Stride**: 6-31. (Shifted by 6) |
+| **0x1140** | `0x4D40` | `+0x280` | **TileDmaSrcReserved** | |
+| **0x1144** | `0x4D44` | `+0x284` | **TileDmaSrcReserved** | |
+| **0x1148** | `0x4D48` | `+0x288` | **TileDmaSrcReserved** | |
+| **0x114C** | `0x4D4C` | `+0x28c` | **TileDmaSrcReserved** | |
+| **0x1150** | `0x4D50` | `+0x290` | **Src1Fmt** | **FmtMode**: 0-1, **Truncate**: 4-7, **Shift**: 8-11, **MemFmt**: 12-15, **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. |
+| **0x1154** | `0x4D54` | `+0x294` | **Src2Fmt** | **FmtMode**: 0-1, **Truncate**: 4-7, **Shift**: 8-11, **MemFmt**: 12-15, **OffsetCh**: 16-18, **Interleave**: 24-27, **CmpVec**: 28-31. |
+| **0x1158** | `0x4D58` | `+0x298` | **TileDmaSrcReserved** | |
+| **0x115C** | `0x4D5C` | `+0x29c` | **TileDmaSrcReserved** | |
+| **0x1160** | `0x4D60` | `+0x2a0` | **TileDmaSrcReserved** | |
+| **0x1164** | `0x4D64` | `+0x2a4` | **TileDmaSrcReserved** | |
+| **0x1168** | `0x4D68` | `+0x2a8` | **PixelOffset[0]** | **PixelOffset 0**: 0-15. (Previously listed as Src1CompressedInfo) |
+| **0x116C** | `0x4D6C` | `+0x2ac` | **PixelOffset[1]** | **PixelOffset 1**: 0-15. |
+| **0x1170** | `0x4D70` | `+0x2b0` | **PixelOffset[2]** | **PixelOffset 2**: 0-15. |
+| **0x1174** | `0x4D74` | `+0x2b4` | **PixelOffset[3]** | **PixelOffset 3**: 0-15. |
+| **0x1178** | `0x4D78` | `+0x2b8` | **TileDmaSrcReserved** | |
+| ... | ... | ... | ... | ... |
+| **0x11CC** | `0x4DCC` | `+0x30c` | **Spare0** | TileDMASrc Spare 0 register. |
+| **0x11D0** | `0x4DD0` | `+0x310` | **Spare1** | TileDMASrc Spare 1 register. |
 | **0x11D4** | `0x4DD4` | `+0x314` | **TileDmaSrcReserved** | |
 
 *Note: H14 preserves triple cache hints (3 separate hint fields per source) and 4D pixel offsets (`SetTileDmaSrc1PixelOffset*`), both of which are removed in H16. H14 adds DataSet ID tracking (`SetTileDmaSrc1DataSetId`, `SetTileDmaSrc2DataSetId`) as new in this generation.*
@@ -328,11 +310,13 @@ Bit extraction for 0x00e000e0:
 
 | OLD HW Addr | Modern HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- | :--- |
-| **0x0D00** | `0x4900` | `+0x3a4` | **KernelCfg** | **Fmt**: 0-1, **PalettizedEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **Reuse**: 10, **SparseBinary**: 15, **Align**: 16, **BlockSize**: 21-23. |
-| **0x0D04** | `0x4904` | `+0x3a8` | **MacCfg** | **OpMode**: 0-2 (0:Conv, 1:EW, 2:RCAS, 4:Bypass, 5:Transconv), **KMode**: 3, **BiasEn**: 4, **PassEn**: 5, **BinPoint**: 8-13, **NLMode**: 16-17. |
-| **0x0D08** | `0x4908` | `+0x3ac` | **NEBias** | **BiasVal**: 0-15, **ExpIdx**: 16-20. |
-| **0x0D0C** | `0x490C` | `+0x3b0` | **NEPostScale** | **ScaleVal**: 0-15, **ExpIdx**: 16-20 (Negated). |
-| **0x0D10** | `0x4910` | `+0x3b4` | **RoundModeCfg** | **Mode**: 0-1, **IntBits**: 4-8. |
+| **0x0D00** | `0x4900` | `+0x3a4` | **KernelCfg** | **KernelFmt**: 0-1, **PalettizedEn**: 2-3, **PalettizedBits**: 4-7, **SparseFmt**: 8-9, **GroupKernelReuse**: 10-11. |
+| **0x0D04** | `0x4904` | `+0x3a8` | **MacCfg** | **OpMode**: 0-2, **KernelMode**: 3-5, **BiasMode**: 4-5? (Wait, instruction has ubfx #3 width #3 and others), **MatrixBiasEn**: 6-7, **BinaryPoint**: 8-15, **PostScaleMode**: 14-15, **NonlinearMode**: 16-17 (upper halfword). |
+| **0x0D08** | `0x4908` | `+0x3ac` | **MatrixVectorBias** | **BiasVal**: 0-15. |
+| **0x0D0C** | `0x490C` | `+0x3b0` | **AccBias** | **AccBias**: 0-15 (lower halfword), **AccBiasShift**: 16-20 (upper halfword). |
+| **0x0D10** | `0x4910` | `+0x3b4` | **PostScale** | **PostScale**: 0-15 (lower halfword), **PostRightShift**: 16-20 (upper halfword). |
+| **0x0D14** | `0x4914` | `+0x3b8` | **Spare0** | NE Spare 0 register. |
+| **0x0D18** | `0x4918` | `+0x3bc` | **Spare1** | NE Spare 1 register. |
 
 ### TileDMA Destination (0x1500 OLD / 0x5100 Modern, Object `+0x3c0`)
 - **Count**: 9 registers (`0x09` words, `0x24` bytes).
@@ -340,15 +324,17 @@ Bit extraction for 0x00e000e0:
 
 | OLD HW Addr | Modern HW Addr | Offset (`this`) | Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- | :--- |
-| **0x1500** | `0x5100` | `+0x3c0` | **DstDMAConfig** | **Enable**: 0, **CacheHint**: 4-7, **DataSetId**: 8-15, **UserTag**: 16-23. (NEW: DataSetId in H14) |
-| **0x1504** | `0x5104` | `+0x3c4` | **DstBaseAddr** | **Addr**: 6-31. |
-| **0x1508** | `0x5108` | `+0x3c8` | **DstRowStride** | **Stride**: 6-31. |
-| **0x150C** | `0x510C` | `+0x3cc` | **DstPlaneStride** | **Stride**: 6-31. |
-| **0x1510** | `0x5110` | `+0x3d0` | **DstDepthStride** | **Stride**: 6-31. |
-| **0x1514** | `0x5114` | `+0x3d4` | **DstGroupStride** | **Stride**: 6-31. |
-| **0x1518** | `0x5118` | `+0x3d8` | **DstFmt** | **FormatMode**: 0-1, **MemFmt**: 12-13. |
-| **0x151C** | `0x511C` | `+0x3dc` | **DstPixelOffset** | **PixelOffset**: 0-15. (H14 preserves pixel offset; removed in H16) |
-| **0x1520** | `0x5120` | `+0x3e0` | **DstReserved** | Reserved. |
+| **0x1500** | `0x5100` | `+0x3c0` | **DstDMAConfig** | **Enable**: bit 0, **CrH**: bits 2-3, **CacheHint**: bits 4-7, **L2BfrMode**: bit 24, **BypassEOW**: bit 25. |
+| **0x1504** | `0x5104` | `+0x3c4` | **DstReserved** | Reserved. |
+| **0x1508** | `0x5108` | `+0x3c8` | **DstBaseAddrLo** | **Addr**: 6-31. (Lower 32-bits shifted by 6) |
+| **0x150C** | `0x510C` | `+0x3cc` | **DstBaseAddrHi** | **Addr**: 0-9. (Upper 10-bits of address) |
+| **0x1510** | `0x5110` | `+0x3d0` | **DstRowStride** | **Stride**: 6-31. (Shifted by 6) |
+| **0x1514** | `0x5114` | `+0x3d4` | **DstPlaneStride** | **Stride**: 6-31. (Shifted by 6) |
+| **0x1518** | `0x5118` | `+0x3d8` | **DstDepthStride** | **Stride**: 6-31. (Shifted by 6) |
+| **0x151C** | `0x511C` | `+0x3dc` | **DstGroupStride** | **Stride**: 6-31. (Shifted by 6) |
+| **0x1520** | `0x5120` | `+0x3e0` | **DstFmt** | **FmtMode**: 0-1, **Truncate**: 4-7, **Shift**: 8-11, **MemFmt**: 12-15, **OffsetCh**: 16-18, **ZeroPadLast**: 20, **ZeroPadFirst**: 21, **CmpVecFill**: 22-23, **CmpVec**: 28-31. |
+| **0x1524** | `0x5124` | `+0x3e4` | **Spare0** | TileDMADst Spare 0 register. |
+| **0x1528** | `0x5128` | `+0x3e8` | **Spare1** | TileDMADst Spare 1 register. |
 
 ## Cross-Cutting Subsystems
 

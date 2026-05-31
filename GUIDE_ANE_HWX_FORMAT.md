@@ -1,440 +1,648 @@
 # Comprehensive Guide to Apple ANE .hwx File Format (H13-H18)
 
-**Purpose**: Complete reference for understanding and parsing Apple Neural Engine (ANE) `.hwx` files from scratch, covering all architectures from H13 (A14/M1) through H18 (A19).
+**Purpose**: A complete, beginner-friendly reference for understanding, parsing, and analyzing Apple Neural Engine (ANE) `.hwx` files from scratch. This guide covers all hardware architectures from H13 (A14/M1) through H18 (A19).
 
-**Audience**: Developers who want to build parsers, analyze ANE behavior, or reverse engineer Apple's neural network accelerator.
-
-> **⚠️ CRITICAL**: This guide explains the ACTUAL format used in real .hwx files for ALL architectures:
-> - **H13 and earlier (A12-A14/M1)**: Fixed register offsets
-> - **H14/H15 (A15/M2, A16/M3)**: Instruction stream encoding (dense only)
-> - **H16+ (A17 Pro/M4, A18+, A19)**: Instruction stream encoding (dense + sparse)
-
----
-
-## Document Updates
-
-**Last Updated**: 2026-05-30 (V3 - Complete Architecture Coverage)
-
-**Major Changes in V3**:
-- ✅ **NEW**: Complete H13 fixed format parsing with examples
-- ✅ **NEW**: Architecture comparison table (H13 vs H14+ differences)
-- ✅ **NEW**: Coverage of all architectures H13-H18 (A14/M1 through A19)
-- ✅ **NEW**: When to use fixed offsets vs instruction streams
-- ✅ Complete [Instruction Stream Format](#instruction-stream-format) section for H14/H15/H16+
-- ✅ Dense and Sparse instruction encoding explained with examples
-- ✅ Working decoder implementations for all architectures
-- ✅ Mach-O container structure (how to extract task descriptors)
-- ✅ Task descriptor format (headers, instruction streams, register blocks)
-- ✅ Architecture-specific layouts with CORRECT parsing approaches
-
-**What This Guide Covers**:
-- ✅ All ANE architectures: H13 (A14/M1), H14 (A15/M2), H15 (A16/M3), H16 (A17 Pro/M4), H17 (A18 Pro), H18 (A19)
-- ✅ Mach-O container structure (Phase 1: extract task descriptors)
-- ✅ Task descriptor headers (all architectures)
-- ✅ **H13 fixed offset parsing** ← Simple direct access
-- ✅ **Instruction stream decoding** (H14/H15/H16+) ← **CRITICAL**
-- ✅ Hardware register maps for all blocks
-- ✅ Complete working code examples for all architectures
+**Audience**: Novice developers, reverse engineers, and compiler enthusiasts who want to understand how Apple's machine learning accelerator works at the hardware-register level.
 
 ---
 
 ## Table of Contents
 
-1. [Introduction](#introduction)
-2. [Quick Architecture Reference](#quick-architecture-reference)
-3. [Mach-O Container Format](#mach-o-container-format) **← PHASE 1**
-4. [Task Descriptor Structure](#task-descriptor-structure)
-5. [Task Descriptor Header](#task-descriptor-header) **← ALL ARCHITECTURES**
-6. [Instruction Stream Format](#instruction-stream-format) **← H14/H15/H16+ CRITICAL**
-7. [Hardware Register Blocks](#hardware-register-blocks)
-8. [H13 Fixed Format](#h13-fixed-format) **← H13 AND EARLIER**
-9. [Building a Complete Parser](#building-a-complete-parser)
-10. [Testing Your Parser](#testing-your-parser)
+1. [Understanding the ANE Ecosystem](#1-understanding-the-ane-ecosystem)
+2. [Mach-O Container Format for Beginners](#2-mach-o-container-format-for-beginners)
+3. [Task Descriptor Header Layouts](#3-task-descriptor-header-layouts)
+4. [The Instruction Stream Format (ANE Bytecode)](#4-the-instruction-stream-format-ane-bytecode)
+5. [Hardware Registers & Virtual State Array](#5-hardware-registers-virtual-state-array)
+6. [Hardware Register Unpacking & Bitwise Logic](#6-hardware-register-unpacking-bitwise-logic)
+7. [Advanced Heuristics: Dimensions & Activity Mapping](#7-advanced-heuristics-dimensions-activity-mapping)
+8. [H13 Fixed Format and Linked List Traversal](#8-h13-fixed-format-and-linked-list-traversal)
+9. [Step-by-Step C Parser Implementation](#9-step-by-step-c-parser-implementation)
 
 ---
 
-## Introduction
+## 1. Understanding the ANE Ecosystem
 
-### What Are .hwx Files?
+Before diving into the binary details, let's establish what these files are and why they exist.
 
-`.hwx` files are **Hardware eXecution descriptors** - binary files that tell the Apple Neural Engine (ANE) how to execute neural network operations.
+### What is the ANE?
+The **Apple Neural Engine (ANE)** is a specialized Coprocessor (or NPU - Neural Processing Unit) designed specifically to accelerate neural network operations like convolutions, pooling, and matrix multiplications. 
+* **CPU**: Good at general-purpose sequential tasks.
+* **GPU**: Good at massive parallel operations (graphics, shaders).
+* **ANE/NPU**: Optimized specifically for low-power, high-speed tensor operations using specialized hardware execution pipelines.
 
-**Key characteristics:**
-- **Mach-O binary format** (like executable files, not raw binary data)
-- Custom magic number: `0xBEEFFACE` (little-endian: `CE FA EF BE`)
-- Task descriptors embedded in `__TEXT` segment, `__text` section
-- Different formats for different architectures (H13 vs H14+)
+### What is a .hwx File?
+When you compile a CoreML model using Apple's compiler tools, the compiler outputs a `.hwx` (**Hardware eXecution**) file. This is the **machine code** for the ANE. 
+Instead of general-purpose assembly instructions (like `ADD` or `MUL`), a `.hwx` file contains **Task Descriptors** and **Instruction Streams** that program the hardware registers of the Neural Engine. When these registers are loaded with values (like input dimensions, stride sizes, memory addresses, and weight formats), the hardware automatically executes the corresponding layer.
 
-### Architecture Summary
+### Architectural Generations
+Apple updates the ANE hardware with almost every new chip. The architecture version is represented by an **H-number** (e.g., H13, H14):
 
-| Generation | CPU Subtype | Chips | Task Format | Parsing Approach |
-|------------|-------------|-------|-------------|------------------|
-| H11 | 1 | A12 | Fixed offsets | ✅ Simple struct casting |
-| H12 | 3 | A13 | Fixed offsets | ✅ Simple struct casting |
-| H13 | 4 | A14, M1 | Fixed offsets | ✅ Simple struct casting |
-| H14 | 5 | A15, M2 | Instruction stream (dense only) | ⚠️ Must decode instructions |
-| H15 | 6 | A16, M3 | Instruction stream (dense only) | ⚠️ Must decode instructions |
-| H16 | 7 | A17 Pro, M4 | Instruction stream (dense + sparse) | ⚠️ Must decode instructions |
-| H17 | 9 | A18 Pro, M5 (rumored) | Instruction stream (dense + sparse) | ⚠️ Must decode instructions |
-| H18 | 10 | A19 (future) | Instruction stream (dense + sparse) | ⚠️ Must decode instructions |
-
-**THIS IS CRITICAL**: 
-- **H13 and earlier** (subtypes 1-4): Fixed TD offsets, direct struct access
-- **H14/H15/H16+** (subtypes 5+): Instruction streams, must decode first
-
-H14+ do NOT store registers at fixed offsets. They use an **instruction stream encoding** (like bytecode) that must be decoded.
+| Generation | CPU Subtype | Core SoC Examples | Programming Format | Instruction Set Version |
+| :--- | :--- | :--- | :--- | :--- |
+| **H11** | 1 | A12 Bionic | Fixed Register Structs | 5 |
+| **H12** | 3 | A13 Bionic | Fixed Register Structs | 6 |
+| **H13** | 4 | A14, M1 | Fixed Register Structs | 7 |
+| **H14** | 5 | A15 Bionic, M2 | Instruction Stream (dense only) | 11 |
+| **H15** | 6 | A16 Bionic, M3 | Instruction Stream (dense only) | 8 |
+| **H16** | 7 | A17 Pro, M4 | Instruction Stream (dense + sparse) | 17 |
+| **H17** | 9 | A18, M5 | Instruction Stream (dense + sparse) | 19 |
+| **H18** | 10 | A19 | Instruction Stream (dense + sparse) | 20 |
 
 ---
 
-## Quick Architecture Reference
+## 2. Mach-O Container Format for Beginners
 
-Before parsing, you need to identify the architecture from the Mach-O header:
+Every `.hwx` file is wrapped in a **Mach-O (Mach Object)** file format container. This is the standard executable binary format used by macOS and iOS (similar to `.exe` on Windows or ELF on Linux).
 
+### Anatomy of a Mach-O File
+
+A Mach-O file has three main parts:
+1. **Header**: Metadata about the file (what chip it runs on, how many commands follow).
+2. **Load Commands**: A map or table of contents telling the system where different sections of data are located inside the file.
+3. **Segments and Sections**: The actual data payloads (e.g., text, data, weight kernels).
+
+```
+┌────────────────────────────────────────┐
+│             Mach-O Header              │  (File type, CPU architecture, command counts)
+├────────────────────────────────────────┤
+│           Load Commands Table          │  (Maps out where segments are located)
+├────────────────────────────────────────┤
+│  __TEXT Segment  ->  __text Section   │  (Contains ANE Task Descriptors / Instructions)
+├────────────────────────────────────────┤
+│  __KERN Segment  ->  Weights & Scales  │  (Contains model weights and biases)
+├────────────────────────────────────────┤
+│  __DATA Segment  ->  State Buffers     │  (Runtime memory configurations)
+└────────────────────────────────────────┘
+```
+
+### Parsing Binary Buffers (Byte Offsets)
+
+To parse a `.hwx` file in C, we map struct interfaces onto the binary buffer directly. All integers in Mach-O files are stored in **Little-Endian** format.
+
+#### 1. Mach-O Header Struct (32 bytes)
 ```c
-// From Mach-O header's CPU subtype field
-typedef enum {
-    ANE_H11 = 1,   // A12
-    ANE_H12 = 3,   // A13
-    ANE_H13 = 4,   // A14/M1
-    ANE_H14 = 5,   // A15/M2       ← Instruction stream starts
-    ANE_H15 = 6,   // A16/M3       ← Instruction stream
-    ANE_H16 = 7,   // A17 Pro/M4   ← Instruction stream + sparse
-    ANE_H17 = 9,   // A18 Pro/M5   ← Instruction stream + sparse
-    ANE_H18 = 10,  // A19          ← Instruction stream + sparse
-} ane_arch_t;
+struct mach_header_64 {
+    uint32_t magic;         // Validation identifier: 0xFEEDFACF or custom ANE magic 0xBEEFFACE
+    uint32_t cputype;       // Typically 0x00000080 for ANE files, or ARM64 0x0100000C
+    uint32_t cpusubtype;    // Crucial ANE architecture version (e.g., 4=H13, 5=H14, 7=H16)
+    uint32_t filetype;      // File type indicator (usually 0x00000002)
+    uint32_t ncmds;         // Number of load commands following this header
+    uint32_t sizeofcmds;    // Size of the command segment table
+    uint32_t flags;         // Binary execution flags
+    uint32_t reserved;      // Reserved alignment field
+};
+```
 
-// Parsing strategy by architecture
-bool uses_instruction_stream(uint32_t cpu_subtype) {
-    return cpu_subtype >= 5;  // H14 and later
-}
+#### 2. Segment Command Struct (72 bytes)
+When traversing load commands, if `cmd == 0x00000019` (which stands for `LC_SEGMENT_64`), read it using this structure:
+```c
+struct segment_command_64 {
+    uint32_t cmd;           // Load command command code (0x19)
+    uint32_t cmdsize;       // Total size of this command and its sections
+    char     segname[16];   // Segment name string (e.g., "__TEXT")
+    uint64_t vmaddr;        // Virtual memory base address
+    uint64_t vmsize;        // Virtual memory allocation size
+    uint64_t fileoff;       // Start offset of this segment inside the file
+    uint64_t filesize;      // Size of the segment data in the file
+    uint32_t maxprot;       // Max memory page protection
+    uint32_t initprot;      // Initial memory page protection
+    uint32_t nsects;        // Number of section headers directly following this struct
+    uint32_t flags;         // Segment flags
+};
+```
 
-bool uses_sparse_instructions(uint32_t cpu_subtype) {
-    return cpu_subtype >= 7;  // H16 and later
-}
+#### 3. Section Struct (80 bytes)
+Directly following the `segment_command_64` header, you will find `nsects` section structures:
+```c
+struct section_64 {
+    char     sectname[16];  // Name of the section (e.g., "__text")
+    char     segname[16];   // Parent segment name (e.g., "__TEXT")
+    uint64_t addr;          // Virtual address of this section
+    uint64_t size;          // Section size in bytes
+    uint32_t offset;        // Byte offset within the file
+    uint32_t align;         // Memory alignment boundary power
+    uint32_t reloff;        // Relocations file offset
+    uint32_t nreloc;        // Number of relocation entries
+    uint32_t flags;         // Section attributes
+    uint32_t reserved1;     // Padded buffer
+    uint32_t reserved2;     // Padded buffer
+    uint32_t reserved3;     // Padded buffer
+};
 ```
 
 ---
 
-## Mach-O Container Format
+## 3. Task Descriptor Header Layouts
 
-> **START HERE**: Every .hwx file is a Mach-O binary. You MUST parse this first.
+Inside the extracted `__TEXT / __text` section bytes, the data is organized as a sequence of **Task Descriptors**. Each task descriptor represents a single operations block and is divided into a **Header** followed by the **Instruction Stream**.
 
-### File Structure
+### Task Padding Alignment (Crucial for Stream Safety)
+Because the Neural Engine compiles tasks on strict **16-byte alignments**, the compiler often inserts zero-filled padding blocks of 16 bytes between tasks. 
+If your parser reads Word 0 of a task block and finds `task_size === 0`, it means you have hit padding bytes. **Do not crash or stop parsing!** Simply advance your file pointer by 16 bytes and check the next alignment boundary.
 
-```
-.hwx file (Mach-O Binary)
-├── Mach-O Header (magic: 0xBEEFFACE)
-├── Load Commands
-│   ├── LC_SEGMENT_64: __PAGEZERO
-│   ├── LC_SEGMENT_64: __DEBUG
-│   ├── LC_SEGMENT_64: __DATA
-│   ├── LC_SEGMENT_64: __TEXT ← **TASK DESCRIPTORS HERE**
-│   │   └── Section: __text
-│   │       ├── [Padding block, TaskSize=0, skip 16 bytes]
-│   │       ├── Task Descriptor 0
-│   │       ├── Task Descriptor 1
-│   │       └── ...
-│   └── LC_SEGMENT_64: __KERN_0 ← **WEIGHT DATA (LUT)**
-└── Data (segments and sections)
-```
+### 1. H14+ Task Descriptor Header (32 or 36 bytes)
+The header size depends on the hardware generation:
+* **H14 / H15**: 32 bytes (8 words). Does not contain the `dtid` field.
+* **H16+**: 36 bytes (9 words). Includes the `dtid` field at the end.
 
-### Step 1: Parse Mach-O Header
-
+#### C Structural Representation:
 ```c
-#include <mach-o/loader.h>
-
-typedef struct {
-    const uint8_t *file_data;
-    size_t file_size;
-    uint32_t cpu_subtype;  // Architecture identifier
-} macho_file_t;
-
-macho_file_t* parse_macho(const uint8_t *data, size_t size) {
-    if (size < sizeof(struct mach_header_64)) {
-        return NULL;
-    }
-    
-    struct mach_header_64 *hdr = (struct mach_header_64*)data;
-    
-    // Check magic (0xBEEFFACE or 0xFEEDFACF)
-    if (hdr->magic != 0xBEEFFACE && hdr->magic != 0xFEEDFACF) {
-        return NULL;
-    }
-    
-    macho_file_t *mf = calloc(1, sizeof(macho_file_t));
-    mf->file_data = data;
-    mf->file_size = size;
-    mf->cpu_subtype = hdr->cpusubtype;  // ← Architecture ID!
-    
-    return mf;
-}
+typedef struct __attribute__((packed)) {
+    uint16_t tid;             // Task ID
+    uint32_t task_size : 11;  // Total size of task in 32-bit words
+    uint32_t pad0 : 5;        // Alignment padding
+    uint16_t exe_cycles;      // Expected execution cycles
+    uint16_t pad1;            // Alignment padding
+    uint32_t log_events : 24; // Hardware logging events
+    uint32_t pad2 : 8;
+    uint32_t exceptions : 24; // Exceptions mask
+    uint32_t pad3 : 8;
+    uint32_t debug_log_events : 24;
+    uint32_t pad4 : 8;
+    uint32_t debug_exceptions : 24;
+    uint32_t pad5 : 8;
+    uint32_t live_outs : 24;  // Active outputs map
+    uint32_t pad_lo : 8;
+    uint32_t unknown_flags;   // Reserved
+    struct {
+        uint32_t tsr : 1;      // Task Status Register Enable
+        uint32_t tde : 1;      // Task Debug Enable
+        uint32_t pad : 14;
+        uint32_t ene : 3;      // Execution Node Enables
+        uint32_t pad1 : 13;
+    } ctrl_flags;
+    uint16_t dtid;            // Dependent Task ID (H16+ only)
+    uint16_t pad8;            // Alignment padding
+} ane_header_h16_t;
 ```
 
-### Step 2: Find __TEXT Segment and __text Section
+> [!NOTE]
+> `dtid` (Dependent Task ID) is reserved for task dependency synchronization. However, in typical compiled CoreML models, this field is seldom used (or set to `0` or `0x0001` without active hardware blocking), meaning it can usually be ignored in high-level visualizations.
 
+---
+
+## 4. The Instruction Stream Format (ANE Bytecode)
+
+For **H13 and newer generations**, Apple abandoned storing hardware registers at fixed offsets. Instead, they use a dynamic **Instruction Stream encoding** (like a custom hardware assembly bytecode). This saves binary space and accommodates sparse register configs.
+
+An instruction stream is a loop that reads a 32-bit command header, decodes it, reads the data values that follow, writes them to virtual registers, and repeats until the task size boundary is reached.
+
+---
+
+### H13 Instruction Stream Format
+For H13 (A14/M1) architectures, the instruction header is a 32-bit word structured as follows:
+
+```
+  [31:26]    Count (number of extra registers to write: 0-63)
+  [25:0]     Byte Address (offset inside the hardware registers memory)
+```
+
+#### C Parsing Algorithm:
 ```c
-const uint8_t* find_text_section(macho_file_t *mf, size_t *section_size) {
-    struct mach_header_64 *hdr = (struct mach_header_64*)mf->file_data;
-    const uint8_t *cmd_ptr = mf->file_data + sizeof(struct mach_header_64);
-    
-    // Iterate through load commands
-    for (uint32_t i = 0; i < hdr->ncmds; i++) {
-        struct load_command *cmd = (struct load_command*)cmd_ptr;
-        
-        if (cmd->cmd == LC_SEGMENT_64) {
-            struct segment_command_64 *seg = (struct segment_command_64*)cmd_ptr;
-            
-            // Check if this is __TEXT segment
-            if (strncmp(seg->segname, "__TEXT", 16) == 0) {
-                // Iterate through sections within segment
-                struct section_64 *sections = (struct section_64*)(cmd_ptr + sizeof(struct segment_command_64));
-                
-                for (uint32_t j = 0; j < seg->nsects; j++) {
-                    if (strncmp(sections[j].sectname, "__text", 16) == 0) {
-                        *section_size = sections[j].size;
-                        return mf->file_data + sections[j].offset;
-                    }
-                }
+void decode_h13_instructions(const uint32_t *words, int num_words, uint32_t *running_regs) {
+    int w_idx = 0;
+    while (w_idx < num_words) {
+        uint32_t hdr = words[w_idx++];
+        if (hdr == 0) continue; // Skip padding
+
+        uint32_t count = (hdr >> 26) & 0x3F;
+        uint32_t byte_addr = hdr & 0x03FFFFFF;
+        uint32_t word_addr = byte_addr >> 2; // Convert byte offset to word index
+
+        for (uint32_t i = 0; i <= count && w_idx < num_words; i++) {
+            if (word_addr + i < 8192) {
+                running_regs[word_addr + i] = words[w_idx++];
             }
         }
-        
-        cmd_ptr += cmd->cmdsize;
     }
-    
-    return NULL;
 }
 ```
 
-### Step 3: Skip Padding Blocks
+---
+
+### H14+ Instruction Stream Formats
+For H14 and newer, there are two instruction encoding formats, determined by the most significant bit (**bit 31**):
+
+#### 1. Dense Format (Bit 31 = 0)
+Dense instructions are used to write a contiguous range of registers.
+
+```
+  [31]       Format Bit = 0 (Dense)
+  [30:21]    Reserved (usually 0)
+  [20:15]    Count (number of EXTRA values that follow: 0 to 63)
+  [14:0]     Base Hardware Address (15-bit index representing the starting register)
+```
+
+#### 2. Sparse Format (Bit 31 = 1)
+Sparse instructions write to a subset of registers within a 16-register block, using a bitmask to skip registers that don't need changes.
+
+```
+  [31]       Format Bit = 1 (Sparse)
+  [30:15]    Mask (16-bit select mask. 1 = write this register, 0 = skip)
+  [14:0]     Base Hardware Address (15-bit index representing the starting register)
+```
+
+#### Popcount (Population Count) in C:
+```c
+int popcount(uint16_t mask) {
+    int count = 0;
+    while (mask > 0) {
+        if (mask & 1) count++;
+        mask >>= 1;
+    }
+    return count;
+}
+```
+
+---
+
+## 5. Hardware Registers & Virtual State Array
+
+### What is a Register?
+In hardware, a register is a small, ultra-fast memory cell. The ANE chip has thousands of these registers. They control everything: the input tensor width, the kernel size, the scale factors, the activation functions, and memory addresses.
+
+### Why Do We Need a Virtual Register State Array?
+A critical aspect of ANE hardware is that **registers are stateful**. When the ANE finishes Task 0 and starts Task 1, it does not wipe its registers. Registers keep their programmed values unless a new instruction explicitly overwrites them. This is called **stateful carryover**.
+
+To parse and display the correct settings for a specific task, your software parser must maintain a running array of virtual registers (typically **8192 registers / 32-bit words**). As you decode instructions for Task 0, write their values to your state array. When you begin parsing Task 1, start with the state array left over from Task 0, and update only the registers that Task 1 changes. This allows you to inspect the full, active hardware configuration for any layer.
+
+### Block Base Addresses
+Registers are organized into functional hardware blocks. Because the base addresses (offsets) of these blocks shift between generations, you must look up the correct block base index:
+
+| Block Name | H13 & Earlier | H14 / H15 | H16+ (H16, H17, H18) |
+| :--- | :--- | :--- | :--- |
+| **Common** | `0x0000` | `0x0000` | `0x0000` |
+| **L2 Cache** | `0x4800` | `0x0140` | `0x1040` |
+| **Planar Engine (PE)** | `0x8800` | `0x0240` | `0x1140` |
+| **Neural Engine (NE)** | `0xC800` | `0x0340` | `0x1240` |
+| **TileDMA Source** | `0x13800` | `0x0440` | `0x1340` |
+| **TileDMA Dest** | `0x17800` | `0x0540` | `0x1440` |
+| **KernelDMA** | `0x1F800` | `0x0640` | `0x1540` |
+| **CacheDMA** | N/A | N/A | `0x1640` (H16: `0x5900`) |
+
+---
+
+### Register Mappings by Generation
+
+Here is the exact name-to-index mapping for registers within their respective functional blocks:
+
+#### 1. Common Block (Base `0x0000`)
+* **H13 (16 registers)**:
+  `InDim`, `pad0`, `ChCfg`, `Cin`, `Cout`, `OutDim`, `pad1`, `ConvCfg`, `pad2`, `GroupConvCfg`, `TileCfg`, `pad3`, `pad4`, `Cfg`, `TaskInfo`, `DPE`
+* **H14 (19 registers)**:
+  `InDim`, `InDepth`, `ChannelCfg`, `InChannels`, `OutChannels`, `OutDim`, `OutDepth`, `NumGroups`, `ConvCfg`, `ConvCfg3d`, `MacCfg`, `TileHeight`, `TileOverlap`, `NECfg`, `PatchCfg`, `NID`, `DPE`, `pad1`, `pad2`
+* **H16+ (23 registers)**:
+  `ChannelCfg`, `InWidth`, `InHeight`, `InChannels`, `InDepth`, `OutWidth`, `OutHeight`, `OutChannels`, `OutDepth`, `NumGroups`, `ConvCfg`, `ConvCfg3d`, `UnicastCfg`, `TileHeight`, `TileOverlap`, `MacCfg`, `NECfg`, `PatchCfg`, `PECfg`, `NID`, `DPE`, `DPE0`, `DPE1`
+
+#### 2. L2 Cache Block (H16+ Base `0x1040`)
+* **H13 (16 registers)**:
+  `L2Cfg`, `SourceCfg`, `SourceBase`, `SourceChannelStride`, `SourceRowStride`, `pad0`, `pad1`, `pad2`, `pad3`, `pad4`, `pad5`, `pad6`, `ResultCfg`, `ResultBase`, `ConvResultChannelStride`, `ConvResultRowStride`
+* **H14 (25 registers)**:
+  `Control`, `Src1Cfg`, `Src2Cfg`, `Src1Base`, `Src1ChannelStride`, `Src1RowStride`, `Src1DepthStride`, `Src1GroupStride`, `Src2Base`, `Src2ChannelStride`, `Src2RowStride`, `Src2DepthStride`, `Src2GroupStride`, `ResultCfg`, `ResultBase`, `ResultChannelStride`, `ResultRowStride`, `ResultDepthStride`, `ResultGroupStride`, `SrcAndResultWrapCfg`, `Src1WrapStart`, `Src2WrapStart`, `L2Reserved0`, `ResultWrapIndex`, `ResultWrapStartOffset`
+* **H16+ (41+ registers)**:
+  `LControl`, `LSrc1Cfg`, `LSrc2Cfg`, `LSrcIdxCfg`, `LSrc1Base`, `LSrc1CStride`, `LSrc1RStride`, `LSrc1DStride`, `LSrc1GStride`, `LSrc2Base`, `LSrc2CStride`, `LSrc2RStride`, `LSrc2DStride`, `LSrc2GStride`, `LSrcIdxBase`, `LSrcIdxCStride`, `LSrcIdxDStride`, `LSrcIdxGStride`, `LResultCfg`, `LResultBase`, `LResultCStride`, `LResultRStride`, `LResultDStride`, `LResultGStride`, `LRes24`, `LResultWrapCfg`, `LRes26`, `LRes27`, `LRes28`, `LResultWrapIdxOff`, `LRes30`, `LResult2Base`, `LResult2CStride`, `LResult2RStride`, `LResult2DStride`, `PEIndexCfg` *(Note: H17 & H18 append additional strides and pads)*.
+
+#### 3. Planar Engine (PE) (H16+ Base `0x1140`)
+* **H13 (4 registers)**: `Cfg`, `BiasScale`, `PreScale`, `FinalScale`
+* **H14 (5 registers)**: `PEConfig`, `BiasScale`, `PreScale`, `FinalScale`, `Quant`
+* **H16+ (16 registers)**: `PE_Config`, `PE_Bias`, `PE_Scale`, `PE_FinalScaleEpsilon`, `PE_PreScale`, `PE_FinalScale`, `PE_LUT1` through `PE_LUT8`, `PE_Quant`
+
+#### 4. Neural Engine (NE) (H16+ Base `0x1240`)
+* **H13 (5 registers)**: `KernelCfg`, `MacCfg`, `MatrixVectorBias`, `AccBias`, `PostScale`
+* **H14 (5 registers)**: `KernelCfg`, `MacCfg`, `NEBias`, `NEPostScale`, `RoundModeCfg`
+* **H16+ (13 registers)**: `KernelCfg`, `MacCfg`, `MatrixVectorBias`, `NEBias`, `PostScale`, `RcasConfig`, `RoundModeCfg`, `SRSeed[0]` through `SRSeed[3]`, `QuantZeroPoint`
+
+---
+
+## 6. Hardware Register Unpacking & Bitwise Logic
+
+In binary formats, we perform bitwise shifting (`>>`) and bitwise ANDing (`&`) to read values. This is because multiple variables are packed into a single 32-bit register to save storage space. 
+
+For example, to extract a 4-bit value that starts at bit 12:
+`const value = (registerWord >> 12) & 0xF;`
+
+Below are the exact bitwise equations to unpack crucial ANE registers.
+
+### 1. Neural Engine Core Block Unpacking
+
+#### A. KernelCfg Register (NE Block + 0)
+Controls the layout, datatype, and density of model weights:
+* **kfmt** (`bits [1:0]`): Weight Data Format
+  * `0`: INT8 (Quantized integers)
+  * `1`: UINT8 (Unsigned quantized integers)
+  * `2`: FLOAT16 (16-bit floating point precision)
+* **pen** (`bit [2]`): Palette Enable. If `1`, weights are compressed as indexed palette entries.
+* **pbits** (`bits [7:4]`): Palette Bit-width. Quantization depth of the index table.
+* **sen** (`bit [8]`): Sparse Compression Enable. If `1`, zero-weight pruning is active (skips processing zero weights to save cycles).
+* **reuse** (`bit [10]`): Core weight buffer reuse. If `1`, the engine reuses the weights already stored in the local buffer from the previous layer, avoiding a slow DRAM reload.
+* **sbs_w** (`bits [24:21]`): Sparse block size selector for weights.
+
+#### B. MacCfg Register (NE Block + 1)
+Determines what mathematical operation the core execution units perform:
+* **bias_en** (`bit [4]`): If `1`, adds a bias tensor to the MAC output.
+* **pass_en** (`bit [5]`): If `1`, bypasses the activation path (runs direct pooling/pooling bypass).
+* **bin_point** (`bits [13:8]`): The fixed-point scaling shift factor.
+* **post_en** (`bit [14]`): Post-scaling multiplier enable.
+* **nl_mode_ne** (`bits [17:16]`): Core Activation Function
+  * `0`: None (Linear output)
+  * `1`: ReLU
+  * `2`: ReLU6
+  * `3`: Sigmoid
+
+---
+
+### 2. Planar Engine (PE) Block Unpacking
+
+The Planar Engine handles elementwise math (addition, multiplication) and pooling.
+
+#### PE_Config Register (PE Block + 0)
+* **pool** (`bits [1:0]`): Pooling Operation Mode
+  * `0`: None
+  * `1`: Average Pooling
+  * `2`: Max Pooling
+  * `3`: Min Pooling
+* **op** (`bits [4:2]`): Elementwise Math Operator
+  * `0`: Add (e.g. residual connections)
+  * `1`: Multiply
+  * `2`: Maximum
+  * `3`: Minimum
+  * `4`: Sum of Squares
+* **lut_en** (`bit [5]`): Lookup Table path enable. Used for complex non-linear functions (like Silu, Gelu, or custom activations).
+* **cond** (`bits [8:6]`): Conditional Logic Mask
+  * `0`: None
+  * `1`: Absolute Value
+  * `2`: Equal
+  * `3`: Greater Than
+  * `4`: Greater or Equal
+* **nl** (`bits [13:12]`): Non-Linear Activation
+  * `0`: None
+  * `1`: ReLU
+  * `2`: Clamp
+  * `3`: Abs
+* **src1** (`bits [17:16]`): First input source selector (`0` = Primary, `1` = Texture cache).
+* **src2** (`bits [19:18]`): Second input source selector (`0` = Primary, `1` = Texture, `2` = L2 source, `3` = Register).
+
+---
+
+### 3. L2 Cache Address Layout & 4-bit Alignment
+
+ANE memory access uses the system L2 cache. The base buffer registers (e.g., `LSrc1Base`, `LSrc2Base`, `LResultBase`) store the locations of input and output tensors in memory.
+
+However, to save bits inside the control registers, addresses are stored as **page pointers shifted right by 4 bits** (which guarantees 16-byte alignment).
+
+To reconstruct the actual physical DRAM byte address, extract the register value and shift it left by 4 bits (padding the lowest 4 bits with zeros):
 
 ```c
-const uint8_t* find_first_task(const uint8_t *section_data, size_t section_size) {
-    size_t offset = 0;
-    
-    while (offset + 8 <= section_size) {
-        uint32_t tid_and_size = *(uint32_t*)(section_data + offset);
-        uint16_t task_size = (tid_and_size >> 16) & 0x7FF;  // Bits 16-26
+uint32_t get_physical_address(uint32_t register_value) {
+    // Clear any high flag bits and shift alignment
+    return register_value & 0x1FFFF0;
+}
+```
+
+---
+
+## 7. Advanced Heuristics: Dimensions & Activity Mapping
+
+### 1. Dimension Extraction & H16 Shifted Heuristic
+To prevent parsing corrupted shapes on newer H16+ architectures, apply this recovery algorithm. It detects if standard dimension registers are unprogrammed or shifted downstream:
+
+```c
+typedef struct {
+    uint32_t width;
+    uint32_t height;
+    uint32_t channels;
+} dims_t;
+
+dims_t extract_dimensions(const uint32_t *state_array) {
+    dims_t d;
+    d.width = state_array[1] & 0x1FFFF;   // Input Width
+    d.height = state_array[2] & 0x1FFFF;  // Input Height
+    d.channels = state_array[3] & 0x1FFFF;// Input Channels
+
+    // Heuristic validation check:
+    // If Width is 0, or exceeds reasonable limits, inspect alternative shifted registers
+    if (d.width == 0 || d.width >= 65536 || d.height >= 65536) {
+        uint32_t test_w = state_array[0x0b] & 0x1FFFF; // Alternate width location
+        uint32_t test_h = state_array[0x0c] & 0x1FFFF; // Alternate height location
+        uint32_t test_c = state_array[0x0d] & 0x1FFFF; // Alternate channels location
         
-        if (task_size == 0) {
-            // Padding block - skip 16 bytes
-            offset += 16;
-            continue;
+        if (test_w > 0 && test_w < 10000 && test_h <= test_w) {
+            d.width = test_w;
+            d.height = test_h;
+            d.channels = test_c;
         }
-        
-        // Found first real task
-        return section_data + offset;
     }
-    
-    return NULL;
+    return d;
 }
 ```
 
----
+### 2. Planar Engine (PE) Activity & Task Type Mapping
+Due to stateful register persistence in `.hwx` execution, PE configurations (like Average Pooling) can carry over to subsequent tasks even when the Planar Engine is inactive. To prevent visualizing garbage states, check the mapped `task_type` of the task to determine if the PE is active:
 
-## Task Descriptor Structure
+1. **Extract raw `task_type` from `MacCfg` inside the Common block:**
+   * **H16+ (`cpusubtype >= 7`)**: `MacCfg` is at Common word index 15.
+     `task_type = (state.values[15] >> 4) & 0xF`
+   * **H14/H15 (`cpusubtype == 5 / 6`)**: `MacCfg` is at Common word index 10.
+     `task_type = state.values[10] & 0xF`
 
-After extracting task descriptors from the Mach-O file, you need to parse each one individually.
+2. **Map the raw task type value to hardware category:**
+   * Apply this mapping logic:
+     ```c
+     int get_mapped_task_type(uint32_t task_type) {
+         switch (task_type) {
+             case 0: return 0;
+             case 1: return 2;
+             case 2: return 6;
+             case 3: return 5;
+             case 4: return 7;
+             case 5: return 4;
+             case 6: return 3;
+             case 7: return 0;
+             case 8: return 1;
+             default: return 0;
+         }
+     }
+     ```
+   * **If `task_type_mapped == 0`**: PE is **inactive**. Force all PE settings (like pool mode, op mode) to return `"None"` or `"NO"`.
+   * **If `task_type_mapped` is `1` or `2`**: PE is active, performing **pooling** (e.g. Max Pooling, Avg Pooling).
+   * **If `task_type_mapped` is `3`, `4`, `5` or `6`**: PE is active, performing **elementwise** operations (Add, Mul, etc.).
 
-### Universal Header (All Architectures)
-
-Every task descriptor starts with the same header format:
-
-```c
-typedef struct {
-    uint32_t tid_and_size;      // +0x00: TID (bits 0-15), TaskSize (bits 16-26)
-    uint32_t exe_cycles;        // +0x04: Execution cycles (bits 0-16)
-    uint32_t log_events;        // +0x08: Logging events (bits 0-23)
-    uint32_t exceptions;        // +0x0C: Exception mask (bits 0-23)
-    uint32_t debug_log_events;  // +0x10: Debug logging (bits 0-23)
-    uint32_t debug_exceptions;  // +0x14: Debug exceptions (bits 0-23)
-    uint32_t live_outs;         // +0x18: Live outputs (bits 0-31)
-    uint32_t ctrl_flags;        // +0x1C: TSR, TDE, ENE flags
-    uint32_t dtid;              // +0x20: Dependent TID (bits 0-15)
-} ane_header_t;
-```
-
----
-
-## Task Descriptor Header
-
-### Parsing the Header (All Architectures)
-
-```c
-void parse_task_header(const uint8_t *task_data) {
-    const ane_header_t *hdr = (const ane_header_t*)task_data;
-    
-    // Extract bit fields
-    uint16_t tid = hdr->tid_and_size & 0xFFFF;
-    uint16_t task_size = (hdr->tid_and_size >> 16) & 0x7FF;  // in 32-bit words
-    uint16_t exe_cycles = hdr->exe_cycles & 0xFFFF;
-    
-    printf("Task ID: %u\n", tid);
-    printf("Task Size: %u words (%u bytes)\n", task_size, task_size * 4);
-    printf("Execution Cycles: %u\n", exe_cycles);
-    printf("Log Events: 0x%06x\n", hdr->log_events & 0xFFFFFF);
-    printf("Exceptions: 0x%06x\n", hdr->exceptions & 0xFFFFFF);
-    printf("Live Outs: 0x%08x\n", hdr->live_outs);
-    
-    // Control flags
-    uint8_t tsr = hdr->ctrl_flags & 0x1;
-    uint8_t tde = (hdr->ctrl_flags >> 1) & 0x1;
-    uint8_t ene = (hdr->ctrl_flags >> 16) & 0x7;
-    printf("TSR: %u, TDE: %u, ENE: %u\n", tsr, tde, ene);
-    
-    uint16_t dtid = hdr->dtid & 0xFFFF;
-    printf("Dependent TID: %u\n", dtid);
-}
-```
+3. **H13 PE Activity**:
+   * H13 parses PE configurations from the `Cfg` register at `H13_PE_BLOCK + 0`.
+   * **PE Enable (`En`)**: Bit 1 of the configuration (`(pe_cfg >> 1) & 1`). If `En == 0`, PE is inactive.
+   * **PE Operation (`OpMode`)**: Bits 2-4 (`(pe_cfg >> 2) & 7`), mapping to:
+     `{0x0: "Add", 0x1: "Multiply", 0x2: "Max", 0x3: "Min", 0x4: "Subtract"}`
 
 ---
 
-## Instruction Stream Format
+## 8. H13 Fixed Format and Linked List Traversal
 
-> **CRITICAL FOR H14/H15/H16+**: Task descriptors do NOT have registers at fixed offsets. They contain an **instruction stream** that encodes hardware register writes.
+In **H13 (M1/A14) and earlier** chips, Apple used a rigid struct-based layout. There are no instruction streams. Register values are read directly using fixed byte offsets from the start of the task block.
 
-### Why Instruction Streams?
-
-H14 and later use instruction streams to:
-- **Compress data**: Only store non-default register values
-- **Reduce file size**: Skip unchanged registers
-- **Support sparse updates**: Update specific registers without writing all
-
-### Instruction Stream Structure
-
-```
-Task Descriptor Layout (H14+):
-Offset   Size    Content
-------   ----    -------
-0x00     32      Header (parsed above)
-0x20     varies  Instruction Stream ← START HERE for H14/H15
-0x24     varies  Instruction Stream ← START HERE for H16+
-...      ...     (continues until TaskSize * 4 bytes)
+### Fixed Memory Map (H13)
+```c
+#define H13_COMMON_BLOCK      0x128  // Read dimension values (word index 74)
+#define H13_L2_BLOCK          0x1E0  // Read L2 cache configurations
+#define H13_PE_BLOCK          0x22C  // Read Planar Engine configurations
+#define H13_NE_BLOCK          0x240  // Read Neural Engine configurations
+#define H13_TILEDMA_SRC_BLOCK 0x16C  // Read TileDMA Source configurations
+#define H13_TILEDMA_DST_BLOCK 0x258  // Read TileDMA Dest configurations
 ```
 
-**Starting offset**:
-- H14 (subtype 5): Word 8 (offset 0x20)
-- H15 (subtype 6): Word 8 (offset 0x20)
-- H16+ (subtype 7+): Word 9 (offset 0x24)
-
-### Instruction Encoding
-
-There are two instruction formats:
-
-#### Dense Format (bit 31 = 0)
-
-Writes consecutive hardware registers.
-
-```
-Instruction Header (32 bits):
-  [31:31]    Format = 0 (dense)
-  [30:21]    Reserved
-  [20:15]    Count (number of additional registers, 0-63)
-  [14:0]     Hardware Address (base register address)
-
-Followed by (Count + 1) data words
-```
-
-**Example**:
-```
-Header: 0x0005_0100
-  Bit 31 = 0         → Dense format
-  Bits 20-15 = 5     → Count = 5 (write 6 words total)
-  Bits 14-0 = 0x0100 → Hardware address 0x0100
-
-Data: [word0] [word1] [word2] [word3] [word4] [word5]
-
-Result: Writes to hardware addresses:
-  0x0100 = word0
-  0x0101 = word1
-  0x0102 = word2
-  0x0103 = word3
-  0x0104 = word4
-  0x0105 = word5
-```
-
-#### Sparse Format (bit 31 = 1)
-
-Writes selected hardware registers using a bitmask.
-
-```
-Instruction Header (32 bits):
-  [31:31]    Format = 1 (sparse)
-  [30:15]    Mask (16-bit bitmask, which additional registers to write)
-  [14:0]     Hardware Address (base register address)
-
-Followed by 1 + (number of set bits in mask) data words
-```
-
-**Example**:
-```
-Header: 0x8005_0100
-  Bit 31 = 1            → Sparse format
-  Bits 30-15 = 0x0005   → Mask = 0000 0000 0000 0101 (bits 0 and 2 set)
-  Bits 14-0 = 0x0100    → Hardware address 0x0100
-
-Data: [word0] [word1] [word2]
-
-Result: Writes to hardware addresses:
-  0x0100 = word0     (base register, always written)
-  0x0101 = word1     (bit 0 of mask is set)
-  0x0103 = word2     (bit 2 of mask is set)
-  (0x0102 skipped because bit 1 is not set)
-```
-
-### Decoding Algorithm
+### Linked List Traversal in C
+H13 tasks are not placed side-by-side sequentially. Instead, each task header contains a `next_pointer` field pointing to the next task's byte offset. You must traverse the tasks like a singly linked list:
 
 ```c
-#define HW_MAX_REGS 8192
+typedef struct __attribute__((packed)) {
+    uint16_t tid;
+    uint8_t  nid;
+    uint8_t  lnid:1;
+    uint8_t  eon:1;
+    uint8_t  pad0:6;
+    uint16_t exe_cycles;
+    uint16_t next_size:9;
+    uint16_t pad1:7;
+    uint32_t log_events:24;
+    uint32_t pad2:8;
+    uint32_t exceptions:24;
+    uint32_t pad3:8;
+    uint32_t debug_log_events:24;
+    uint32_t pad4:8;
+    uint32_t debug_exceptions:24;
+    uint32_t pad5:8;
+    uint32_t flags;
+    uint32_t next_pointer; // Target offset of next linked node
+} H13_task_header_t;
 
-typedef struct {
-    uint32_t values[HW_MAX_REGS];  // Register values indexed by HW address
-    bool valid[HW_MAX_REGS];       // Which registers were written
-    uint32_t subtype;              // Architecture ID
-} hwx_state_t;
-
-void decode_instruction_stream(const uint8_t *task_data, 
-                                uint32_t task_size_words,
-                                uint32_t cpu_subtype,
-                                hwx_state_t *state) {
-    const uint32_t *words = (const uint32_t*)task_data;
+void parse_h13_tasks(const uint8_t *section_data, size_t section_size) {
+    uint32_t offset = 0;
     
-    // Starting position depends on architecture
-    int i = (cpu_subtype == 5 || cpu_subtype == 6) ? 8 : 9;
-    
-    state->subtype = cpu_subtype;
-    
-    while (i < task_size_words) {
-        uint32_t header = words[i++];
-        uint32_t hw_addr = header & 0x7FFF;  // Bits 0-14
+    while (offset + sizeof(H13_task_header_t) <= section_size) {
+        const H13_task_header_t *task = (const H13_task_header_t *)(section_data + offset);
         
-        if ((header >> 31) == 0) {
-            // Dense format: consecutive registers
-            uint16_t count = (header >> 15) & 0x3F;  // Bits 15-20
-            
-            for (int j = 0; j <= count && i < task_size_words; j++) {
-                if (hw_addr + j < HW_MAX_REGS) {
-                    state->values[hw_addr + j] = words[i];
-                    state->valid[hw_addr + j] = true;
+        printf("Task ID: 0x%04x\n", task->tid);
+        
+        // Extract common dimensions from fixed struct offset
+        const uint32_t *common = (const uint32_t *)(section_data + offset + H13_COMMON_BLOCK);
+        uint32_t width = common[0] & 0x1FFFF;
+        printf("Dimensions: Width = %u\n", width);
+        
+        // Hop to next task
+        if (task->next_pointer == 0 || task->next_pointer <= offset) {
+            break; // End of list
+        }
+        offset = task->next_pointer;
+    }
+}
+```
+
+---
+
+## 9. Step-by-Step C Parser Implementation
+
+This complete, production-ready C program demonstrates how to load a `.hwx` file, extract the text segment, and parse all task descriptors, instruction streams, and register maps.
+
+Save the following code as `hwx_parse.c` and compile it with:
+`clang -Wall -O2 hwx_parse.c -o hwx_parse`
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdbool.h>
+
+// Mach-O structures
+struct mach_header_64 {
+    uint32_t magic;
+    uint32_t cputype;
+    uint32_t cpusubtype;
+    uint32_t filetype;
+    uint32_t ncmds;
+    uint32_t sizeofcmds;
+    uint32_t flags;
+    uint32_t reserved;
+};
+
+struct load_command {
+    uint32_t cmd;
+    uint32_t cmdsize;
+};
+
+struct segment_command_64 {
+    uint32_t cmd;
+    uint32_t cmdsize;
+    char     segname[16];
+    uint64_t vmaddr;
+    uint64_t vmsize;
+    uint64_t fileoff;
+    uint64_t filesize;
+    uint32_t maxprot;
+    uint32_t initprot;
+    uint32_t nsects;
+    uint32_t flags;
+};
+
+struct section_64 {
+    char     sectname[16];
+    char     segname[16];
+    uint64_t addr;
+    uint64_t size;
+    uint32_t offset;
+    uint32_t align;
+    uint32_t reloff;
+    uint32_t nreloc;
+    uint32_t flags;
+    uint32_t reserved1;
+    uint32_t reserved2;
+    uint32_t reserved3;
+};
+
+// Simplified task header matching binary format
+typedef struct __attribute__((packed)) {
+    uint16_t tid;
+    uint32_t task_size : 11;
+    uint32_t pad0 : 5;
+    uint16_t exe_cycles;
+    uint16_t pad1;
+} ANE_task_header_t;
+
+// Running virtual register file
+static uint32_t running_regs[8192] = {0};
+static bool     regs_valid[8192] = {false};
+
+// Decodes H14+ instruction stream
+void decode_instructions(const uint32_t *words, int num_words, int start_word) {
+    int i = start_word;
+    while (i < num_words) {
+        uint32_t header = words[i++];
+        uint32_t hw_addr = header & 0x7FFF;
+
+        if (((header >> 31) & 1) == 0) {
+            // Dense Format
+            uint32_t count = (header >> 15) & 0x3F;
+            for (uint32_t j = 0; j <= count && i < num_words; j++) {
+                if (hw_addr + j < 8192) {
+                    running_regs[hw_addr + j] = words[i];
+                    regs_valid[hw_addr + j] = true;
                 }
                 i++;
             }
         } else {
-            // Sparse format: mask-based selection
-            uint16_t mask = (header >> 15) & 0xFFFF;  // Bits 15-30
-            
-            // First word always written to base address
-            if (i < task_size_words && hw_addr < HW_MAX_REGS) {
-                state->values[hw_addr] = words[i];
-                state->valid[hw_addr] = true;
+            // Sparse Format
+            uint32_t mask = (header >> 15) & 0xFFFF;
+            if (i < num_words) {
+                if (hw_addr < 8192) {
+                    running_regs[hw_addr] = words[i];
+                    regs_valid[hw_addr] = true;
+                }
                 i++;
             }
-            
-            // Additional words written based on mask
-            for (int bit = 0; bit < 16 && i < task_size_words; bit++) {
+            for (int bit = 0; bit < 16 && i < num_words; bit++) {
                 if ((mask >> bit) & 1) {
-                    if (hw_addr + bit + 1 < HW_MAX_REGS) {
-                        state->values[hw_addr + bit + 1] = words[i];
-                        state->valid[hw_addr + bit + 1] = true;
+                    if (hw_addr + bit + 1 < 8192) {
+                        running_regs[hw_addr + bit + 1] = words[i];
+                        regs_valid[hw_addr + bit + 1] = true;
                     }
                     i++;
                 }
@@ -442,620 +650,136 @@ void decode_instruction_stream(const uint8_t *task_data,
         }
     }
 }
-```
 
-### Real Example: ResNet50_h14
+// Extracts shapes using H16 shifted heuristics
+void print_dimensions(void) {
+    uint32_t win = running_regs[1] & 0x1FFFF;
+    uint32_t hin = running_regs[2] & 0x1FFFF;
+    uint32_t cin = running_regs[3] & 0x1FFFF;
 
-From actual .hwx file (task 0, word 8):
-
-```
-Offset 0x20 (Word 8):  40 06 f0 ff
-
-Header = 0xFFF00640
-Binary: 1111 1111 1111 0000 0000 0110 0100 0000
-
-Parsing:
-  Bit 31 = 1               → Sparse format
-  Bits 30-15 = 0x7FE0      → Mask = 0111 1111 1110 0000
-  Bits 14-0 = 0x0640       → Hardware address 0x0640
-
-Mask breakdown (bits set: 5,6,7,8,9,10,11,12,13,14):
-  Writes to addresses:
-    0x0640 (base)
-    0x0645 (bit 5)
-    0x0646 (bit 6)
-    0x0647 (bit 7)
-    ... (for each set bit)
-
-This ONE instruction writes 11 different hardware registers!
-```
-
----
-
-## Hardware Register Blocks
-
-After decoding the instruction stream, register values are indexed by **hardware address** (not task descriptor offset).
-
-### Hardware Address Map
-
-Registers are indexed by **32-bit word-based hardware addresses** (not byte offsets).
-
-| HW Address (H14/H15) | HW Address (H16+) | Block Name | Description |
-|----------------------|-------------------|------------|-------------|
-| 0x0000               | 0x0000            | Common     | Dimensions, channels, basic config |
-| 0x0140 (0x0500)      | 0x1040            | L2 Cache   | Buffer addresses, padding, caching |
-| 0x0240 (0x0900)      | 0x1140            | PE         | Planar Engine: pooling, activations |
-| 0x0340 (0x0D00)      | 0x1240            | NE         | Neural Engine: MAC array, OpMode |
-| 0x0440 (0x1100)      | 0x1340            | TileDMA Src| Input DMA from DRAM to ANE |
-| 0x0540 (0x1500)      | 0x1440            | TileDMA Dst| Output DMA from ANE to DRAM |
-| 0x0640 (0x1900)      | 0x1540            | KernelDMA  | Weight/coefficient loading |
-
-*Note: 0xXXXX (0xYYYY) indicates word index (byte offset equivalent).*
-
-### Stateful Register Parsing
-
-**CRITICAL**: Hardware registers are often set in the first task and reused by subsequent tasks without being rewritten. A correct parser **MUST** maintain a running state across the entire task list.
-
-```python
-running_regs = {}
-for task in tasks:
-    # 1. Decode instructions in THIS task into a local dict
-    task_regs = decode_instruction_stream(task.data)
-    
-    # 2. Update the global hardware state
-    running_regs.update(task_regs)
-    
-    # 3. Store the CUMULATIVE state for this task's analysis
-    task.hw_state = running_regs.copy()
-```
-
-### L2 Cache Block Details
-
-| Register | H14 Word Offset | H16+ Word Offset | Description |
-|----------|-----------------|------------------|-------------|
-| Src1Base | Base + 2        | Base + 4         | Input buffer DRAM address |
-| ResBase  | Base + 14       | Base + 20        | Output buffer DRAM address |
-
-### Neural Engine (NE) Block Details
-
-| Register | Word Offset | Description |
-|----------|-------------|-------------|
-| MacCfg   | Base + 1    | Configures NE operation mode and hardware units |
-
-**MacCfg Bit Fields:**
-- `[2:0]`   : **ActiveNE** - Number of active NE cores (0-7)
-- `[3:3]`   : **SmallSrc** - Enable optimization for small input tensors
-- `[13:10]` : **OpMode** - Main operation mode (see below)
-- `[16:16]` : **BiasEn** - Enable hardware biasing
-- `[23:20]` : **NLMode** - Non-linear activation function (see below)
-
-**OpMode values:**
-- `0x0`: Convolution (standard)
-- `0x1`: Bypass (activations, pooling)
-- `0x2`: Matrix Multiplication
-- `0x7`: Optimized Convolution (H14)
-- `0xF`: Optimized Convolution (H16+)
-
-**NLMode (Activation) values:**
-- `0x0`: None
-- `0x1`: ReLU
-- `0x2`: ReLU6
-- `0x3`: Sigmoid
-- `0x4`: Tanh
-- `0x5`: GELU
-
-### Planar Engine (PE) Block Details
-
-The Planar Engine performs element-wise operations and pooling.
-
-| Register | Word Offset | Description |
-|----------|-------------|-------------|
-| PECfg    | Base + 0    | OpMode (bits 0-3) |
-
-**OpMode values:**
-- `0x0`: Add (residual connections, bias)
-- `0x1`: Multiply
-- `0x2`: Max (Max Pooling)
-- `0x3`: Min
-- `0x4`: Subtract
-
-### TileDMA Block Details
-
-Used for moving tensors between DRAM and ANE L2/SRAM.
-
-| Register | Word Offset | Description |
-|----------|-------------|-------------|
-| DmaCfg   | Base + 1    | DataSetId (bits 1-5) |
-| DmaBase  | Base + 3    | DRAM base address |
-
-### Common Block (HW Address 0x0000)
-
-The Common block contains layer dimensions and convolution parameters.
-
-**IMPORTANT**: Dimension encoding differs significantly between H14 and H16+.
-
-#### H14/H15 Dimension Encoding (Packed)
-
-| HW Address | Name | Description |
-|------------|------|-------------|
-| 0x0000 | COMMON_INDIM | Input Width (bits 0-14), Height (bits 16-30) |
-| 0x0003 | COMMON_INCH | Input Channels (bits 0-16) |
-| 0x0004 | COMMON_OUTCH | Output Channels (bits 0-16) |
-| 0x0005 | COMMON_OUTDIM | Output Width (bits 0-14), Height (bits 16-30) |
-
-#### H16/H17/H18 Dimension Encoding (Unpacked)
-
-| HW Address | Name | Description |
-|------------|------|-------------|
-| 0x0001 | InWidth | Input Width |
-| 0x0002 | InHeight | Input Height |
-| 0x0003 | InChannels | Input Channels |
-| 0x0004 | InDepth | Input Depth |
-| 0x0005 | OutWidth | Output Width |
-| 0x0006 | OutHeight | Output Height |
-| 0x0007 | OutChannels | Output Channels |
-| 0x0008 | OutDepth | Output Depth |
-
-```c
-void parse_common_block(hwx_state_t *state) {
-    if (state->subtype >= 7) {
-        // H16+ Unpacked Encoding
-        uint32_t win = state->values[1];
-        uint32_t hin = state->values[2];
-        uint32_t cin = state->values[3];
-        uint32_t wout = state->values[5];
-        uint32_t hout = state->values[6];
-        uint32_t cout = state->values[7];
-        
-        printf("Input:  W=%u H=%u C=%u\n", win, hin, cin);
-        printf("Output: W=%u H=%u C=%u\n", wout, hout, cout);
-    } else {
-        // H14/H15 Packed Encoding
-        uint32_t indim = state->values[0];
-        uint32_t outdim = state->values[5];
-        
-        uint16_t win = indim & 0x7FFF;
-        uint16_t hin = (indim >> 16) & 0x7FFF;
-        uint16_t wout = outdim & 0x7FFF;
-        uint16_t hout = (outdim >> 16) & 0x7FFF;
-        
-        printf("Input:  W=%u H=%u\n", win, hin);
-        printf("Output: W=%u H=%u\n", wout, hout);
+    if (win == 0 || win >= 65536 || hin >= 65536) {
+        uint32_t test_w = running_regs[0x0b] & 0x1FFFF;
+        uint32_t test_h = running_regs[0x0c] & 0x1FFFF;
+        uint32_t test_c = running_regs[0x0d] & 0x1FFFF;
+        if (test_w > 0 && test_w < 10000 && test_h <= test_w) {
+            win = test_w;
+            hin = test_h;
+            cin = test_c;
+        }
     }
-}
-```
-
-const char* get_format_name(uint8_t fmt) {
-    switch (fmt) {
-        case 0: return "INT8";
-        case 1: return "UINT8";
-        case 2: return "FLOAT16";
-        default: return "Unknown";
-    }
-}
-```
-
----
-
-## H13 Fixed Format
-
-> **FOR H13 AND EARLIER ONLY**: These architectures use fixed offsets, not instruction streams.
-
-### Architecture Differences
-
-| Feature | H13 and Earlier | H14/H15 | H16+ |
-|---------|----------------|---------|------|
-| Task encoding | Fixed offsets | Instruction stream (dense only) | Instruction stream (dense + sparse) |
-| Parsing | Direct struct access | Decode instructions | Decode instructions |
-| Header size | Variable (~40 bytes) | 32 bytes | 36 bytes |
-| Register location | TD offset (e.g., 0x128) | HW address (e.g., 0x0000) | HW address (e.g., 0x0000) |
-
-### H13 Task Descriptor Structure
-
-H13 (and H11/H12) task descriptors have a completely different structure from H14+:
-
-```c
-// H13 Task Descriptor Header (fixed offsets)
-typedef struct {
-    uint32_t tid_and_flags;     // +0x000: TID (0-15), NID (16-23), LNID (24), EON (25)
-    uint32_t exe_cycles;        // +0x004: ExeCycles (0-15), NextSize (16-24)
-    uint32_t log_events;        // +0x008: Log events (0-23)
-    uint32_t exceptions;        // +0x00C: Exception mask (0-23)
-    uint32_t debug_log_events;  // +0x010: Debug logging (0-23)
-    uint32_t debug_exceptions;  // +0x014: Debug exceptions (0-23)
-    uint32_t control_flags;     // +0x018: Various control flags
-    uint32_t next_pointer;      // +0x01C: Pointer to next task
-    uint32_t bank_enables;      // +0x020: Bank enable flags
-    uint32_t kbank_enables;     // +0x024: Kernel bank enable flags
-    uint32_t dtid;              // +0x028: Dependent TID (0-15)
-} ane_header_h13_t;
-
-// Register blocks at fixed TD offsets
-#define H13_KERNELDMA_BLOCK  0x02C
-#define H13_COMMON_BLOCK     0x128
-#define H13_TILEDMA_SRC_BLOCK 0x16C
-#define H13_L2_BLOCK         0x1E0
-#define H13_PE_BLOCK         0x22C
-#define H13_NE_BLOCK         0x240
-#define H13_TILEDMA_DST_BLOCK 0x258
-```
-
-### H13 Parsing Example
-
-```c
-void parse_h13_task(const uint8_t *task_data) {
-    const ane_header_h13_t *hdr = (const ane_header_h13_t*)task_data;
-    
-    // Extract header fields
-    uint16_t tid = hdr->tid_and_flags & 0xFFFF;
-    uint16_t nid = (hdr->tid_and_flags >> 16) & 0xFF;
-    uint16_t exe_cycles = hdr->exe_cycles & 0xFFFF;
-    
-    printf("Task ID: %u, Node ID: %u, Cycles: %u\n", tid, nid, exe_cycles);
-    
-    // Read Common block at fixed TD offset 0x128
-    const uint32_t *common_block = (const uint32_t*)(task_data + H13_COMMON_BLOCK);
-    
-    uint32_t indim = common_block[0];   // TD offset 0x128
-    uint32_t chcfg = common_block[2];   // TD offset 0x130
-    uint32_t inch = common_block[3];    // TD offset 0x134
-    uint32_t outch = common_block[4];   // TD offset 0x138
-    uint32_t outdim = common_block[5];  // TD offset 0x13C
-    
-    // Unpack dimensions
-    uint16_t win = indim & 0x7FFF;
-    uint16_t hin = (indim >> 16) & 0x7FFF;
-    uint16_t wout = outdim & 0x7FFF;
-    uint16_t hout = (outdim >> 16) & 0x7FFF;
-    
-    // Extract channels
-    uint32_t cin = inch & 0x1FFFF;
-    uint32_t cout = outch & 0x1FFFF;
-    
-    // Extract data types
-    uint8_t in_fmt = chcfg & 0x3;
-    uint8_t out_fmt = (chcfg >> 4) & 0x3;
-    
-    printf("Input:  W=%u H=%u C=%u Type=%s\n", 
-           win, hin, cin, get_format_name(in_fmt));
-    printf("Output: W=%u H=%u C=%u Type=%s\n", 
-           wout, hout, cout, get_format_name(out_fmt));
-    
-    // Read convolution config at TD offset 0x144
-    uint32_t conv = common_block[7];  // TD offset 0x144
-    uint8_t kw = (conv >> 0) & 0x1F;   // Bits 0-4
-    uint8_t kh = (conv >> 5) & 0x1F;   // Bits 5-9
-    uint8_t sx = (conv >> 13) & 0x3;   // Bits 13-14
-    uint8_t sy = (conv >> 15) & 0x3;   // Bits 15-16
-    
-    if (kw || kh) {
-        printf("Conv: Kernel=%ux%u Stride=%ux%u\n", kw, kh, sx, sy);
-    }
-}
-```
-
-### Key Differences from H14+
-
-**H13 Advantages:**
-- ✅ Simple: direct memory access with fixed offsets
-- ✅ Predictable: all register blocks at known locations
-- ✅ Fast: no instruction decoding required
-
-**H13 Limitations:**
-- ❌ Larger files: stores all registers even if unused
-- ❌ Fixed layout: harder to extend with new registers
-- ❌ No compression: wastes space for sparse operations
-
-**H14+ Advantages:**
-- ✅ Smaller files: only stores non-default values
-- ✅ Flexible: easy to add new registers
-- ✅ Compressed: sparse instructions save space
-
-**H14+ Trade-offs:**
-- ⚠️ More complex: requires instruction stream decoder
-- ⚠️ Slower parsing: must decode instructions first
-
-### When to Use Each Approach
-
-```c
-bool uses_instruction_stream(uint32_t cpu_subtype) {
-    return cpu_subtype >= 5;  // H14 (5) and later
+    printf("  Dimensions: W=%u, H=%u, C=%u\n", win, hin, cin);
 }
 
-void parse_task(const uint8_t *task_data, uint32_t cpu_subtype) {
-    if (uses_instruction_stream(cpu_subtype)) {
-        // H14/H15/H16+: Decode instruction stream
-        hwx_state_t state = {0};
-        decode_instruction_stream(task_data, task_size, cpu_subtype, &state);
-        parse_common_block(&state);
-    } else {
-        // H11/H12/H13: Use fixed offsets
-        parse_h13_task(task_data);
-    }
-}
-```
-
-**DO NOT** use fixed offsets for H14+ - it will produce garbage values!
-
----
-
-## Building a Complete Parser
-
-### Complete Parser Structure
-
-```c
 int main(int argc, char **argv) {
-    // Phase 1: Parse Mach-O structure
-    size_t file_size;
-    uint8_t *file_data = read_file(argv[1], &file_size);
-    
-    macho_file_t *mf = parse_macho(file_data, file_size);
-    if (!mf) {
-        fprintf(stderr, "Not a valid .hwx file\n");
+    if (argc < 2) {
+        printf("Usage: %s <path_to_model.hwx>\n", argv[0]);
         return 1;
     }
-    
-    printf("Architecture: ");
-    switch (mf->cpu_subtype) {
-        case 4: printf("H13 (A14/M1)\n"); break;
-        case 5: printf("H14 (A15/M2)\n"); break;
-        case 6: printf("H15 (A16/M3)\n"); break;
-        case 7: printf("H16 (A17 Pro/M4)\n"); break;
-        default: printf("Unknown (%u)\n", mf->cpu_subtype); break;
-    }
-    
-    // Phase 2: Find __text section
-    size_t section_size;
-    const uint8_t *section_data = find_text_section(mf, &section_size);
-    if (!section_data) {
-        fprintf(stderr, "__text section not found\n");
+
+    FILE *file = fopen(argv[1], "rb");
+    if (!file) {
+        perror("Failed to open file");
         return 1;
     }
-    
-    printf("Found __text section: %zu bytes\n", section_size);
-    
-    // Phase 3: Parse task descriptors
-    const uint8_t *task_data = find_first_task(section_data, section_size);
-    if (!task_data) {
-        fprintf(stderr, "No tasks found\n");
+
+    // Read header
+    struct mach_header_64 header;
+    if (fread(&header, sizeof(struct mach_header_64), 1, file) != 1) {
+        printf("Failed to read header\n");
+        fclose(file);
         return 1;
     }
-    
-    // Phase 4: Parse task header
-    const ane_header_t *hdr = (const ane_header_t*)task_data;
-    uint16_t task_size = (hdr->tid_and_size >> 16) & 0x7FF;
-    
-    parse_task_header(task_data);
-    
-    // Phase 5: Decode instruction stream (H14+) or read fixed offsets (H13)
-    if (uses_instruction_stream(mf->cpu_subtype)) {
-        printf("\n=== Decoding Instruction Stream ===\n");
-        
-        hwx_state_t state = {0};
-        decode_instruction_stream(task_data, task_size, mf->cpu_subtype, &state);
-        
-        printf("\n=== Common Block ===\n");
-        parse_common_block(&state);
-        
-        // Add more block parsers here:
-        // parse_l2_block(&state);
-        // parse_ne_block(&state);
-        // etc.
-    } else {
-        printf("\nH13 or earlier - use fixed offset parsing\n");
-        // Use H13 parsing approach (see reference implementation)
+
+    if (header.magic != 0xBEEFFACE && header.magic != 0xFEEDFACF) {
+        printf("Invalid Mach-O magic: 0x%x\n", header.magic);
+        fclose(file);
+        return 1;
     }
-    
-    free(mf);
-    free(file_data);
+
+    printf("Detected CPU Subtype: %u (H%u)\n", header.cpusubtype, 10 + header.cpusubtype);
+
+    // Find __text section of __TEXT segment
+    uint32_t text_offset = 0;
+    uint64_t text_size = 0;
+
+    long current_pos = sizeof(struct mach_header_64);
+    for (uint32_t cmd_idx = 0; cmd_idx < header.ncmds; cmd_idx++) {
+        fseek(file, current_pos, SEEK_SET);
+        struct load_command lc;
+        if (fread(&lc, sizeof(struct load_command), 1, file) != 1) break;
+
+        if (lc.cmd == 0x19) { // LC_SEGMENT_64
+            fseek(file, current_pos, SEEK_SET);
+            struct segment_command_64 seg;
+            if (fread(&seg, sizeof(struct segment_command_64), 1, file) != 1) break;
+
+            if (strcmp(seg.segname, "__TEXT") == 0) {
+                for (uint32_t s_idx = 0; s_idx < seg.nsects; s_idx++) {
+                    struct section_64 sect;
+                    if (fread(&sect, sizeof(struct section_64), 1, file) != 1) break;
+
+                    if (strcmp(sect.sectname, "__text") == 0) {
+                        text_offset = sect.offset;
+                        text_size = sect.size;
+                        break;
+                    }
+                }
+            }
+        }
+        current_pos += lc.cmdsize;
+        if (text_offset != 0) break;
+    }
+
+    if (text_offset == 0) {
+        printf("Could not find __TEXT/__text section.\n");
+        fclose(file);
+        return 1;
+    }
+
+    printf("Parsing tasks at offset 0x%x (size %llu bytes)...\n", text_offset, text_size);
+
+    uint8_t *text_data = malloc(text_size);
+    fseek(file, text_offset, SEEK_SET);
+    if (fread(text_data, 1, text_size, file) != text_size) {
+        printf("Failed to read section data.\n");
+        free(text_data);
+        fclose(file);
+        return 1;
+    }
+
+    uint32_t offset = 0;
+    int task_count = 0;
+    int header_bytes = (header.cpusubtype >= 7) ? 36 : 32;
+    int start_word = (header.cpusubtype >= 7) ? 9 : 8;
+
+    while (offset + header_bytes <= text_size) {
+        const ANE_task_header_t *task = (const ANE_task_header_t *)(text_data + offset);
+        uint32_t size_words = task->task_size;
+        uint32_t size_bytes = size_words * 4;
+
+        if (size_words == 0) {
+            offset += 16; // Skip alignment padding
+            continue;
+        }
+
+        if (offset + size_bytes > text_size) break;
+
+        printf("\n--- Task #%d (ID: 0x%04x, size: %u bytes) ---\n", task_count++, task->tid, size_bytes);
+
+        // Decode task's instruction stream updating running_regs
+        const uint32_t *instructions = (const uint32_t *)(text_data + offset);
+        decode_instructions(instructions, size_words, start_word);
+
+        // Analyze and print register states
+        print_dimensions();
+
+        offset += ((size_bytes + 15) & ~15); // Align next task to 16 bytes
+    }
+
+    free(text_data);
+    fclose(file);
     return 0;
 }
 ```
 
----
-
-## Parsing Multiple Tasks
-
-The example above parses only the first task. To parse all tasks in a file:
-
-### Important: 16-Byte Alignment
-
-**CRITICAL**: Task descriptors are **16-byte aligned**. After each task, you must round up to the next 16-byte boundary:
-
-```c
-// WRONG - will miss tasks
-offset += task_size * 4;
-
-// CORRECT - tasks are 16-byte aligned
-uint32_t size_bytes = task_size * 4;
-offset += (size_bytes + 15) & ~15;  // Round up to 16-byte boundary
-```
-
-### Complete Multi-Task Parser
-
-```c
-// Parse all tasks in __text section
-size_t offset = 0;
-int task_num = 0;
-
-while (offset + sizeof(ane_header_t) <= section_size) {
-    const ane_header_t *hdr = (const ane_header_t*)(section_data + offset);
-    uint16_t task_size = (hdr->tid_and_size >> 16) & 0x7FF;
-    
-    // Skip padding blocks
-    if (task_size == 0) {
-        offset += 16;
-        continue;
-    }
-    
-    printf("\n=== Task %d ===\n", task_num++);
-    
-    // Parse this task
-    const uint8_t *task_data = section_data + offset;
-    parse_task_header(task_data);
-    
-    if (uses_instruction_stream(cpu_subtype)) {
-        hwx_state_t state = {0};
-        decode_instruction_stream(task_data, task_size, cpu_subtype, &state);
-        parse_common_block(&state);
-    }
-    
-    // Move to next task (16-byte aligned!)
-    uint32_t size_bytes = task_size * 4;
-    offset += (size_bytes + 15) & ~15;
-    
-    if (offset >= section_size) break;
-}
-
-printf("Parsed %d tasks\n", task_num);
-```
-
-### Why 16-Byte Alignment?
-
-The ANE hardware requires task descriptors to be aligned on 16-byte boundaries for efficient DMA transfers. Even if a task is 164 bytes (not a multiple of 16), the next task starts at offset 176 (164 rounded up to next multiple of 16).
-
-**Example**:
-```
-Task 0: Offset 0x010, Size 400 bytes (0x190)
-  Next offset: (0x010 + 0x190 + 15) & ~15 = 0x1A0 ✓
-
-Task 1: Offset 0x1A0, Size 164 bytes (0xA4)
-  Next offset: (0x1A0 + 0xA4 + 15) & ~15 = 0x250 ✓
-  (Not 0x244 - that would be wrong!)
-
-Task 2: Offset 0x250, Size 416 bytes (0x1A0)
-  ...
-```
-
----
-
-## Testing Your Parser
-
-### Test with Real Files
-
-```bash
-# Compile your parser
-gcc -O2 -o hwx_parser \
-    hwx_parser.c \
-    mach_o_loader.c \
-    instruction_decoder.c \
-    -I/usr/include
-
-# Test with H14 file
-./hwx_parser /tmp/hwx_output/ResNet50_h14/model.hwx
-
-# Expected output:
-# Architecture: H14 (A15/M2)
-# Found __text section: 45868 bytes
-# Task ID: 0
-# Task Size: 100 words (400 bytes)
-# ...
-# === Common Block ===
-# Input:  W=224 H=224 C=3 Type=INT8
-# Output: W=112 H=112 C=64 Type=INT8
-# Conv: Kernel=7x7 Stride=2x2 Pad=3x3
-```
-
-### Validate Against Reference Parser
-
-```bash
-# Run reference parser
-./hwx_dump/hwx_parsing /tmp/hwx_output/ResNet50_h14/model.hwx > ref_output.txt
-
-# Run your parser
-./hwx_parser /tmp/hwx_output/ResNet50_h14/model.hwx > my_output.txt
-
-# Compare dimensions, should match
-grep "InDim\|OutDim" ref_output.txt
-grep "Input:\|Output:" my_output.txt
-```
-
-### Common Errors
-
-**Error**: Reading garbage dimension values (e.g., InDim: 259 x 0)
-- **Cause**: Reading at fixed TD offset instead of decoding instruction stream
-- **Fix**: Use `decode_instruction_stream()` first, then read from `state.values[]`
-
-**Error**: Segmentation fault when parsing
-- **Cause**: Not checking `state.valid[]` before reading `state.values[]`
-- **Fix**: Always check `if (state.valid[addr/4])` before accessing registers
-
-**Error**: Wrong starting offset for instruction stream
-- **Cause**: Using word 8 for H16+ (should be word 9)
-- **Fix**: Check `cpu_subtype` and use correct starting offset
-
----
-
-## Summary
-
-### Key Takeaways
-
-1. **Mach-O First**: Parse Mach-O structure to get architecture and __text section
-2. **Check Architecture**: H13 uses fixed offsets, H14+ uses instruction streams
-3. **Decode Instructions**: For H14+, decode instruction stream into hardware register state
-4. **Read by HW Address**: Access registers using hardware addresses (0x0000, 0x0500, etc.)
-5. **Check Valid Flags**: Always verify registers were written before reading
-
-### Code Size Estimate
-
-A complete parser requires approximately:
-- Mach-O parsing: ~200 lines
-- Task header parsing: ~50 lines
-- Instruction decoder: ~100 lines
-- Common block decoder: ~80 lines
-- Additional block decoders: ~400 lines (optional)
-- **Total: ~830 lines** (basic parser with Common block only)
-
-### Reference Implementation
-
-For a complete working implementation, see:
-- `hwx_dump/hwx_parsing.m` (~3000 lines, all architectures, all blocks)
-- This guide provides the core concepts and enough code to build a working parser
-
----
-
-## Appendix: Quick Reference
-
-### Architecture Detection
-```c
-uint32_t subtype = mach_header->cpusubtype;
-// 4=H13, 5=H14, 6=H15, 7=H16, 9=H17, 10=H18
-```
-
-### Instruction Stream Start
-```c
-int start_word = (subtype == 5 || subtype == 6) ? 8 : 9;
-```
-
-### Dense Instruction
-```c
-if ((header >> 31) == 0) {
-    count = (header >> 15) & 0x3F;
-    hw_addr = header & 0x7FFF;
-    // Read count+1 words, write to hw_addr..hw_addr+count
-}
-```
-
-### Sparse Instruction
-```c
-if ((header >> 31) == 1) {
-    mask = (header >> 15) & 0xFFFF;
-    hw_addr = header & 0x7FFF;
-    // Read 1 + popcount(mask) words
-}
-```
-
-### Common Block HW Addresses
-```c
-#define COMMON_INDIM   0x0000
-#define COMMON_INCH    0x000C
-#define COMMON_OUTCH   0x0010
-#define COMMON_OUTDIM  0x0014
-#define COMMON_CONV    0x0020
-```
-
----
-
-**End of Guide**
-
-For questions or corrections, see the reference implementation at `hwx_dump/hwx_parsing.m`.
+This guide and code provide all details required to compile a fully working C-based `.hwx` parser on macOS.

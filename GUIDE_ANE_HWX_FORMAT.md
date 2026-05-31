@@ -136,6 +136,19 @@ struct section_64 {
 
 Inside the extracted `__TEXT / __text` section bytes, the data is organized as a sequence of **Task Descriptors**. Each task descriptor represents a single operations block and is divided into a **Header** followed by the **Instruction Stream**.
 
+### ANE Section Header (16 bytes)
+The ANE section (`__TEXT` segment in .hwx files) begins with a 16-byte header before the first task descriptor:
+
+```c
+// Offset 0x00 in ANE section
+struct ane_section_header {
+    uint32_t signature;      // 0x00000001 (observed)
+    uint32_t reserved[3];    // All zeros
+};
+```
+
+**Important**: Task descriptors start at offset **0x10** (16 bytes) into the ANE section, not at offset 0x00. Your parser must skip this header before reading the first task.
+
 ### Task Padding Alignment (Crucial for Stream Safety)
 Because the Neural Engine compiles tasks on strict **16-byte alignments**, the compiler often inserts zero-filled padding blocks of 16 bytes between tasks. 
 If your parser reads Word 0 of a task block and finds `task_size === 0`, it means you have hit padding bytes. **Do not crash or stop parsing!** Simply advance your file pointer by 16 bytes and check the next alignment boundary.
@@ -230,7 +243,7 @@ Dense instructions are used to write a contiguous range of registers.
   [31]       Format Bit = 0 (Dense)
   [30:21]    Reserved (usually 0)
   [20:15]    Count (number of EXTRA values that follow: 0 to 63)
-  [14:0]     Base Hardware Address (15-bit index representing the starting register)
+  [14:0]     Base Hardware Address (15-bit WORD index, multiply by 4 for byte address)
 ```
 
 #### 2. Sparse Format (Bit 31 = 1)
@@ -239,8 +252,10 @@ Sparse instructions write to a subset of registers within a 16-register block, u
 ```
   [31]       Format Bit = 1 (Sparse)
   [30:15]    Mask (16-bit select mask. 1 = write this register, 0 = skip)
-  [14:0]     Base Hardware Address (15-bit index representing the starting register)
+  [14:0]     Base Hardware Address (15-bit WORD index, multiply by 4 for byte address)
 ```
+
+> **CRITICAL**: The hardware address field (bits [14:0]) is a **word-based index**, not a byte address. To convert to byte addresses (used in register documentation), multiply by 4. For example, hw_addr=0x0003 refers to byte address 0x000C.
 
 #### Popcount (Population Count) in C:
 ```c
@@ -266,19 +281,49 @@ A critical aspect of ANE hardware is that **registers are stateful**. When the A
 
 To parse and display the correct settings for a specific task, your software parser must maintain a running array of virtual registers (typically **8192 registers / 32-bit words**). As you decode instructions for Task 0, write their values to your state array. When you begin parsing Task 1, start with the state array left over from Task 0, and update only the registers that Task 1 changes. This allows you to inspect the full, active hardware configuration for any layer.
 
+**⚠️ CRITICAL PARSER REQUIREMENT**: Your parser MUST use a **single persistent HardwareState** object across all tasks in a file. Creating a fresh state for each task will lose stateful carryover and produce incorrect results.
+
+**Correct Implementation**:
+```c
+// Create ONE hardware state for the entire file
+hwx_state_t global_state = {0};
+global_state.arch = detected_architecture;
+
+// Parse all tasks using the SAME state
+for (int i = 0; i < num_tasks; i++) {
+    decode_instruction_stream(task_data[i], &global_state);  // Updates state
+    print_task_info(&global_state);                          // Reads accumulated state
+    // State persists to next iteration!
+}
+```
+
+**Incorrect Implementation** (will fail):
+```c
+// ❌ WRONG: Creating new state per task loses carryover
+for (int i = 0; i < num_tasks; i++) {
+    hwx_state_t state = {0};  // ❌ Fresh state - loses previous values!
+    decode_instruction_stream(task_data[i], &state);
+    print_task_info(&state);
+}
+```
+
+This stateful behavior is why many registers (especially ChannelCfg for data format) appear "missing" in later tasks - they're inherited from earlier tasks that set them.
+
 ### Block Base Addresses
 Registers are organized into functional hardware blocks. Because the base addresses (offsets) of these blocks shift between generations, you must look up the correct block base index:
 
 | Block Name | H13 & Earlier | H14 / H15 | H16+ (H16, H17, H18) |
 | :--- | :--- | :--- | :--- |
 | **Common** | `0x0000` | `0x0000` | `0x0000` |
-| **L2 Cache** | `0x4800` | `0x0140` | `0x1040` |
-| **Planar Engine (PE)** | `0x8800` | `0x0240` | `0x1140` |
-| **Neural Engine (NE)** | `0xC800` | `0x0340` | `0x1240` |
-| **TileDMA Source** | `0x13800` | `0x0440` | `0x1340` |
-| **TileDMA Dest** | `0x17800` | `0x0540` | `0x1440` |
-| **KernelDMA** | `0x1F800` | `0x0640` | `0x1540` |
-| **CacheDMA** | N/A | N/A | `0x1640` (H16: `0x5900`) |
+| **L2 Cache** | `0x4800` | `0x0140` | `0x4100` |
+| **Planar Engine (PE)** | `0x8800` | `0x0240` | `0x4500` |
+| **Neural Engine (NE)** | `0xC800` | `0x0340` | `0x4900` |
+| **TileDMA Source** | `0x13800` | `0x0440` | `0x4D00` |
+| **TileDMA Dest** | `0x17800` | `0x0540` | `0x5100` |
+| **KernelDMA** | `0x1F800` | `0x0640` | `0x5500` |
+| **CacheDMA** | N/A | N/A | `0x5900` |
+
+> **Note**: H16+ addresses verified from h16_register_map.md and actual binary analysis.
 
 ---
 
@@ -287,14 +332,65 @@ Registers are organized into functional hardware blocks. Because the base addres
 Here is the exact name-to-index mapping for registers within their respective functional blocks:
 
 #### 1. Common Block (Base `0x0000`)
-* **H13 (16 registers)**:
-  `InDim`, `pad0`, `ChCfg`, `Cin`, `Cout`, `OutDim`, `pad1`, `ConvCfg`, `pad2`, `GroupConvCfg`, `TileCfg`, `pad3`, `pad4`, `Cfg`, `TaskInfo`, `DPE`
-* **H14 (19 registers)**:
-  `InDim`, `InDepth`, `ChannelCfg`, `InChannels`, `OutChannels`, `OutDim`, `OutDepth`, `NumGroups`, `ConvCfg`, `ConvCfg3d`, `MacCfg`, `TileHeight`, `TileOverlap`, `NECfg`, `PatchCfg`, `NID`, `DPE`, `pad1`, `pad2`
-* **H16+ (23 registers)**:
-  `ChannelCfg`, `InWidth`, `InHeight`, `InChannels`, `InDepth`, `OutWidth`, `OutHeight`, `OutChannels`, `OutDepth`, `NumGroups`, `ConvCfg`, `ConvCfg3d`, `UnicastCfg`, `TileHeight`, `TileOverlap`, `MacCfg`, `NECfg`, `PatchCfg`, `PECfg`, `NID`, `DPE`, `DPE0`, `DPE1`
 
-#### 2. L2 Cache Block (H16+ Base `0x1040`)
+**Important Note**: Not all Common block registers are written for every task. The instruction stream only writes registers that differ from the previous task's state. When parsing, you must maintain a stateful register array across tasks.
+
+* **H14/H15 Key Registers** (byte addresses):
+  - `0x0000`: InDim (packed: width in bits [14:0], height in bits [30:16])
+  - `0x0008`: ChannelCfg (data format: InFmt [1:0], Src2InFmt [3:2], OutFmt [5:4])
+  - `0x000C`: InChannels
+  - `0x0010`: OutChannels
+  - `0x0014`: OutDim (packed: width in bits [14:0], height in bits [30:16])
+  - `0x0020`: ConvCfg (kernel size, stride, padding)
+  
+* **H16+ Key Registers** (byte addresses, separate width/height):
+  - `0x0000`: ChannelCfg (data format: InFmt [1:0], Src2InFmt [3:2], OutFmt [5:4])
+  - `0x0004`: InWidth (14 bits)
+  - `0x0008`: InHeight (14 bits)
+  - `0x000C`: InChannels (14 bits)
+  - `0x0014`: OutWidth (14 bits)
+  - `0x0018`: OutHeight (14 bits)
+  - `0x001C`: OutChannels (14 bits)
+  - `0x0028`: ConvCfg (kernel size, stride, padding)
+
+#### Data Format Encoding (ChannelCfg Register)
+
+The ChannelCfg register encodes data types using 2-bit fields:
+* `0x0` (0): INT8 - 8-bit signed integer (quantized)
+* `0x1` (1): UINT8 - 8-bit unsigned integer
+* `0x2` (2): FLOAT16 - 16-bit IEEE 754 half-precision float
+* `0x3` (3): Reserved/Unknown
+
+**Critical Implementation Detail**: The ChannelCfg register is **frequently not written** in the instruction stream when tasks use the architecture's default format. Your parser must handle missing ChannelCfg values by applying architecture-specific defaults:
+
+* **H14/H15 Default**: INT8 (value 0)
+  - Apple's compiler quantizes models to INT8 for these older architectures by default
+  - Register `0x0008` (H14/H15) often omitted from instruction stream
+  
+* **H16+ Default**: FLOAT16 (value 2)
+  - Newer architectures (H16, H17, H18) use FP16 natively
+  - Register `0x0000` (H16+) often omitted when FP16 is used
+  - Models compiled with `-t h16` or higher typically run in FP16 unless explicitly quantized
+
+**Parser Implementation**:
+```c
+// Pseudocode for handling data format
+if (chcfg_register_present) {
+    infmt = chcfg & 0x3;
+    outfmt = (chcfg >> 4) & 0x3;
+} else {
+    // Apply architecture default
+    if (arch >= H16) {
+        infmt = outfmt = FLOAT16;  // 0x2
+    } else {
+        infmt = outfmt = INT8;     // 0x0
+    }
+}
+```
+
+This default behavior reflects Apple's compilation strategy: older ANE generations prioritize power efficiency through quantization (INT8), while newer generations have sufficient power budget and hardware support for native FP16 computation.
+
+#### 2. L2 Cache Block (H14 Base `0x0140`, H16+ Base `0x4100`)
 * **H13 (16 registers)**:
   `L2Cfg`, `SourceCfg`, `SourceBase`, `SourceChannelStride`, `SourceRowStride`, `pad0`, `pad1`, `pad2`, `pad3`, `pad4`, `pad5`, `pad6`, `ResultCfg`, `ResultBase`, `ConvResultChannelStride`, `ConvResultRowStride`
 * **H14 (25 registers)**:
@@ -302,12 +398,12 @@ Here is the exact name-to-index mapping for registers within their respective fu
 * **H16+ (41+ registers)**:
   `LControl`, `LSrc1Cfg`, `LSrc2Cfg`, `LSrcIdxCfg`, `LSrc1Base`, `LSrc1CStride`, `LSrc1RStride`, `LSrc1DStride`, `LSrc1GStride`, `LSrc2Base`, `LSrc2CStride`, `LSrc2RStride`, `LSrc2DStride`, `LSrc2GStride`, `LSrcIdxBase`, `LSrcIdxCStride`, `LSrcIdxDStride`, `LSrcIdxGStride`, `LResultCfg`, `LResultBase`, `LResultCStride`, `LResultRStride`, `LResultDStride`, `LResultGStride`, `LRes24`, `LResultWrapCfg`, `LRes26`, `LRes27`, `LRes28`, `LResultWrapIdxOff`, `LRes30`, `LResult2Base`, `LResult2CStride`, `LResult2RStride`, `LResult2DStride`, `PEIndexCfg` *(Note: H17 & H18 append additional strides and pads)*.
 
-#### 3. Planar Engine (PE) (H16+ Base `0x1140`)
+#### 3. Planar Engine (PE) (H14 Base `0x0240`, H16+ Base `0x4500`)
 * **H13 (4 registers)**: `Cfg`, `BiasScale`, `PreScale`, `FinalScale`
 * **H14 (5 registers)**: `PEConfig`, `BiasScale`, `PreScale`, `FinalScale`, `Quant`
 * **H16+ (16 registers)**: `PE_Config`, `PE_Bias`, `PE_Scale`, `PE_FinalScaleEpsilon`, `PE_PreScale`, `PE_FinalScale`, `PE_LUT1` through `PE_LUT8`, `PE_Quant`
 
-#### 4. Neural Engine (NE) (H16+ Base `0x1240`)
+#### 4. Neural Engine (NE) (H14 Base `0x0340`, H16+ Base `0x4900`)
 * **H13 (5 registers)**: `KernelCfg`, `MacCfg`, `MatrixVectorBias`, `AccBias`, `PostScale`
 * **H14 (5 registers)**: `KernelCfg`, `MacCfg`, `NEBias`, `NEPostScale`, `RoundModeCfg`
 * **H16+ (13 registers)**: `KernelCfg`, `MacCfg`, `MatrixVectorBias`, `NEBias`, `PostScale`, `RcasConfig`, `RoundModeCfg`, `SRSeed[0]` through `SRSeed[3]`, `QuantZeroPoint`
@@ -616,33 +712,34 @@ void decode_instructions(const uint32_t *words, int num_words, int start_word) {
     int i = start_word;
     while (i < num_words) {
         uint32_t header = words[i++];
-        uint32_t hw_addr = header & 0x7FFF;
+        uint32_t hw_word_addr = header & 0x7FFF;  // Word-based address
+        uint32_t hw_byte_addr = hw_word_addr * 4; // Convert to byte address
 
         if (((header >> 31) & 1) == 0) {
             // Dense Format
             uint32_t count = (header >> 15) & 0x3F;
             for (uint32_t j = 0; j <= count && i < num_words; j++) {
-                if (hw_addr + j < 8192) {
-                    running_regs[hw_addr + j] = words[i];
-                    regs_valid[hw_addr + j] = true;
+                uint32_t byte_addr = hw_byte_addr + (j * 4);
+                if (byte_addr < 32768) {  // 8192 words * 4 bytes
+                    running_regs[byte_addr] = words[i];
+                    regs_valid[byte_addr] = true;
                 }
                 i++;
             }
         } else {
             // Sparse Format
             uint32_t mask = (header >> 15) & 0xFFFF;
-            if (i < num_words) {
-                if (hw_addr < 8192) {
-                    running_regs[hw_addr] = words[i];
-                    regs_valid[hw_addr] = true;
-                }
+            if (i < num_words && hw_byte_addr < 32768) {
+                running_regs[hw_byte_addr] = words[i];
+                regs_valid[hw_byte_addr] = true;
                 i++;
             }
             for (int bit = 0; bit < 16 && i < num_words; bit++) {
                 if ((mask >> bit) & 1) {
-                    if (hw_addr + bit + 1 < 8192) {
-                        running_regs[hw_addr + bit + 1] = words[i];
-                        regs_valid[hw_addr + bit + 1] = true;
+                    uint32_t byte_addr = hw_byte_addr + ((bit + 1) * 4);
+                    if (byte_addr < 32768) {
+                        running_regs[byte_addr] = words[i];
+                        regs_valid[byte_addr] = true;
                     }
                     i++;
                 }
@@ -650,6 +747,9 @@ void decode_instructions(const uint32_t *words, int num_words, int start_word) {
         }
     }
 }
+
+// Note: running_regs[] array should now be indexed by byte address, not word index
+// Example: To read InChannels at byte address 0x000C, use running_regs[0x000C]
 
 // Extracts shapes using H16 shifted heuristics
 void print_dimensions(void) {

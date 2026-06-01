@@ -67,7 +67,7 @@ A Mach-O file has three main parts:
 ├────────────────────────────────────────┤
 │           Load Commands Table          │  (Maps out where segments are located)
 ├────────────────────────────────────────┤
-│  __TEXT Segment  ->  __text Section   │  (Contains ANE Task Descriptors / Instructions)
+│  __TEXT Segment  ->  __text Section    │  (Contains ANE Task Descriptors / Instructions)
 ├────────────────────────────────────────┤
 │  __KERN Segment  ->  Weights & Scales  │  (Contains model weights and biases)
 ├────────────────────────────────────────┤
@@ -390,6 +390,41 @@ if (chcfg_register_present) {
 
 This default behavior reflects Apple's compilation strategy: older ANE generations prioritize power efficiency through quantization (INT8), while newer generations have sufficient power budget and hardware support for native FP16 computation.
 
+#### Convolution Configuration (ConvCfg Register)
+
+The ConvCfg register contains convolution kernel parameters:
+
+**H14/H15**: Located at byte address `0x0020`  
+**H16+**: Located at byte address `0x0028`
+
+**Bit Field Layout**:
+* `bits [5:0]`: Kernel Width (1-63)
+* `bits [11:6]`: Kernel Height (1-63)
+* `bits [14:13]`: Stride X (0-3)
+* `bits [16:15]`: Stride Y (0-3)
+* `bits [21:17]`: Padding X (0-31)
+* `bits [26:22]`: Padding Y (0-31)
+
+**Parser Implementation**:
+```c
+uint32_t conv_addr = (arch >= H16) ? 0x0028 : 0x0020;
+if (register_valid(conv_addr)) {
+    uint32_t conv = read_register(conv_addr);
+    uint32_t kernel_w = (conv >> 0) & 0x3F;
+    uint32_t kernel_h = (conv >> 6) & 0x3F;
+    uint32_t stride_x = (conv >> 13) & 0x3;
+    uint32_t stride_y = (conv >> 15) & 0x3;
+    uint32_t pad_x = (conv >> 17) & 0x1F;
+    uint32_t pad_y = (conv >> 22) & 0x1F;
+}
+```
+
+Common convolution patterns:
+- **3×3 convolution, stride 1, padding 1**: `K=3x3 S=1x1 P=1x1` (standard feature extraction)
+- **3×3 convolution, stride 2, padding 1**: `K=3x3 S=2x2 P=1x1` (downsampling)
+- **7×7 convolution, stride 2, padding 3**: `K=7x7 S=2x2 P=3x3` (typical first layer in ResNet)
+- **1×1 convolution, stride 1, padding 0**: `K=1x1 S=1x1 P=0x0` (pointwise/projection layers)
+
 #### 2. L2 Cache Block (H14 Base `0x0140`, H16+ Base `0x4100`)
 * **H13 (16 registers)**:
   `L2Cfg`, `SourceCfg`, `SourceBase`, `SourceChannelStride`, `SourceRowStride`, `pad0`, `pad1`, `pad2`, `pad3`, `pad4`, `pad5`, `pad6`, `ResultCfg`, `ResultBase`, `ConvResultChannelStride`, `ConvResultRowStride`
@@ -442,8 +477,10 @@ Determines what mathematical operation the core execution units perform:
 * **nl_mode_ne** (`bits [17:16]`): Core Activation Function
   * `0`: None (Linear output)
   * `1`: ReLU
-  * `2`: ReLU6
-  * `3`: Sigmoid
+  * `2`: Clamp (ReLU6 / Clamp to [0, 6])
+  * `3`: Abs (Absolute value)
+
+**Note**: For H16+, this NE MacCfg activation field (at byte address `0x4904`) is the primary location for activation functions in convolution operations. The PE Config register (at `0x4500`) also has a `nl` field at bits [13:12] with the same encoding, used for element-wise operations.
 
 ---
 

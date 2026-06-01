@@ -7,10 +7,13 @@ CoreML format is publicly available, https://apple.github.io/coremltools/mlmodel
 # HWX
 HWX is a proprietary modified Mach-O file format to pass models to AppleH11ANEInterface, an I/O Kit kernel driver in macOS and iOS when Apple Neural Engine is available.
 
-# How to use this little progam
+# How to use this little program
+
+## Quick Start
+
 Simply `make` it on macOS either x86_64 or Apple Silicon machines. YES, Apple ships ANE related x86_64 binaries on machines without ANE, so we can compile and run this on x86_64 machines.
 
-Get a coreml model, e.g., `wget https://ml-assets.apple.com/coreml/models/Image/ImageClassification/MobileNetV2/MobileNetV2.mlmodel` or use [coremltools](https://github.com/apple/coremltools) to convert one. Then, we can convert the model by
+Get a CoreML model, e.g., `wget https://ml-assets.apple.com/coreml/models/Image/ImageClassification/MobileNetV2/MobileNetV2.mlmodel` or use [coremltools](https://github.com/apple/coremltools) to convert one. Then, we can convert the model by
 ```
 ./coreml2hwx MobileNetV2.mlmodel debug
 ```
@@ -34,6 +37,20 @@ And get results like
 2021-05-24 18:47:40.064 coreml2hwx[44933:4104983] result at /tmp/hwx_output/MobileNetV2/model.hwx
 2021-05-24 18:47:40.064 coreml2hwx[44933:4104983] other debug information at /tmp/hwx_output/MobileNetV2/
 ```
+
+## Detailed Workflow Guide
+
+For a complete end-to-end guide on generating `.hwx` files from PyTorch/TensorFlow models, see:
+
+📖 **[WORKFLOW_MLPACKAGE_TO_HWX_ANALYSIS.md](WORKFLOW_MLPACKAGE_TO_HWX_ANALYSIS.md)** - Complete compilation pipeline walkthrough
+
+This guide covers:
+- Converting PyTorch/TensorFlow models to CoreML (`.mlpackage`)
+- Compiling `.mlpackage` to `.mlmodelc` (compiled model)
+- Extracting MIL (Model Intermediate Language) representation
+- Generating `.hwx` files for different ANE architectures (H14-H18)
+- Parsing and analyzing the generated `.hwx` files
+- Troubleshooting common issues
 
 # mlmodelc to hwx
 There are many compiled CoreML models in macOS and iOS. Some have meta infomation; some do not. For those

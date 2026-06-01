@@ -1,0 +1,51 @@
+# Parser implementations (not for public release)
+hwx_dump_ai/
+hwx_dump_ai_cpp/
+
+# Build artifacts
+*.o
+*.dSYM/
+coreml2hwx
+mlmodelc2hwx
+espressonet2hwx
+mil_to_hwx
+hwx_parser
+
+# Temporary files
+/tmp/
+hwx_output/
+*.log
+.DS_Store
+
+# Analysis and documentation (working files)
+*_ANALYSIS.md
+*_COMPLETE.md
+*_SUMMARY.md
+*_RESULTS.md
+*_STATUS.md
+SESSION_*.md
+GUIDE_VALIDATION*.md
+GUIDE_CORRECTION*.md
+*_FIX*.md
+
+# Test models and outputs
+test_models/
+test_models_compiled/
+test_models_tier*/
+*.mlpackage/
+*.mlpackage.zip
+*.mlmodelc/
+*.json
+*.txt
+__pycache__/
+
+# IDE and editor files
+.vscode/
+.antigravitycli/
+*.swp
+*.swo
+*~
+
+# Python cache
+*.pyc
+__pycache__/

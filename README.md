@@ -1,6 +1,25 @@
 # coreml_to_ane_hwx
 a quick and dirty little program to convert Apple CoreML model to ANE hwx file
 
+## 🌐 Web-Based HWX Analyzer
+
+Try the **interactive web-based parser** (no installation needed):
+
+👉 **[https://freedomtan.github.io/coreml_to_ane_hwx/hwx_dump_js/](https://freedomtan.github.io/coreml_to_ane_hwx/hwx_dump_js/)**
+
+Features:
+- ✅ Drag & drop `.hwx` files directly in your browser
+- ✅ Client-side parsing (no files uploaded to servers)
+- ✅ Visual register inspector for all hardware blocks
+- ✅ Supports H13-H18 architectures (A14-A19 chips)
+- ✅ Built following the [ANE HWX Format Guide](GUIDE_ANE_HWX_FORMAT.md)
+
+## 📚 Documentation
+
+- **[GUIDE_ANE_HWX_FORMAT.md](GUIDE_ANE_HWX_FORMAT.md)** - Comprehensive format specification for all ANE generations (H13-H18)
+
+---
+
 # CoreML model
 CoreML format is publicly available, https://apple.github.io/coremltools/mlmodel/index.html
 

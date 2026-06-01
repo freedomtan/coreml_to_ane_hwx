@@ -1,0 +1,726 @@
+/**
+ * ANE .hwx Parser in JavaScript
+ * Built according to the ANE HWX Format Guide:
+ * https://github.com/freedomtan/coreml_to_ane_hwx/blob/main/GUIDE_ANE_HWX_FORMAT.md
+ *
+ * Provides parsing for H13 (fixed offset) and H14-H18 (instruction stream) architectures.
+ */
+
+// Helper to format values as Hex strings
+function toHex(val, padding = 8) {
+  if (val === undefined || val === null) return "N/A";
+  return "0x" + val.toString(16).toUpperCase().padStart(padding, "0");
+}
+
+// Map CPU subtype to architecture name
+function getArchitectureName(subtype) {
+  switch (subtype) {
+    case 1: return "H11 (A12)";
+    case 3: return "H12 (A13)";
+    case 4: return "H13 (A14/M1)";
+    case 5: return "H14 (A15/M2)";
+    case 6: return "H15 (A16/M3)";
+    case 7: return "H16 (A17 Pro/M4)";
+    case 9: return "H17 (A18 Pro)";
+    case 10: return "H18 (A19)";
+    default: return "Unknown Subtype (" + subtype + ")";
+  }
+}
+
+// Convert FP16 uint16 to standard FP32 float (from binary representation)
+function fp16ToFloat32(h) {
+  const s = (h & 0x8000) >> 15;
+  const e = (h & 0x7C00) >> 10;
+  const f = h & 0x03FF;
+
+  if (e === 0) {
+    if (f === 0) return 0.0;
+    return (s ? -1 : 1) * Math.pow(2, -14) * (f / 1024);
+  } else if (e === 31) {
+    return f === 0 ? (s ? -Infinity : Infinity) : NaN;
+  }
+  return (s ? -1 : 1) * Math.pow(2, e - 15) * (1 + f / 1024);
+}
+
+// Main parser function
+function parseHwxFile(arrayBuffer) {
+  const view = new DataView(arrayBuffer);
+  const size = arrayBuffer.byteLength;
+
+  if (size < 32) {
+    throw new Error("File too small to be a Mach-O container (minimum 32 bytes).");
+  }
+
+  // Step 1: Parse Mach-O Header
+  const magic = view.getUint32(0, true);
+  if (magic !== 0xBEEFFACE && magic !== 0xFEEDFACF) {
+    throw new Error(`Invalid magic: ${toHex(magic)}. Expected 0xBEEFFACE or 0xFEEDFACF.`);
+  }
+
+  const cputype = view.getUint32(4, true);
+  const cpusubtype = view.getUint32(8, true);
+  const filetype = view.getUint32(12, true);
+  const ncmds = view.getUint32(16, true);
+  const sizeofcmds = view.getUint32(20, true);
+  const flags = view.getUint32(24, true);
+
+  const headerInfo = {
+    magic,
+    cputype,
+    cpusubtype,
+    filetype,
+    ncmds,
+    sizeofcmds,
+    flags,
+    archName: getArchitectureName(cpusubtype),
+    usesInstructionStream: cpusubtype >= 5,
+    usesSparse: cpusubtype >= 7
+  };
+
+  // Step 2: Find __TEXT Segment and __text Section
+  let textSection = null;
+  let offset = 32; // Skip mach_header_64 (32 bytes)
+
+  for (let i = 0; i < ncmds; i++) {
+    if (offset + 8 > size) break;
+    const cmd = view.getUint32(offset, true);
+    const cmdsize = view.getUint32(offset + 4, true);
+
+    if (cmd === 0x19) { // LC_SEGMENT_64
+      // Read segname (16 bytes)
+      let segname = "";
+      for (let j = 0; j < 16; j++) {
+        const charCode = view.getUint8(offset + 8 + j);
+        if (charCode === 0) break;
+        segname += String.fromCharCode(charCode);
+      }
+
+      if (segname === "__TEXT") {
+        const nsects = view.getUint32(offset + 64, true);
+        let sectOffset = offset + 72; // segmentcommand64 is 72 bytes
+
+        for (let s = 0; s < nsects; s++) {
+          if (sectOffset + 80 > size) break;
+          // Read sectname (16 bytes)
+          let sectname = "";
+          for (let j = 0; j < 16; j++) {
+            const charCode = view.getUint8(sectOffset + j);
+            if (charCode === 0) break;
+            sectname += String.fromCharCode(charCode);
+          }
+
+          if (sectname === "__text") {
+            const sectSize = Number(view.getBigUint64(sectOffset + 40, true));
+            const sectFileOffset = view.getUint32(sectOffset + 48, true);
+            textSection = {
+              offset: sectFileOffset,
+              size: sectSize
+            };
+            break;
+          }
+          sectOffset += 80;
+        }
+      }
+    }
+    offset += cmdsize;
+    if (textSection) break;
+  }
+
+  if (!textSection) {
+    throw new Error("__text section in __TEXT segment not found. This is not a standard .hwx file.");
+  }
+
+  // Step 3: Parse Task Descriptors
+  const tasks = [];
+  let taskOffset = textSection.offset;
+  const sectionEnd = textSection.offset + textSection.size;
+  let taskNum = 0;
+
+  // Initialize stateful register updates across the tasks
+  const hwState = {
+    values: new Uint32Array(8192),
+    valid: new Uint8Array(8192),
+    subtype: cpusubtype
+  };
+
+  if (cpusubtype < 5) {
+    // H13 or earlier linked list traversal
+    let offset = 0;
+    const total_len = textSection.size;
+    
+    while (offset + 40 <= total_len) {
+      const tid_and_flags = view.getUint32(taskOffset + offset, true);
+      const exe_cycles_raw = view.getUint32(taskOffset + offset + 4, true);
+      const log_events = view.getUint32(taskOffset + offset + 8, true);
+      const next_pointer = view.getUint32(taskOffset + offset + 28, true);
+      
+      if (next_pointer === 0 && exe_cycles_raw === 0 && log_events === 0) {
+        break; // End of tasks / zero padding
+      }
+
+      // Determine task size in words
+      let taskSizeWords = 0;
+      if (next_pointer > offset + 40) {
+        taskSizeWords = (next_pointer - offset) / 4;
+      } else {
+        taskSizeWords = (total_len - offset) / 4;
+      }
+
+      const taskSizeInBytes = taskSizeWords * 4;
+      const taskRawBytes = new Uint8Array(arrayBuffer, taskOffset + offset, taskSizeInBytes);
+      
+      const parsedTask = parseH13Task(view, taskOffset + offset, taskSizeWords);
+      parsedTask.taskIndex = taskNum++;
+      parsedTask.fileOffset = taskOffset + offset;
+      parsedTask.sizeBytes = taskSizeInBytes;
+      parsedTask.rawHex = Array.from(taskRawBytes).map(b => b.toString(16).padStart(2, "0").toUpperCase()).join(" ");
+
+      tasks.push(parsedTask);
+
+      if (next_pointer === 0 || next_pointer <= offset) {
+        break;
+      }
+      offset = next_pointer;
+    }
+  } else {
+    // H14+ sequential tasks with 16-byte alignment
+    let offset = 0;
+    const total_len = textSection.size;
+
+    while (offset + 8 <= total_len) {
+      const tid_and_size = view.getUint32(taskOffset + offset, true);
+      const task_size = (tid_and_size >> 16) & 0x7FF;
+      if (task_size === 0) {
+        offset += 16;
+        continue;
+      }
+      break;
+    }
+
+    while (offset + 36 <= total_len) {
+      const tid_and_size = view.getUint32(taskOffset + offset, true);
+      const task_size = (tid_and_size >> 16) & 0x7FF;
+
+      if (task_size === 0) {
+        offset += 16;
+        continue;
+      }
+
+      const taskSizeInBytes = task_size * 4;
+      if (offset + taskSizeInBytes > total_len) {
+        break;
+      }
+
+      const taskRawBytes = new Uint8Array(arrayBuffer, taskOffset + offset, taskSizeInBytes);
+      const parsedTask = decodeInstructionStream(view, taskOffset + offset, task_size, cpusubtype, hwState);
+      
+      parsedTask.taskIndex = taskNum++;
+      parsedTask.fileOffset = taskOffset + offset;
+      parsedTask.sizeBytes = taskSizeInBytes;
+      parsedTask.rawHex = Array.from(taskRawBytes).map(b => b.toString(16).padStart(2, "0").toUpperCase()).join(" ");
+
+      tasks.push(parsedTask);
+
+      offset += Math.ceil(taskSizeInBytes / 16) * 16;
+    }
+  }
+
+  return {
+    header: headerInfo,
+    section: textSection,
+    tasks: tasks
+  };
+}
+
+// Decode H14+ task and instructions
+function decodeInstructionStream(view, taskOffset, taskSizeWords, cpusubtype, runningState) {
+  // Read Universal Header (first 36 bytes)
+  const tid_and_size = view.getUint32(taskOffset + 0, true);
+  const exe_cycles_raw = view.getUint32(taskOffset + 4, true);
+  const log_events = view.getUint32(taskOffset + 8, true);
+  const exceptions = view.getUint32(taskOffset + 12, true);
+  const debug_log_events = view.getUint32(taskOffset + 16, true);
+  const debug_exceptions = view.getUint32(taskOffset + 20, true);
+  const live_outs = view.getUint32(taskOffset + 24, true);
+  const ctrl_flags = view.getUint32(taskOffset + 28, true);
+  const dtid_raw = view.getUint32(taskOffset + 32, true);
+
+  const tid = tid_and_size & 0xFFFF;
+  const task_size = (tid_and_size >> 16) & 0x7FF;
+  const exe_cycles = exe_cycles_raw & 0xFFFF;
+  const tsr = ctrl_flags & 0x1;
+  const tde = (ctrl_flags >> 1) & 0x1;
+  const ene = (ctrl_flags >> 16) & 0x7;
+  const dtid = dtid_raw & 0xFFFF;
+
+  // Starting word index for instruction stream
+  // H14 (5), H15 (6) -> word 8 (offset 0x20)
+  // H16+ (7+) -> word 9 (offset 0x24)
+  const startWord = (cpusubtype === 5 || cpusubtype === 6) ? 8 : 9;
+  let i = startWord;
+
+  // Process instructions
+  while (i < taskSizeWords) {
+    const header = view.getUint32(taskOffset + i * 4, true);
+    i++;
+    const hw_addr = header & 0x7FFF;
+
+    if (((header >> 31) & 1) === 0) {
+      // Dense Format
+      const count = (header >> 15) & 0x3F;
+      for (let j = 0; j <= count && i < taskSizeWords; j++) {
+        const val = view.getUint32(taskOffset + i * 4, true);
+        runningState.values[hw_addr + j] = val;
+        runningState.valid[hw_addr + j] = 1;
+        i++;
+      }
+    } else {
+      // Sparse Format
+      const mask = (header >> 15) & 0xFFFF;
+      if (i < taskSizeWords) {
+        const val = view.getUint32(taskOffset + i * 4, true);
+        runningState.values[hw_addr] = val;
+        runningState.valid[hw_addr] = 1;
+        i++;
+      }
+
+      for (let bit = 0; bit < 16 && i < taskSizeWords; bit++) {
+        if ((mask >> bit) & 1) {
+          const val = view.getUint32(taskOffset + i * 4, true);
+          runningState.values[hw_addr + bit + 1] = val;
+          runningState.valid[hw_addr + bit + 1] = 1;
+          i++;
+        }
+      }
+    }
+  }
+
+  // Recover common dimensions and other parameters from decoded hardware state
+  const recoveredInfo = parseStateRegisters(runningState, cpusubtype);
+
+  return {
+    header: {
+      tid,
+      task_size,
+      exe_cycles,
+      log_events,
+      exceptions,
+      debug_log_events,
+      debug_exceptions,
+      live_outs,
+      ctrl_flags,
+      tsr,
+      tde,
+      ene,
+      dtid
+    },
+    decodedInfo: recoveredInfo,
+    activeRegisters: dumpState(runningState)
+  };
+}
+
+// Parse H13 Task descriptor at fixed offsets
+function parseH13Task(view, taskOffset, taskSizeWords) {
+  // Read H13 Task Descriptor Header
+  const tid_and_flags = view.getUint32(taskOffset + 0, true);
+  const exe_cycles_raw = view.getUint32(taskOffset + 4, true);
+  const log_events = view.getUint32(taskOffset + 8, true);
+  const exceptions = view.getUint32(taskOffset + 12, true);
+  const debug_log_events = view.getUint32(taskOffset + 16, true);
+  const debug_exceptions = view.getUint32(taskOffset + 20, true);
+  const control_flags = view.getUint32(taskOffset + 24, true);
+  const next_pointer = view.getUint32(taskOffset + 28, true);
+  const bank_enables = view.getUint32(taskOffset + 32, true);
+  const kbank_enables = view.getUint32(taskOffset + 36, true);
+  const dtid_raw = view.getUint32(taskOffset + 40, true);
+
+  const tid = tid_and_flags & 0xFFFF;
+  const nid = (tid_and_flags >> 16) & 0xFF;
+  const lnid = (tid_and_flags >> 24) & 1;
+  const eon = (tid_and_flags >> 25) & 1;
+  const exe_cycles = exe_cycles_raw & 0xFFFF;
+  const next_size = (exe_cycles_raw >> 16) & 0x1FF;
+  const dtid = dtid_raw & 0xFFFF;
+
+  // Register Blocks at fixed TD offsets
+  const H13_COMMON_BLOCK = 0x128;
+  const H13_L2_BLOCK = 0x1E0;
+  const H13_PE_BLOCK = 0x22C;
+  const H13_NE_BLOCK = 0x240;
+  const H13_TILEDMA_SRC_BLOCK = 0x16C;
+  const H13_TILEDMA_DST_BLOCK = 0x258;
+  const H13_KERNELDMA_BLOCK = 0x02C;
+
+  // Unpack dimensions and config from Common Block
+  const indim = view.getUint32(taskOffset + H13_COMMON_BLOCK + 0, true);
+  const chcfg = view.getUint32(taskOffset + H13_COMMON_BLOCK + 8, true);
+  const inch = view.getUint32(taskOffset + H13_COMMON_BLOCK + 12, true);
+  const outch = view.getUint32(taskOffset + H13_COMMON_BLOCK + 16, true);
+  const outdim = view.getUint32(taskOffset + H13_COMMON_BLOCK + 20, true);
+  const conv = view.getUint32(taskOffset + H13_COMMON_BLOCK + 28, true);
+
+  const win = indim & 0x7FFF;
+  const hin = (indim >> 16) & 0x7FFF;
+  const wout = outdim & 0x7FFF;
+  const hout = (outdim >> 16) & 0x7FFF;
+  const cin = inch & 0x1FFFF;
+  const cout = outch & 0x1FFFF;
+
+  const in_fmt = chcfg & 0x3;
+  const out_fmt = (chcfg >> 4) & 0x3;
+  const formatNames = ["INT8", "UINT8", "FLOAT16", "Unknown"];
+  const inFmtName = formatNames[in_fmt] || "Unknown";
+  const outFmtName = formatNames[out_fmt] || "Unknown";
+
+  const kw = conv & 0x1F;
+  const kh = (conv >> 5) & 0x1F;
+  const sx = (conv >> 13) & 0x3;
+  const sy = (conv >> 15) & 0x3;
+
+  // L2 Addresses
+  const l2_src1 = view.getUint32(taskOffset + H13_L2_BLOCK + 8, true); // SourceBase
+  const l2_res = view.getUint32(taskOffset + H13_L2_BLOCK + 13 * 4, true); // ResultBase
+
+  // Neural Engine config
+  const ne_maccfg = view.getUint32(taskOffset + H13_NE_BLOCK + 4, true); // MacCfg
+  const activeNE = ne_maccfg & 0x7;
+  const smallSrc = (ne_maccfg >> 3) & 1;
+  const neOpMode = (ne_maccfg >> 10) & 0xF;
+  const biasEn = (ne_maccfg >> 16) & 1;
+  const nlMode = (ne_maccfg >> 20) & 0xF;
+
+  const opModeNames = { 0x0: "Conv", 0x1: "Bypass", 0x2: "MatMul" };
+  const nlModeNames = { 0x0: "None", 0x1: "ReLU", 0x2: "ReLU6", 0x3: "Sigmoid", 0x4: "Tanh", 0x5: "GELU" };
+
+  // Planar Engine config
+  const pe_cfg = view.getUint32(taskOffset + H13_PE_BLOCK + 0, true);
+  const peEn = (pe_cfg >> 1) & 1;
+  const peOpMode = (pe_cfg >> 2) & 7;
+  const peOpNames = { 0x0: "Add", 0x1: "Multiply", 0x2: "Max", 0x3: "Min", 0x4: "Subtract" };
+  const peOpModeName = peEn ? (peOpNames[peOpMode] || `Unknown(${toHex(peOpMode, 1)})`) : "None";
+
+  // TileDMA buffers
+  const tdma_src_base = view.getUint32(taskOffset + H13_TILEDMA_SRC_BLOCK + 8, true); // BaseAddr
+  const tdma_dst_base = view.getUint32(taskOffset + H13_TILEDMA_DST_BLOCK + 4, true); // BaseAddr
+
+  // Build simulated running state for displaying registers
+  const tempState = {
+    values: new Uint32Array(8192),
+    valid: new Uint8Array(8192)
+  };
+
+  // Helper to copy block data to tempState
+  const mapH13Block = (tdOffset, hwBase, count) => {
+    for (let word = 0; word < count; word++) {
+      const addr = hwBase + word;
+      tempState.values[addr] = view.getUint32(taskOffset + tdOffset + word * 4, true);
+      tempState.valid[addr] = 1;
+    }
+  };
+
+  // Map each block into virtual H13 registers
+  mapH13Block(H13_COMMON_BLOCK, 0x0000, 16);
+  mapH13Block(H13_L2_BLOCK, 0x4800, 16);
+  mapH13Block(H13_PE_BLOCK, 0x8800, 4);
+  mapH13Block(H13_NE_BLOCK, 0xC800, 5);
+  mapH13Block(H13_TILEDMA_SRC_BLOCK, 0x13800, 24);
+  mapH13Block(H13_TILEDMA_DST_BLOCK, 0x17800, 7);
+  mapH13Block(H13_KERNELDMA_BLOCK, 0x1F800, 5);
+
+  return {
+    header: {
+      tid,
+      nid,
+      lnid,
+      eon,
+      exe_cycles,
+      next_size,
+      next_pointer,
+      bank_enables,
+      kbank_enables,
+      dtid,
+      task_size: taskSizeWords
+    },
+    decodedInfo: {
+      inputDim: { W: win, H: hin, C: cin },
+      outputDim: { W: wout, H: hout, C: cout },
+      inFormat: inFmtName,
+      outFormat: outFmtName,
+      conv: kw || kh ? { KW: kw, KH: kh, SX: sx, SY: sy } : null,
+      l2: { Src1Base: l2_src1, ResBase: l2_res },
+      ne: {
+        activeNE,
+        smallSrc,
+        opMode: opModeNames[neOpMode] || `Unknown(${toHex(neOpMode, 1)})`,
+        biasEn,
+        activation: nlModeNames[nlMode] || `Unknown(${toHex(nlMode, 1)})`
+      },
+      pe: {
+        opMode: peOpModeName,
+        poolMode: "None",
+        lutEn: "NO",
+        cond: "None",
+        nlMode: "None",
+        active: peEn === 1
+      },
+      tileDma: {
+        SrcBase: tdma_src_base,
+        DstBase: tdma_dst_base
+      }
+    },
+    activeRegisters: dumpState(tempState)
+  };
+}
+
+function parseStateRegisters(state, cpusubtype) {
+  let win = 0, hin = 0, cin = 0, din = 1;
+  let wout = 0, hout = 0, cout = 0, dout = 1;
+  let inFmtName = "INT8"; // Defaults
+  let outFmtName = "INT8";
+
+  // 1. Dimensions parsing
+  if (cpusubtype >= 7) {
+    // H16+ Unpacked
+    win = state.values[1] & 0x1FFFF;
+    hin = state.values[2] & 0x1FFFF;
+    cin = state.values[3] & 0x1FFFF;
+    din = (state.values[4] & 0x1FFFF) || 1;
+    wout = state.values[5] & 0x1FFFF;
+    hout = state.values[6] & 0x1FFFF;
+    cout = state.values[7] & 0x1FFFF;
+    dout = (state.values[8] & 0x1FFFF) || 1;
+
+    // Shifted dimensions heuristic (primarily for H16)
+    if (win === 0 || win >= 65536 || hin >= 65536) {
+      const test_w = state.values[0x0b] & 0x1FFFF;
+      const test_h = state.values[0x0c] & 0x1FFFF;
+      const test_c = state.values[0x0d] & 0x1FFFF;
+      if (test_w > 0 && test_w < 10000 && test_h <= test_w) {
+        win = test_w;
+        hin = test_h;
+        cin = test_c;
+      }
+    }
+  } else {
+    // H14/H15 Packed
+    const indim = state.values[0];
+    const outdim = state.values[5];
+    win = indim & 0x7FFF;
+    hin = (indim >> 16) & 0x7FFF;
+    cin = state.values[3] & 0x1FFFF;
+    cout = state.values[4] & 0x1FFFF;
+    wout = outdim & 0x7FFF;
+    hout = (outdim >> 16) & 0x7FFF;
+  }
+
+  // 2. Convolution Config (COMMON_CONV)
+  const conv = state.values[8];
+  let convConfig = null;
+  if (conv) {
+    const kw = conv & 0x3F;
+    const kh = (conv >> 6) & 0x3F;
+    const sx = (conv >> 13) & 3;
+    const sy = (conv >> 15) & 3;
+    const pl = (conv >> 17) & 0x1F;
+    const pt = (conv >> 22) & 0x1F;
+    if (kw || kh) {
+      convConfig = { KW: kw, KH: kh, SX: sx, SY: sy, PL: pl, PT: pt };
+    }
+  }
+
+  // 3. L2 cache base addresses
+  let l2 = {};
+  if (cpusubtype >= 7) {
+    const l2Base = 0x1040;
+    l2.Src1Base = (state.values[l2Base + 4] & 0x1FFFF0);
+    l2.Src2Base = (state.values[l2Base + 9] & 0x1FFFF0);
+    l2.ResBase = (state.values[l2Base + 19] & 0x1FFFF0);
+    l2.SrcIdxBase = (state.values[l2Base + 14] & 0x1FFFF0);
+  } else {
+    const l2Base = 0x0140;
+    l2.Src1Base = state.values[l2Base + 3];
+    l2.Src2Base = state.values[l2Base + 8];
+    l2.ResBase = state.values[l2Base + 14];
+  }
+
+  // 4. PE Config
+  let pe = {};
+  const peBase = (cpusubtype >= 7) ? 0x1140 : 0x0240;
+  const pe_cfg = state.values[peBase + 0];
+
+  // Determine if PE is active using task_type from MacCfg in Common block
+  const task_type_mapped_dict = {0: 0, 1: 2, 2: 6, 3: 5, 4: 7, 5: 4, 6: 3, 7: 0, 8: 1};
+  let isPEActive = true;
+  if (cpusubtype >= 7) {
+    const is_valid = state.valid[15] === 1;
+    const m = is_valid ? state.values[15] : 0;
+    const task_type = (m >> 4) & 0xF;
+    const task_type_mapped = task_type_mapped_dict[task_type] !== undefined ? task_type_mapped_dict[task_type] : 0;
+    if (!is_valid || task_type_mapped === 0) {
+      isPEActive = false;
+    }
+  } else if (cpusubtype === 5 || cpusubtype === 6) {
+    const is_valid = state.valid[10] === 1;
+    const m = is_valid ? state.values[10] : 0;
+    const task_type = m & 0xF;
+    const task_type_mapped = task_type_mapped_dict[task_type] !== undefined ? task_type_mapped_dict[task_type] : 0;
+    if (!is_valid || task_type_mapped === 0) {
+      isPEActive = false;
+    }
+  }
+
+  if (isPEActive) {
+    const pool = pe_cfg & 3;
+    const op = (pe_cfg >> 2) & 7;
+    const lut_en = (pe_cfg >> 5) & 1;
+    const cond = (pe_cfg >> 6) & 0xF;
+    const nl = (pe_cfg >> 12) & 3;
+
+    const poolNames = ["None", "Avg", "Max", "Min"];
+    const opNames = ["Add", "Multiply", "Max", "Min", "Subtract", "SumSqr"];
+    const condNames = ["None", "Abs", "Equal", "Greater", "GreaterEqual", "LessEqual", "Less", "NotEqual"];
+    const nlNames = ["None", "ReLU", "Clamp", "Abs"];
+
+    pe.poolMode = poolNames[pool] || "None";
+    pe.opMode = opNames[op] || "None";
+    pe.lutEn = lut_en ? "YES" : "NO";
+    pe.cond = condNames[cond] || "None";
+    pe.nlMode = nlNames[nl] || "None";
+    pe.active = true;
+  } else {
+    pe.poolMode = "None";
+    pe.opMode = "None";
+    pe.lutEn = "NO";
+    pe.cond = "None";
+    pe.nlMode = "None";
+    pe.active = false;
+  }
+
+  // 5. NE Config
+  let ne = {};
+  const neBase = (cpusubtype >= 7) ? 0x1240 : 0x0340;
+  const kernel_cfg = state.values[neBase + 0];
+  const ne_maccfg = state.values[neBase + 1];
+
+  let kfmt = 0, pen = 0, pbits = 0, sen = 0, reuse = 0;
+  if (cpusubtype >= 7) {
+    kfmt = kernel_cfg & 3;
+    pen = (kernel_cfg >> 2) & 1;
+    pbits = (kernel_cfg >> 4) & 0xF;
+    sen = (kernel_cfg >> 8) & 1;
+    reuse = (kernel_cfg >> 10) & 1;
+  }
+
+  const kfmtNames = ["INT8", "UINT8", "FLOAT16", "Unknown"];
+  ne.kfmt = kfmtNames[kfmt] || "INT8";
+  ne.pen = pen ? "YES" : "NO";
+  ne.pbits = pbits;
+  ne.sen = sen ? "YES" : "NO";
+  ne.reuse = reuse ? "YES" : "NO";
+
+  let activeNE = 0, smallSrc = 0, opMode = 0, biasEn = 0, nlMode = 0;
+  if (cpusubtype >= 7) {
+    const m = state.values[15]; // Common block offset word 15
+    activeNE = (m >> 19) & 7;
+    if (cpusubtype >= 9) {
+      opMode = ne_maccfg & 0x3F;
+    } else {
+      opMode = ne_maccfg & 7;
+      biasEn = (ne_maccfg >> 4) & 1;
+      nlMode = (ne_maccfg >> 16) & 3;
+    }
+  } else {
+    activeNE = ne_maccfg & 7;
+    smallSrc = (ne_maccfg >> 3) & 1;
+    opMode = (ne_maccfg >> 10) & 0xF;
+    biasEn = (ne_maccfg >> 16) & 1;
+    nlMode = (ne_maccfg >> 20) & 0xF;
+  }
+
+  const neOpNames = {
+    0: "Conv",
+    1: "ElemWise",
+    2: "RCAS",
+    3: "EWSqrt",
+    4: "Bypass",
+    5: "TransposedConv",
+    7: "OptConv (H14)",
+    0xF: "OptConv (H16+)"
+  };
+  const neNlNames = { 0x0: "None", 0x1: "ReLU", 0x2: "ReLU6", 0x3: "Sigmoid", 0x4: "Tanh", 0x5: "GELU" };
+
+  ne.activeNE = activeNE;
+  ne.smallSrc = smallSrc ? "YES" : "NO";
+  ne.opMode = neOpNames[opMode] || `Unknown(${opMode})`;
+  ne.biasEn = biasEn ? "YES" : "NO";
+  ne.activation = neNlNames[nlMode] || `Unknown(${nlMode})`;
+
+  // 6. TileDMA base addresses
+  let tileDma = {};
+  const tdmaSrcBase = (cpusubtype >= 7) ? 0x1340 : 0x0440;
+  const tdmaDstBase = (cpusubtype >= 7) ? 0x1440 : 0x0540;
+  tileDma.SrcBase = state.values[tdmaSrcBase + 3];
+  tileDma.DstBase = state.values[tdmaDstBase + 3];
+
+  return {
+    inputDim: { W: win, H: hin, C: cin, D: din },
+    outputDim: { W: wout, H: hout, C: cout, D: dout },
+    inFormat: inFmtName,
+    outFormat: outFmtName,
+    conv: convConfig,
+    l2,
+    ne,
+    pe,
+    tileDma
+  };
+}
+
+// Convert hardware state arrays to printable registers list
+function dumpState(state) {
+  const regs = [];
+  for (let r = 0; r < state.values.length; r++) {
+    if (state.valid[r]) {
+      const hwAddr = r;
+      regs.push({
+        addr: toHex(hwAddr * 4, 5), // Offset in bytes
+        addrWord: toHex(hwAddr, 4), // Word address
+        val: toHex(state.values[r], 8),
+        block: getBlockName(hwAddr, state.subtype)
+      });
+    }
+  }
+  return regs;
+}
+
+// Determine which block a hardware register address belongs to
+function getBlockName(addr, subtype) {
+  if (subtype >= 7) {
+    // H16+ addresses
+    if (addr >= 0x0000 && addr < 0x0020) return "Common";
+    if (addr >= 0x1040 && addr < 0x1140) return "L2 Cache";
+    if (addr >= 0x1140 && addr < 0x1240) return "Planar Engine";
+    if (addr >= 0x1240 && addr < 0x1340) return "Neural Engine";
+    if (addr >= 0x1340 && addr < 0x1440) return "TileDMA Src";
+    if (addr >= 0x1440 && addr < 0x1540) return "TileDMA Dst";
+    if (addr >= 0x1540 && addr < 0x1640) return "KernelDMA";
+  } else if (subtype === 5 || subtype === 6) {
+    // H14/H15 addresses
+    if (addr >= 0x0000 && addr < 0x0140) return "Common";
+    if (addr >= 0x0140 && addr < 0x0240) return "L2 Cache";
+    if (addr >= 0x0240 && addr < 0x0340) return "Planar Engine";
+    if (addr >= 0x0340 && addr < 0x0440) return "Neural Engine";
+    if (addr >= 0x0440 && addr < 0x0540) return "TileDMA Src";
+    if (addr >= 0x0540 && addr < 0x0640) return "TileDMA Dst";
+    if (addr >= 0x0640 && addr < 0x0740) return "KernelDMA";
+  } else {
+    // H13 (virtual addresses)
+    if (addr >= 0x0000 && addr < 0x4800) return "Common";
+    if (addr >= 0x4800 && addr < 0x8800) return "L2 Cache";
+    if (addr >= 0x8800 && addr < 0xC800) return "Planar Engine";
+    if (addr >= 0xC800 && addr < 0x13800) return "Neural Engine";
+    if (addr >= 0x13800 && addr < 0x17800) return "TileDMA Src";
+    if (addr >= 0x17800 && addr < 0x1F800) return "TileDMA Dst";
+    if (addr >= 0x1F800) return "KernelDMA";
+  }
+  return "Unknown Block";
+}

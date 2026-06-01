@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apple ANE HWX Analyzer & Visualizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #070610;
+      --bg-surface: rgba(20, 18, 42, 0.6);
+      --bg-card: rgba(255, 255, 255, 0.03);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(147, 51, 234, 0.4);
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --color-primary: #a855f7;
+      --color-secondary: #3b82f6;
+      --color-accent: #10b981;
+      --color-warning: #f59e0b;
+      --color-error: #ef4444;
+      --font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      line-height: 1.5;
+      overflow-x: hidden;
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 10% 10%, rgba(168, 85, 247, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.15) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(7, 6, 16, 0.8);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      width: 2.25rem;
+      height: 2.25rem;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #fff;
+      font-size: 1.1rem;
+      box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      background: linear-gradient(to right, #ffffff, #d8b4fe, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    .main-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* File Drop Zone */
+    .dropzone {
+      border: 2px dashed rgba(168, 85, 247, 0.3);
+      background: var(--bg-surface);
+      border-radius: 16px;
+      padding: 3.5rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dropzone::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.05), rgba(59, 130, 246, 0.05));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .dropzone:hover {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 25px rgba(168, 85, 247, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .dropzone:hover::before {
+      opacity: 1;
+    }
+
+    .dropzone-icon {
+      font-size: 3rem;
+      margin-bottom: 1.25rem;
+      display: inline-block;
+      transition: transform 0.3s ease;
+    }
+
+    .dropzone:hover .dropzone-icon {
+      transform: scale(1.1) translateY(-2px);
+    }
+
+    .dropzone-text h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .dropzone-text p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    #file-input {
+      display: none;
+    }
+
+    /* Dashboard Layout */
+    .dashboard {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 2rem;
+      display: none; /* Initially hidden */
+    }
+
+    /* Left Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .glass-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.25rem;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .panel-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-primary);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+    }
+
+    /* Info List */
+    .info-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .info-label {
+      color: var(--text-muted);
+    }
+
+    .info-val {
+      font-weight: 500;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+    }
+
+    /* Task List Selector */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 500px;
+      overflow-y: auto;
+      padding-right: 0.25rem;
+    }
+
+    .task-item {
+      padding: 0.75rem 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .task-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(168, 85, 247, 0.3);
+    }
+
+    .task-item.active {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15));
+      border-color: var(--color-primary);
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.1);
+    }
+
+    .task-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .task-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* Main View Area */
+    .content-area {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Main tabs */
+    .tabs-nav {
+      display: flex;
+      gap: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.75rem;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.5rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-radius: 8px;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .tab-btn.active {
+      color: var(--color-primary);
+      background: rgba(168, 85, 247, 0.08);
+      font-weight: 600;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Metadata Layout Grid */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .meta-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .meta-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--color-secondary);
+    }
+
+    .meta-card.primary::after {
+      background: var(--color-primary);
+    }
+
+    .meta-card.accent::after {
+      background: var(--color-accent);
+    }
+
+    .meta-card-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+
+    .meta-card-val {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: baseline;
+      gap: 0.35rem;
+    }
+
+    .meta-card-subval {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+      font-family: var(--font-mono);
+    }
+
+    /* Component Details cards */
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .detail-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .detail-header {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--color-secondary);
+    }
+
+    .detail-header.primary {
+      color: var(--color-primary);
+    }
+
+    /* Key/Value display inside details */
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+      font-size: 0.9rem;
+    }
+
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+
+    .detail-lbl {
+      color: var(--text-muted);
+    }
+
+    .detail-val {
+      font-weight: 500;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-primary {
+      background: rgba(168, 85, 247, 0.15);
+      color: #d8b4fe;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    .badge-secondary {
+      background: rgba(59, 130, 246, 0.15);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .badge-accent {
+      background: rgba(16, 185, 129, 0.15);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    /* Register Table Panel */
+    .reg-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .search-input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      color: var(--text-main);
+      font-family: var(--font-family);
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.15);
+    }
+
+    .block-select {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      color: var(--text-main);
+      font-family: var(--font-family);
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .block-select:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+
+    .table-container {
+      max-height: 500px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+
+    th {
+      background: rgba(15, 12, 33, 0.8);
+      position: sticky;
+      top: 0;
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--font-family);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    /* Hex Dump area */
+    .hex-dump {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #38bdf8;
+      line-height: 1.6;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Critique Panel */
+    .critique-box {
+      margin-top: 3rem;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      background: rgba(6, 78, 59, 0.1);
+    }
+    .critique-title {
+      color: #6ee7b7;
+    }
+    .critique-section {
+      margin-bottom: 1.25rem;
+    }
+    .critique-section h4 {
+      font-size: 0.95rem;
+      color: #a7f3d0;
+      margin-bottom: 0.5rem;
+    }
+    .critique-section ul {
+      margin-left: 1.25rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    /* Responsiveness */
+    @media (max-width: 1024px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo">⌘</div>
+      <div>
+        <h1 class="brand-title">Apple ANE HWX Analyzer</h1>
+        <div class="subtitle">
+          Interactive client-side parser & register visualizer (H13-H18) ·
+          <a href="https://github.com/freedomtan/coreml_to_ane_hwx/blob/main/GUIDE_ANE_HWX_FORMAT.md"
+             target="_blank"
+             style="color: var(--color-primary); text-decoration: none; font-weight: 500; border-bottom: 1px solid transparent; transition: border-color 0.2s;"
+             onmouseover="this.style.borderColor='var(--color-primary)'"
+             onmouseout="this.style.borderColor='transparent'">
+            Format Guide
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="brand-logo" style="background: rgba(255,255,255,0.05); box-shadow: none; font-size: 0.85rem; width: auto; padding: 0.25rem 0.75rem; border-radius: 8px; border: 1px solid var(--border-color);">
+      JS/HTML Parser V3
+    </div>
+  </header>
+
+  <div class="main-container">
+
+    <!-- Drag & Drop Zone -->
+    <div id="dropzone" class="dropzone">
+      <div class="dropzone-icon">📥</div>
+      <div class="dropzone-text">
+        <h3>Drag & Drop model.hwx File</h3>
+        <p>Or click to browse from your device</p>
+        <p style="font-size: 0.75rem; color: var(--color-primary); margin-top: 0.5rem; font-weight: 500;">
+          All decoding is done completely inside your browser locally. No files are uploaded to any server.
+        </p>
+      </div>
+      <input type="file" id="file-input" accept=".hwx" />
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="dashboard">
+      
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <!-- File Info panel -->
+        <div class="glass-panel">
+          <h3 class="panel-title">File Metadata</h3>
+          <div class="info-list">
+            <div class="info-item">
+              <span class="info-label">Architecture</span>
+              <span class="info-val" id="meta-arch" style="color: var(--color-primary); font-weight: 600;">H14</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">File Size</span>
+              <span class="info-val" id="meta-size">0 KB</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Tasks Found</span>
+              <span class="info-val" id="meta-tasks">0</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">CPU Subtype</span>
+              <span class="info-val" id="meta-subtype">0x0</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Mach-O Magic</span>
+              <span class="info-val" id="meta-magic">0x0</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">__text Offset</span>
+              <span class="info-val" id="meta-text-offset">0x0</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">__text Size</span>
+              <span class="info-val" id="meta-text-size">0x0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Task list selector -->
+        <div class="glass-panel" style="flex: 1; display: flex; flex-direction: column;">
+          <h3 class="panel-title">Tasks</h3>
+          <div class="task-list" id="task-selector-list">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Contents -->
+      <div class="content-area">
+        
+        <!-- Tabs Nav -->
+        <div class="tabs-nav">
+          <button class="tab-btn active" onclick="switchTab(event, 'tab-metadata')">Task Metadata</button>
+          <button class="tab-btn" onclick="switchTab(event, 'tab-registers')">Decoded Registers</button>
+          <button class="tab-btn" onclick="switchTab(event, 'tab-hexdump')">Raw Hex Dump</button>
+        </div>
+
+        <!-- TAB: Metadata -->
+        <div id="tab-metadata" class="tab-content active">
+          
+          <!-- Metadata Cards -->
+          <div class="meta-grid">
+            <div class="meta-card primary">
+              <div class="meta-card-title">Network Input Shape</div>
+              <div class="meta-card-val" id="card-in-shape">N/A</div>
+              <div class="meta-card-subval" id="card-in-channels">Channels: N/A</div>
+            </div>
+            <div class="meta-card accent">
+              <div class="meta-card-title">Network Output Shape</div>
+              <div class="meta-card-val" id="card-out-shape">N/A</div>
+              <div class="meta-card-subval" id="card-out-channels">Channels: N/A</div>
+            </div>
+            <div class="meta-card">
+              <div class="meta-card-title">Execution Cycles</div>
+              <div class="meta-card-val" id="card-cycles">N/A</div>
+              <div class="meta-card-subval">Estimated hardware cycles</div>
+            </div>
+          </div>
+
+          <!-- Architectural Details -->
+          <div class="details-grid">
+            
+            <!-- Neural Engine -->
+            <div class="detail-card">
+              <div class="detail-header">
+                <span>🧠</span> Neural Engine (NE) Core Block
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Active NE Cores</span>
+                <span class="detail-val" id="val-ne-cores">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Operation Mode (OpMode)</span>
+                <span class="detail-val" id="val-ne-opmode">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Activation (NLMode)</span>
+                <span class="detail-val" id="val-ne-act">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Biasing Enabled</span>
+                <span class="detail-val" id="val-ne-bias">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Small Source Optimization</span>
+                <span class="detail-val" id="val-ne-smallsrc">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Weight Format (kfmt)</span>
+                <span class="detail-val" id="val-ne-kfmt">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Palette Enable (pen)</span>
+                <span class="detail-val" id="val-ne-pen">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Sparse Weight Enable (sen)</span>
+                <span class="detail-val" id="val-ne-sen">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Weight Reuse Enable (reuse)</span>
+                <span class="detail-val" id="val-ne-reuse">N/A</span>
+              </div>
+            </div>
+
+            <!-- L2 Cache & DMA Buffers -->
+            <div class="detail-card">
+              <div class="detail-header primary">
+                <span>💾</span> L2 Cache & DMA Buffers
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">L2 Src1 Base Address</span>
+                <span class="detail-val" id="val-l2-src1">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">L2 Src2 Base Address</span>
+                <span class="detail-val" id="val-l2-src2">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">L2 Result Base Address</span>
+                <span class="detail-val" id="val-l2-res">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">L2 SrcIdx Base Address</span>
+                <span class="detail-val" id="val-l2-srcidx">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">TileDMA Src Base Address</span>
+                <span class="detail-val" id="val-tdma-src">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">TileDMA Dst Base Address</span>
+                <span class="detail-val" id="val-tdma-dst">N/A</span>
+              </div>
+            </div>
+
+            <!-- Planar Engine (PE) -->
+            <div class="detail-card">
+              <div class="detail-header" style="color: var(--color-accent)">
+                <span>📐</span> Planar Engine (PE)
+              </div>
+              <div class="detail-row pe-row">
+                <span class="detail-lbl">Planar Engine Op (PECfg)</span>
+                <span class="detail-val" id="val-pe-mode">N/A</span>
+              </div>
+              <div class="detail-row pe-row">
+                <span class="detail-lbl">PE Pooling Mode</span>
+                <span class="detail-val" id="val-pe-pool">N/A</span>
+              </div>
+              <div class="detail-row pe-row">
+                <span class="detail-lbl">PE Lookup Table Enable</span>
+                <span class="detail-val" id="val-pe-luten">N/A</span>
+              </div>
+              <div class="detail-row pe-row">
+                <span class="detail-lbl">PE Conditional Logic</span>
+                <span class="detail-val" id="val-pe-cond">N/A</span>
+              </div>
+              <div class="detail-row pe-row">
+                <span class="detail-lbl">PE Nonlinear Activation</span>
+                <span class="detail-val" id="val-pe-nl">N/A</span>
+              </div>
+            </div>
+
+            <!-- Task Header & Flags -->
+            <div class="detail-card" style="grid-column: span 2;">
+              <div class="detail-header" style="color: var(--color-warning)">
+                <span>⚙️</span> Task Control Flags & Identifiers
+              </div>
+              <div class="details-grid" style="grid-template-columns: 1fr 1fr; border-top: none; padding-top: 0;">
+                <div>
+                  <div class="detail-row">
+                    <span class="detail-lbl">Task ID (TID)</span>
+                    <span class="detail-val" id="val-td-tid">N/A</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-lbl">Dependent ID (DTID)</span>
+                    <span class="detail-val" id="val-td-dtid">N/A</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-lbl">Size in 32-bit Words</span>
+                    <span class="detail-val" id="val-td-words">N/A</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="detail-row">
+                    <span class="detail-lbl">Task State Restore (TSR)</span>
+                    <span class="detail-val" id="val-td-tsr">N/A</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-lbl">Task Descriptor Enable (TDE)</span>
+                    <span class="detail-val" id="val-td-tde">N/A</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-lbl">Enable Neural Engine (ENE)</span>
+                    <span class="detail-val" id="val-td-ene">N/A</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- TAB: Registers -->
+        <div id="tab-registers" class="tab-content">
+          <div class="glass-panel reg-panel">
+            <div class="filter-bar">
+              <input type="text" id="reg-search" class="search-input" placeholder="Search registers by name, address (e.g. 0x0140), or value..." oninput="filterRegisters()" />
+              <select id="reg-block-filter" class="block-select" onchange="filterRegisters()">
+                <option value="ALL">All Hardware Blocks</option>
+                <option value="Common">Common Block</option>
+                <option value="L2 Cache">L2 Cache Block</option>
+                <option value="Planar Engine">Planar Engine (PE)</option>
+                <option value="Neural Engine">Neural Engine (NE)</option>
+                <option value="TileDMA Src">TileDMA Source</option>
+                <option value="TileDMA Dst">TileDMA Destination</option>
+                <option value="KernelDMA">KernelDMA</option>
+              </select>
+            </div>
+            <div class="table-container">
+              <table id="registers-table">
+                <thead>
+                  <tr>
+                    <th>Byte Address</th>
+                    <th>Word Index</th>
+                    <th>Hardware Block</th>
+                    <th>Hex Value (32-bit)</th>
+                  </tr>
+                </thead>
+                <tbody id="registers-tbody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: Hex Dump -->
+        <div id="tab-hexdump" class="tab-content">
+          <div class="glass-panel">
+            <h3 class="panel-title">Task Raw Hex Content</h3>
+            <div id="hexdump-viewer" class="hex-dump">
+              No task selected.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Include the parsing logic script -->
+  <script src="hwx_parser.js"></script>
+  <script>
+    // State Variables
+    let parsedData = null;
+    let selectedTaskIdx = 0;
+
+    // Set up Drag & Drop listeners
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.style.borderColor = 'var(--color-primary)';
+    });
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+    });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFile(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    // File Handler
+    function handleFile(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const buffer = e.target.result;
+          parsedData = parseHwxFile(buffer);
+          
+          // Show Dashboard & Fill content
+          document.getElementById('dashboard').style.display = 'grid';
+          displayFileMetadata(file);
+          populateTaskList();
+          selectTask(0);
+        } catch (err) {
+          alert("Error parsing file: " + err.message);
+          console.error(err);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // Display File Metadata
+    function displayFileMetadata(file) {
+      const h = parsedData.header;
+      document.getElementById('meta-arch').innerText = h.archName;
+      document.getElementById('meta-size').innerText = (file.size / 1024).toFixed(2) + " KB";
+      document.getElementById('meta-tasks').innerText = parsedData.tasks.length;
+      document.getElementById('meta-subtype').innerText = toHex(h.cpusubtype, 4);
+      document.getElementById('meta-magic').innerText = toHex(h.magic, 8);
+      document.getElementById('meta-text-offset').innerText = toHex(parsedData.section.offset, 8);
+      document.getElementById('meta-text-size').innerText = toHex(parsedData.section.size, 8);
+    }
+
+    // Populate Task Tabs in Sidebar
+    function populateTaskList() {
+      const listEl = document.getElementById('task-selector-list');
+      listEl.innerHTML = '';
+      
+      parsedData.tasks.forEach((task, idx) => {
+        const item = document.createElement('div');
+        item.className = 'task-item';
+        item.onclick = () => selectTask(idx);
+        if (idx === 0) item.classList.add('active');
+
+        const label = `Task ${task.taskIndex} [TID: ${toHex(task.header.tid, 4)}]`;
+        const cycles = `Cyc: ${task.header.exe_cycles}`;
+        
+        item.innerHTML = `
+          <span class="task-title">${label}</span>
+          <span class="task-meta">${cycles}</span>
+        `;
+        listEl.appendChild(item);
+      });
+    }
+
+    // Select active task and update detail panes
+    function selectTask(idx) {
+      selectedTaskIdx = idx;
+      
+      // Update sidebar active status
+      const items = document.querySelectorAll('.task-item');
+      items.forEach((item, i) => {
+        if (i === idx) item.classList.add('active');
+        else item.classList.remove('active');
+      });
+
+      const task = parsedData.tasks[idx];
+      const dec = task.decodedInfo;
+
+      // Update Info Cards
+      if (dec.inputDim) {
+        const d = dec.inputDim;
+        document.getElementById('card-in-shape').innerText = `${d.W} × ${d.H}`;
+        document.getElementById('card-in-channels').innerText = `Channels: ${d.C} ${d.D > 1 ? `(Depth: ${d.D})` : ''}`;
+      } else {
+        document.getElementById('card-in-shape').innerText = "N/A";
+        document.getElementById('card-in-channels').innerText = "Channels: N/A";
+      }
+
+      if (dec.outputDim) {
+        const d = dec.outputDim;
+        document.getElementById('card-out-shape').innerText = `${d.W} × ${d.H}`;
+        document.getElementById('card-out-channels').innerText = `Channels: ${d.C} ${d.D > 1 ? `(Depth: ${d.D})` : ''}`;
+      } else {
+        document.getElementById('card-out-shape').innerText = "N/A";
+        document.getElementById('card-out-channels').innerText = "Channels: N/A";
+      }
+
+      document.getElementById('card-cycles').innerText = task.header.exe_cycles.toLocaleString();
+
+      // Update NE details
+      if (dec.ne) {
+        document.getElementById('val-ne-cores').innerText = dec.ne.activeNE;
+        document.getElementById('val-ne-opmode').innerText = dec.ne.opMode;
+        document.getElementById('val-ne-act').innerText = dec.ne.activation;
+        document.getElementById('val-ne-bias').innerText = dec.ne.biasEn;
+        document.getElementById('val-ne-smallsrc').innerText = dec.ne.smallSrc;
+        document.getElementById('val-ne-kfmt').innerText = dec.ne.kfmt || "N/A";
+        document.getElementById('val-ne-pen').innerText = dec.ne.pen || "N/A";
+        document.getElementById('val-ne-sen').innerText = dec.ne.sen || "N/A";
+        document.getElementById('val-ne-reuse').innerText = dec.ne.reuse || "N/A";
+      }
+
+      // Update L2 details
+      if (dec.l2) {
+        document.getElementById('val-l2-src1').innerText = toHex(dec.l2.Src1Base, 8);
+        document.getElementById('val-l2-src2').innerText = dec.l2.Src2Base !== undefined ? toHex(dec.l2.Src2Base, 8) : "N/A";
+        document.getElementById('val-l2-res').innerText = toHex(dec.l2.ResBase, 8);
+        document.getElementById('val-l2-srcidx').innerText = dec.l2.SrcIdxBase !== undefined ? toHex(dec.l2.SrcIdxBase, 8) : "N/A";
+      }
+      if (dec.tileDma) {
+        document.getElementById('val-tdma-src').innerText = toHex(dec.tileDma.SrcBase, 8);
+        document.getElementById('val-tdma-dst').innerText = toHex(dec.tileDma.DstBase, 8);
+      }
+      if (dec.pe) {
+        // Dynamically style based on PE block activity state
+        const peRows = document.querySelectorAll('.pe-row');
+        peRows.forEach(row => {
+          if (dec.pe.active) {
+            row.style.opacity = "1.0";
+          } else {
+            row.style.opacity = "0.4";
+          }
+        });
+
+        document.getElementById('val-pe-mode').innerText = dec.pe.opMode;
+        document.getElementById('val-pe-pool').innerText = dec.pe.poolMode || "N/A";
+        document.getElementById('val-pe-luten').innerText = dec.pe.lutEn || "N/A";
+        document.getElementById('val-pe-cond').innerText = dec.pe.cond || "N/A";
+        document.getElementById('val-pe-nl').innerText = dec.pe.nlMode || "N/A";
+      }
+
+      // Update Universal Headers Detail list
+      document.getElementById('val-td-tid').innerText = toHex(task.header.tid, 4);
+      document.getElementById('val-td-dtid').innerText = toHex(task.header.dtid, 4);
+      document.getElementById('val-td-words').innerText = task.header.task_size;
+      document.getElementById('val-td-tsr').innerText = task.header.tsr !== undefined ? task.header.tsr : "N/A";
+      document.getElementById('val-td-tde').innerText = task.header.tde !== undefined ? task.header.tde : "N/A";
+      document.getElementById('val-td-ene').innerText = task.header.ene !== undefined ? task.header.ene : "N/A";
+
+      // Populate Registers Table
+      populateRegistersTable(task.activeRegisters);
+
+      // Populate Hex View
+      document.getElementById('hexdump-viewer').innerText = task.rawHex;
+    }
+
+    // Populate Registers Grid
+    function populateRegistersTable(registers) {
+      const tbody = document.getElementById('registers-tbody');
+      tbody.innerHTML = '';
+
+      if (!registers || registers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No registers written in this task.</td></tr>';
+        return;
+      }
+
+      registers.forEach(reg => {
+        const tr = document.createElement('tr');
+        tr.dataset.block = reg.block;
+        tr.dataset.addr = reg.addr.toLowerCase();
+        tr.dataset.val = reg.val.toLowerCase();
+
+        tr.innerHTML = `
+          <td style="color: #60a5fa;">${reg.addr}</td>
+          <td style="color: #38bdf8;">${reg.addrWord}</td>
+          <td><span class="badge ${getBadgeClass(reg.block)}">${reg.block}</span></td>
+          <td style="color: #f472b6;">${reg.val}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      
+      filterRegisters(); // Apply current filters immediately
+    }
+
+    function getBadgeClass(block) {
+      switch (block) {
+        case 'Common': return 'badge-primary';
+        case 'L2 Cache': return 'badge-secondary';
+        case 'Planar Engine': return 'badge-accent';
+        case 'Neural Engine': return 'badge-accent';
+        default: return '';
+      }
+    }
+
+    // Filter & Search Table
+    function filterRegisters() {
+      const search = document.getElementById('reg-search').value.toLowerCase();
+      const block = document.getElementById('reg-block-filter').value;
+      const rows = document.querySelectorAll('#registers-tbody tr');
+
+      rows.forEach(row => {
+        if (!row.dataset.block) return; // skip no registers message row
+        
+        const matchesSearch = 
+          row.dataset.addr.includes(search) || 
+          row.dataset.val.includes(search) || 
+          row.dataset.block.toLowerCase().includes(search);
+        
+        const matchesBlock = (block === 'ALL' || row.dataset.block === block);
+
+        if (matchesSearch && matchesBlock) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    // Tab switcher
+    function switchTab(e, tabId) {
+      const tabs = document.querySelectorAll('.tab-content');
+      const buttons = document.querySelectorAll('.tab-btn');
+
+      tabs.forEach(tab => tab.classList.remove('active'));
+      buttons.forEach(btn => btn.classList.remove('active'));
+
+      document.getElementById(tabId).classList.add('active');
+      e.target.classList.add('active');
+    }
+  </script>
+</body>
+</html>

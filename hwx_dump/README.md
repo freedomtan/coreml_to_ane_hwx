@@ -2,7 +2,7 @@
 
 This document describes the structure of Apple Neural Engine (ANE) hardware executable files (`.hwx`) and the protocol for parsing task descriptors (TDs) across different architectures (M1-M4).
 
-If you're looking for a way to bypass HWX and run your models directly on the ANE, Albert Li has done some great work for the Asahi Linux project. You can find his repository here: github.com/allbilly/ane.
+If you're looking for a way to bypass HWX and run your models directly on the ANE, Albert Li has done some great work for the Asahi Linux project. You can find his repository here: [github.com/allbilly/ane](github.com/allbilly/ane).
 
 ## 1. File Container: Mach-O HWX
 

@@ -71,6 +71,7 @@ static const ArchInfo ARCHITECTURES[] = {
     {"h16", "A17 Pro/M4", 17},
     {"h17", "A18/A18 Pro", 19},
     {"h18", "A19", 20},
+    {"h19", "A20 Pro", 24},
 };
 
 static const int NUM_ARCHITECTURES = sizeof(ARCHITECTURES) / sizeof(ArchInfo);

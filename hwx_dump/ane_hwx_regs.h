@@ -68,6 +68,16 @@
 #define H18_KERNELDMA_COUNT 83
 #define H18_CACHEDMA_COUNT 14
 
+// H19 (v24) block counts
+#define H19_COMMON_COUNT 23
+#define H19_L2_COUNT 43
+#define H19_PE_COUNT 16
+#define H19_NE_COUNT 14
+#define H19_TILEDMA_SRC_COUNT 87
+#define H19_TILEDMA_DST_COUNT 29
+#define H19_KERNELDMA_COUNT 85
+#define H19_CACHEDMA_COUNT 14
+
 typedef struct {
   uint32_t values[HW_MAX_REGS];
   bool valid[HW_MAX_REGS];
@@ -472,6 +482,8 @@ typedef struct {
   uint32_t nid;
   uint32_t dpe;
 } ane_common_h18_t;
+
+typedef ane_common_h18_t ane_common_h19_t;
 
 typedef struct {
   uint32_t startAddr;
@@ -890,6 +902,53 @@ typedef struct {
   uint32_t res12;
 } __attribute__((packed)) ane_ne_h18_t;
 
+// [0x4900] Neural Engine (NE) Block (H19)
+typedef struct {
+  struct {
+    uint32_t kernel_fmt : 2;           // [1:0]
+    uint32_t palettized_en : 1;        // [2]
+    uint32_t pad0 : 1;                 // [3]
+    uint32_t palettized_bits : 4;      // [7:4]
+    uint32_t sparse_en : 1;            // [8]
+    uint32_t pad1_0 : 1;               // [9]
+    uint32_t group_kernel_reuse : 1;   // [10]
+    uint32_t pad1_1 : 10;              // [20:11]
+    uint32_t sparse_block_size_w : 4;  // [24:21]
+    uint32_t sparse_block_size_a : 4;  // [28:25]
+    uint32_t pad2 : 3;
+  } kernel_cfg;
+  struct {
+    uint32_t op_mode : 6;      // [5:0]
+    uint32_t kernel_mode : 5;  // [10:6]
+    uint32_t pad0 : 16;
+    uint32_t small_src_mode : 2;  // [28:27]
+    uint32_t pad1 : 3;
+  } mac_cfg;
+  uint32_t matrix_bias;
+  uint32_t ne_bias;
+  uint32_t post_scale;
+  struct {
+    uint32_t rcas_mode : 3;
+    uint32_t pad0 : 5;
+    uint32_t rcas_cmp_bit : 3;
+    uint32_t pad1 : 1;
+    uint32_t rcas_sense_axis : 2;
+    uint32_t pad2 : 1;
+    uint32_t rcas_sense_bit : 1;
+    uint32_t rcas_key_mask : 11;
+    uint32_t pad3 : 5;
+  } rcas_config;
+  struct {
+    uint32_t sr_mode : 4;
+    uint32_t sr_int_bits : 4;
+    uint32_t pad0 : 24;
+  } round_mode_cfg;
+  uint32_t sr_seed[4];
+  uint32_t quant_zero_point;
+  uint32_t res12;
+  uint32_t trace_cfg;  // 0x4934
+} __attribute__((packed)) ane_ne_h19_t;
+
 typedef struct {
   struct {
     uint32_t kernel_fmt : 2;          // [1:0]
@@ -1011,6 +1070,7 @@ typedef struct {
 } ane_l2_h17_t;
 
 typedef ane_l2_h17_t ane_l2_h18_t;
+typedef ane_l2_h18_t ane_l2_h19_t;
 
 // H17 (v19) / H18 (v20) L2 Cache Registers
 // Layout is similar to H16, but anchored at different context offsets:
@@ -1097,6 +1157,7 @@ typedef struct {
 } __attribute__((packed)) ane_pe_h17_t;
 
 typedef ane_pe_h17_t ane_pe_h18_t;
+typedef ane_pe_h18_t ane_pe_h19_t;
 
 // [0x5500] H17/H18 KernelDmaSrc Block
 typedef struct {
@@ -1175,6 +1236,7 @@ typedef struct {
 } __attribute__((packed)) ane_kerneldmasrc_h17_t;
 
 typedef ane_kerneldmasrc_h17_t ane_kerneldmasrc_h18_t;
+typedef ane_kerneldmasrc_h18_t ane_kerneldmasrc_h19_t;
 
 // [0x4100] L2 Cache Control Block (M4 specific mapping - 41 registers)
 typedef struct {

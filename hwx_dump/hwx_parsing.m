@@ -57,6 +57,7 @@ void print_tiledmasrc_h15(const hwx_state_t *state);
 void print_tiledmadst_h15(const hwx_state_t *state);
 void print_kerneldmasrc_h15(const hwx_state_t *state);
 const char *get_h15_reg_name(uint32_t addr);
+const char *get_h19_reg_name(uint32_t addr);
 
 // Architecture printer function table
 typedef struct {
@@ -207,6 +208,21 @@ const char *get_h18_reg_name(uint32_t addr) {
   return lookup_reg_name(addr, h18_ranges, 8);
 }
 
+const char *get_h19_reg_name(uint32_t addr) {
+  static const hwx_reg_range_t h19_ranges[] = {
+      {H16_COMMON_START, H19_COMMON_COUNT, h16_common_names},
+      {H16_L2_START, H19_L2_COUNT, h18_l2_names},
+      {H16_PE_START, H19_PE_COUNT, h17_pe_names},
+      {H16_NE_START, H19_NE_COUNT, h19_ne_names},
+      {H16_TILEDMA_SRC_START, H19_TILEDMA_SRC_COUNT, h19_tdma_src_names},
+      {H16_TILEDMA_DST_START, H19_TILEDMA_DST_COUNT, h19_tdma_dst_names},
+      {H16_KERNELDMA_START, H19_KERNELDMA_COUNT, h19_kdma_names},
+      {H16_CACHEDMA_START, H19_CACHEDMA_COUNT, h17_cdma_names},
+  };
+
+  return lookup_reg_name(addr, h19_ranges, 8);
+}
+
 void dump_hw_blocks(const hwx_state_t *state, const hwx_block_info_t *blocks,
                     int count, const char *(*name_lookup)(uint32_t)) {
   printf("        --- HW Block Register State ---\n");
@@ -251,7 +267,9 @@ const char *get_arch_name(uint32_t subtype) {
   case 9:
     return "H17 (A18 Pro/M5)";
   case 10:
-    return "H18 (A19)";
+    return "H18/H18g (A19/M6)";
+  case 11:
+    return "H19 (A20 Pro)";
   default:
     return "Unknown Architecture";
   }
@@ -275,6 +293,8 @@ uint32_t get_instruction_set_version(uint32_t subtype) {
     return 19;
   case 10:
     return 20;
+  case 11:
+    return 24;
   default:
     return 0;
   }
@@ -1394,7 +1414,7 @@ void print_common_h16(const hwx_state_t *state) {
   if (state->valid[(H16_COMMON_START + 0x4C) / 4])
     printf("        NID       : 0x%08x\n", nid);
   if (state->valid[(H16_COMMON_START + 0x50) / 4])
-    printf("        DPE       : 0x%08x\n", dpe);
+    printf("        DPE       : 0x%08x (Category: %u)\n", dpe, dpe & 0xf);
 }
 
 void print_ne_h16(const hwx_state_t *state) {
@@ -2423,6 +2443,18 @@ static const arch_printers_t h18_printers = {
   .print_cachedma = print_cachedma_h16,
 };
 
+static const arch_printers_t h19_printers = {
+  .print_common = print_common_h16,  // H19 uses H16 common
+  .print_l2 = print_l2_h18,
+  .print_pe_index = print_pe_index_h16,
+  .print_pe = print_pe_h18,
+  .print_ne = print_ne_h16,  // H19 uses H16 NE
+  .print_tiledmasrc = print_tiledmasrc_h16,  // H19 uses H16 TileDMA
+  .print_tiledmadst = print_tiledmadst_h16,
+  .print_kerneldmasrc = print_kerneldmasrc_h18,
+  .print_cachedma = print_cachedma_h16,
+};
+
 // Architecture block definitions
 static const hwx_block_info_t h13_blocks[] = {
   {"[0x00000] Common Module", H13_COMMON_START, 16},
@@ -2488,6 +2520,17 @@ static const hwx_block_info_t h18_blocks[] = {
   {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START, H18_CACHEDMA_COUNT},
 };
 
+static const hwx_block_info_t h19_blocks[] = {
+  {"[0x0000] Common Module", H16_COMMON_START, H19_COMMON_COUNT},
+  {"[0x4100] L2 Cache Control", H16_L2_START, H19_L2_COUNT},
+  {"[0x4500] Planar Engine (PE)", H16_PE_START, H19_PE_COUNT},
+  {"[0x4900] Neural Engine Core (NE)", H16_NE_START, H19_NE_COUNT},
+  {"[0x4D00] TileDMA Source", H16_TILEDMA_SRC_START, H19_TILEDMA_SRC_COUNT},
+  {"[0x5100] TileDMA Destination", H16_TILEDMA_DST_START, H19_TILEDMA_DST_COUNT},
+  {"[0x5500] KernelDMA Source", H16_KERNELDMA_START, H19_KERNELDMA_COUNT},
+  {"[0x5900] CacheDMA & Telemetry", H16_CACHEDMA_START, H19_CACHEDMA_COUNT},
+};
+
 // Get architecture descriptor based on instruction version and subtype
 static const arch_descriptor_t *get_arch_descriptor(uint32_t instr_ver, uint32_t subtype) {
   static const arch_descriptor_t descriptors[] = {
@@ -2506,8 +2549,11 @@ static const arch_descriptor_t *get_arch_descriptor(uint32_t instr_ver, uint32_t
     // H17 (A18 Pro/M5) - ISA v19, subtype 9
     {19, 9, "H17 (A18 Pro/M5)", get_h17_reg_name, &h17_printers, h17_blocks, 8},
 
-    // H18 (A19) - ISA v20, subtype 10
-    {20, 10, "H18 (A19)", get_h18_reg_name, &h18_printers, h18_blocks, 8},
+    // H18/H18g (A19/M6) - ISA v20, subtype 10
+    {20, 10, "H18/H18g (A19/M6)", get_h18_reg_name, &h18_printers, h18_blocks, 8},
+
+    // H19 (A20 Pro) - ISA v24, subtype 11
+    {24, 11, "H19 (A20 Pro)", get_h19_reg_name, &h19_printers, h19_blocks, 8},
   };
 
   const int desc_count = sizeof(descriptors) / sizeof(descriptors[0]);

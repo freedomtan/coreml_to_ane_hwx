@@ -1,6 +1,6 @@
-# ANE H18 (A19) Register Map
+# ANE H18 / H18g (A19 / M6) Register Map
 
-Exhaustive row-by-row mapping for H18 (A19).
+Exhaustive row-by-row mapping for H18 / H18g (A19 / M6) (Instruction Set Version 20, CPU Subtype 10).
 
 ## Block Index
 1. [Common (0x0000)](#common-0x0000)

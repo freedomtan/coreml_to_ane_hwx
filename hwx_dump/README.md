@@ -25,6 +25,7 @@ The `.hwx` file is a customized Mach-O binary.
 | H16/H16c/H16g/H16s (A17 Pro/M4) | 7 | 17 |
 | H17/H17a/H17g (A18/A18 Pro/M5) | 9 | 19 |
 | H18 (A19/A19 Pro) | 10 | 20 |
+| H19 | 11 | 24 |
 
 > [!NOTE]
 > The **Instruction Set Version** $n$ corresponds directly to the template parameter in the **`ZinAneTd<n u>`** class within the ANECompiler binary. For example, M1 (subtype 4) uses version 7, processed by `ZinAneTd<7u>`.

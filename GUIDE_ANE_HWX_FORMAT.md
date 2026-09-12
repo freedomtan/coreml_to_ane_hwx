@@ -46,7 +46,8 @@ Apple updates the ANE hardware with almost every new chip. The architecture vers
 | **H15** | 6 | A16 Bionic, M3 | Instruction Stream (dense only) | 8 |
 | **H16** | 7 | A17 Pro, M4 | Instruction Stream (dense + sparse) | 17 |
 | **H17** | 9 | A18, M5 | Instruction Stream (dense + sparse) | 19 |
-| **H18** | 10 | A19 | Instruction Stream (dense + sparse) | 20 |
+| **H18** | 10 | A19, A19 Pro | Instruction Stream (dense + sparse) | 20 |
+| **H18g / H19** | 11 | M6, A20 Pro | Instruction Stream (dense + sparse) | 24 |
 
 ---
 

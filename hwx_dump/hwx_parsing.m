@@ -267,9 +267,9 @@ const char *get_arch_name(uint32_t subtype) {
   case 9:
     return "H17 (A18 Pro/M5)";
   case 10:
-    return "H18/H18g (A19/M6)";
+    return "H18 (A19)";
   case 11:
-    return "H19 (A20 Pro)";
+    return "H18g/H19 (M6/A20 Pro)";
   default:
     return "Unknown Architecture";
   }
@@ -2549,11 +2549,11 @@ static const arch_descriptor_t *get_arch_descriptor(uint32_t instr_ver, uint32_t
     // H17 (A18 Pro/M5) - ISA v19, subtype 9
     {19, 9, "H17 (A18 Pro/M5)", get_h17_reg_name, &h17_printers, h17_blocks, 8},
 
-    // H18/H18g (A19/M6) - ISA v20, subtype 10
-    {20, 10, "H18/H18g (A19/M6)", get_h18_reg_name, &h18_printers, h18_blocks, 8},
+    // H18 (A19) - ISA v20, subtype 10
+    {20, 10, "H18 (A19)", get_h18_reg_name, &h18_printers, h18_blocks, 8},
 
-    // H19 (A20 Pro) - ISA v24, subtype 11
-    {24, 11, "H19 (A20 Pro)", get_h19_reg_name, &h19_printers, h19_blocks, 8},
+    // H18g/H19 (M6/A20 Pro) - ISA v24, subtype 11
+    {24, 11, "H18g/H19 (M6/A20 Pro)", get_h19_reg_name, &h19_printers, h19_blocks, 8},
   };
 
   const int desc_count = sizeof(descriptors) / sizeof(descriptors[0]);

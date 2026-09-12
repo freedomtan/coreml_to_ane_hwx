@@ -102,14 +102,13 @@ static const ArchInfo ARCHITECTURES[] = {
     {"h17s", "M5 Pro", 19},          // H17S: M5 Pro (Sotra)
     {"h17c", "M5 Max", 19},          // H17C: M5 Max
     {"h17d", "M5 Ultra", 19},        // H17D: T6052
-    // H18 generation (ISA v20): A19/M6 family
-    {"h18",  "A19/M6 (generic)", 20},
+    // H18 generation (ISA v20): A19 family
+    {"h18",  "A19 (generic)", 20},
     {"h18a", "A19", 20},             // H18A: A19 (Tilos)
     {"h18p", "A19 Pro", 20},         // H18P: A19 Pro (Thera)
-    {"h18g", "M6 (T8152)", 20},      // H18G: T8152 (Komodo)
-    // H19 generation (ISA v24)
+    // H19 generation (ISA v24): A20/M6 family
     {"h19",  "A20 Pro", 24},
-    {"h19g", "T8162 (Delos)", 24},   // H19G: T8162
+    {"h18g", "M6", 24},              // H18G: M6 - shares subtype 11 / ISA v24 (ZinIrHal2026BaseLine)
 };
 
 static const int NUM_ARCHITECTURES = sizeof(ARCHITECTURES) / sizeof(ArchInfo);

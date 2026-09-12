@@ -469,6 +469,7 @@ def get_arch_name(subtype):
         7: "H16 (A17 Pro/M4)",
         9: "H17 (A18 Pro/M5)",
         10: "H18 (A19)",
+        11: "H18g/H19 (M6/A20 Pro)",
     }.get(subtype, "Unknown Architecture")
 
 def get_instruction_set_version(subtype):
@@ -481,6 +482,7 @@ def get_instruction_set_version(subtype):
         7: 17,
         9: 19,
         10: 20,
+        11: 24,
     }.get(subtype, 0)
 
 def get_ch_fmt_name(fmt_val):

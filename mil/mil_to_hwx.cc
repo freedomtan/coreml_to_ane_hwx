@@ -66,13 +66,50 @@ struct ArchInfo {
 static const ArchInfo ARCHITECTURES[] = {
     {"h11", "A12", 5},
     {"h12", "A13", 6},
-    {"h13", "A14/M1", 7},
-    {"h14", "A15/M2", 11},
-    {"h15", "A16/M3", 8},
-    {"h16", "A17 Pro/M4", 17},
-    {"h17", "A18/A18 Pro", 19},
-    {"h18", "A19", 20},
-    {"h19", "A20 Pro", 24},
+    // H13 generation (ISA v7): A14/M1 family
+    {"h13",  "A14/M1 (generic)", 7},
+    {"h13p", "A14", 7},              // H13P: A14 (Sicily) - iPhone 12 series
+    {"h13g", "M1", 7},               // H13G: M1 (Tonga)
+    {"h13s", "M1 Pro", 7},           // H13S: M1 Pro (Jade Chop)
+    {"h13c", "M1 Max", 7},           // H13C: M1 Max (Jade 1C)
+    {"h13d", "M1 Ultra", 7},         // H13D: M1 Ultra (Jade 2C)
+    // H14 generation (ISA v11): A15/M2 family
+    {"h14",  "A15/M2 (generic)", 11},
+    {"h14p", "A15", 11},             // H14P: A15 (Ellis)
+    {"h14g", "M2", 11},              // H14G: M2 (Staten)
+    {"h14s", "M2 Pro", 11},          // H14S: M2 Pro (Rhodes Chop)
+    {"h14c", "M2 Max", 11},          // H14C: M2 Max (Rhodes 1C)
+    {"h14d", "M2 Ultra", 11},        // H14D: M2 Ultra (Rhodes 2C)
+    // H15 generation (ISA v8): A16/M3 family
+    {"h15",  "A16/M3 (generic)", 8},
+    {"h15p", "A16", 8},              // H15P: A16 (Crete)
+    {"h15g", "M3", 8},               // H15G: M3 (Ibiza)
+    {"h15s", "M3 Pro", 8},           // H15S: M3 Pro (Lobos)
+    {"h15c", "M3 Max (16-core)", 8}, // H15C: M3 Max (Palma)
+    {"h15m", "M3 Max (14-core)", 8}, // H15M: M3 Max (14-core GPU)
+    {"h15d", "M3 Ultra", 8},         // H15D: M3 Ultra
+    // H16 generation (ISA v17): A17 Pro/M4 family
+    {"h16",  "A17 Pro/M4 (generic)", 17},
+    {"h16p", "A17 Pro", 17},         // H16P: A17 Pro (Coll)
+    {"h16g", "M4", 17},              // H16G: M4 (Donan)
+    {"h16s", "M4 Pro", 17},          // H16S: M4 Pro (Brava Chop)
+    {"h16c", "M4 Max", 17},          // H16C: M4 Max (Brava)
+    // H17 generation (ISA v19): A18/M5 family
+    {"h17",  "A18/M5 (generic)", 19},
+    {"h17a", "A18", 19},             // H17A: A18 (Tupai)
+    {"h17p", "A18 Pro", 19},         // H17P: A18 Pro (Tahiti)
+    {"h17g", "M5", 19},              // H17G: M5 (Hidra)
+    {"h17s", "M5 Pro", 19},          // H17S: M5 Pro (Sotra)
+    {"h17c", "M5 Max", 19},          // H17C: M5 Max
+    {"h17d", "M5 Ultra", 19},        // H17D: T6052
+    // H18 generation (ISA v20): A19/M6 family
+    {"h18",  "A19/M6 (generic)", 20},
+    {"h18a", "A19", 20},             // H18A: A19 (Tilos)
+    {"h18p", "A19 Pro", 20},         // H18P: A19 Pro (Thera)
+    {"h18g", "M6 (T8152)", 20},      // H18G: T8152 (Komodo)
+    // H19 generation (ISA v24)
+    {"h19",  "A20 Pro", 24},
+    {"h19g", "T8162 (Delos)", 24},   // H19G: T8162
 };
 
 static const int NUM_ARCHITECTURES = sizeof(ARCHITECTURES) / sizeof(ArchInfo);
@@ -102,7 +139,7 @@ void print_usage(const char* prog_name) {
               << "  model_name              Base name of model (expects /tmp/<name>.mlmodelc/)\n\n"
               << "Options:\n"
               << "  -a, --arch ARCH         Target architecture (default: h16)\n"
-              << "                          Valid: h11, h12, h13, h14, h15, h16, h17, h18, h19\n"
+              << "                          Valid: h11-h19 (use -l to list all variants)\n"
               << "  -i, --input PATH        Input directory (default: /tmp/<name>.mlmodelc/)\n"
               << "  -o, --output PATH       Output directory (default: /tmp/hwx_output/)\n"
               << "  -d, --debug             Enable debug mode (default: on)\n"

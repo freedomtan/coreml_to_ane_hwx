@@ -19,13 +19,13 @@ The `.hwx` file is a customized Mach-O binary.
 | :--- | :--- | :--- |
 | H11 (A12) | 1 | 5 |
 | H12 (A13) | 3 | 6 |
-| H13/H13g (A14/M1) | 4 | 7 |
-| H14/H14c/H14g (A15/M2) | 5 | 11 |
-| H15/H15c/H15g (A16/M3) | 6 | 8 |
-| H16/H16c/H16g/H16s (A17 Pro/M4) | 7 | 17 |
-| H17/H17a/H17g (A18/A18 Pro/M5) | 9 | 19 |
-| H18 (A19/A19 Pro) | 10 | 20 |
-| H19 | 11 | 24 |
+| H13 (generic) / H13p (A14) / H13g (M1) / H13s (M1 Pro) / H13c (M1 Max) / H13d (M1 Ultra) | 4 | 7 |
+| H14 (generic) / H14p (A15) / H14g (M2) / H14s (M2 Pro) / H14c (M2 Max) / H14d (M2 Ultra) | 5 | 11 |
+| H15 (generic) / H15p (A16) / H15g (M3) / H15s (M3 Pro) / H15c (M3 Max 16c) / H15m (M3 Max 14c) / H15d (M3 Ultra) | 6 | 8 |
+| H16 (generic) / H16p (A17 Pro) / H16g (M4) / H16s (M4 Pro) / H16c (M4 Max) | 7 | 17 |
+| H17 (generic) / H17a (A18) / H17p (A18 Pro) / H17g (M5) / H17s (M5 Pro) / H17c (M5 Max) / H17d (M5 Ultra) | 9 | 19 |
+| H18 (generic) / H18a (A19) / H18p (A19 Pro) / H18g (M6/T8152) | 10 | 20 |
+| H19 (A20 Pro) / H19g (T8162/Delos) | 11 | 24 |
 
 > [!NOTE]
 > The **Instruction Set Version** $n$ corresponds directly to the template parameter in the **`ZinAneTd<n u>`** class within the ANECompiler binary. For example, M1 (subtype 4) uses version 7, processed by `ZinAneTd<7u>`.

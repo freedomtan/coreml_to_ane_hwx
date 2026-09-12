@@ -5,7 +5,7 @@
  * (Hardware Executable) format using Apple's ANECompiler framework.
  *
  * Features:
- * - Support for all ANE architectures (H11-H18)
+ * - Support for all ANE architectures (H11-H19)
  * - Comprehensive debug output and analytics
  * - Flexible command-line options
  * - Performance tracing configuration
@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <iostream>
 #include <string>
+#include <vector>
 
 // ANECompiler C API
 extern "C" {
@@ -101,7 +102,7 @@ void print_usage(const char* prog_name) {
               << "  model_name              Base name of model (expects /tmp/<name>.mlmodelc/)\n\n"
               << "Options:\n"
               << "  -a, --arch ARCH         Target architecture (default: h16)\n"
-              << "                          Valid: h11, h12, h13, h14, h15, h16, h17, h18\n"
+              << "                          Valid: h11, h12, h13, h14, h15, h16, h17, h18, h19\n"
               << "  -i, --input PATH        Input directory (default: /tmp/<name>.mlmodelc/)\n"
               << "  -o, --output PATH       Output directory (default: /tmp/hwx_output/)\n"
               << "  -d, --debug             Enable debug mode (default: on)\n"
@@ -128,8 +129,8 @@ void print_usage(const char* prog_name) {
               << "Output file structure:\n"
               << "  /tmp/hwx_output/<model_name>_<arch>/\n"
               << "  ├── model.hwx                   Compiled binary\n"
-              << "  ├── model.hwx_AnalyticsBuffer_main  Performance data\n"
-              << "  ├── analytics.json              JSON analytics export\n"
+              << "  ├── model.hwx_AnalyticsBuffer_main* Performance data\n"
+              << "  ├── analytics*.json             JSON analytics export\n"
               << "  └── (debug info if -d enabled)\n";
 }
 
@@ -146,7 +147,7 @@ void list_architectures() {
                ARCHITECTURES[i].chip,
                ARCHITECTURES[i].isa_version);
     }
-    std::cout << "\nRecommended: h16 (M4) or h17 (A18 Pro) for latest features\n";
+    std::cout << "\nRecommended: h16 (M4), h17 (A18 Pro), or h19 (A20 Pro) for latest features\n";
 }
 
 /**
@@ -407,8 +408,6 @@ int compile_mil_to_hwx(const CompilerConfig& config) {
 int extract_analytics(const CompilerConfig& config) {
     std::string model_output_dir = config.output_path + config.model_name + "_" + config.target_arch + "/";
     std::string hwx_path = model_output_dir + "model.hwx";
-    std::string analytics_path = model_output_dir + "model.hwx_AnalyticsBuffer_main";
-    std::string json_path = model_output_dir + "analytics.json";
 
     // Load HWX file
     NSData* hwxData = [NSData dataWithContentsOfFile:[NSString stringWithUTF8String:hwx_path.c_str()]];
@@ -417,7 +416,7 @@ int extract_analytics(const CompilerConfig& config) {
         return 1;
     }
 
-    // Get analytics buffer size
+    // Check analytics buffer size if available
     unsigned long bufferLength = 0;
     int ret = ANECGetAnalyticsBufferSize(
         [hwxData bytes],
@@ -427,39 +426,87 @@ int extract_analytics(const CompilerConfig& config) {
     );
 
     if (ret == 0 && config.verbose) {
-        std::cout << "Analytics buffer size: " << bufferLength << " bytes\n";
+        std::cout << "Analytics buffer size (@default): " << bufferLength << " bytes\n";
     }
 
-    // Load analytics buffer
-    NSData* analyticsData = [NSData dataWithContentsOfFile:[NSString stringWithUTF8String:analytics_path.c_str()]];
-    if (!analyticsData) {
+    // Discover analytics buffer files in the output directory
+    // For earlier architectures: model.hwx_AnalyticsBuffer_main
+    // For H19 and later / multi-engine: model.hwx_AnalyticsBuffer_main__bonded,
+    // model.hwx_AnalyticsBuffer_main__nonbonded, etc.
+    std::vector<std::string> buffer_files;
+
+    NSString* nsOutputDir = [NSString stringWithUTF8String:model_output_dir.c_str()];
+    NSFileManager* fm = [NSFileManager defaultManager];
+    NSError* error = nil;
+    NSArray<NSString*>* files = [fm contentsOfDirectoryAtPath:nsOutputDir error:&error];
+
+    if (!error && files) {
+        for (NSString* file in files) {
+            if ([file hasPrefix:@"model.hwx_AnalyticsBuffer_"]) {
+                buffer_files.push_back([file UTF8String]);
+            }
+        }
+    }
+
+    // Fallback if directory listing was empty
+    if (buffer_files.empty()) {
+        std::string default_path = model_output_dir + "model.hwx_AnalyticsBuffer_main";
+        if ([fm fileExistsAtPath:[NSString stringWithUTF8String:default_path.c_str()]]) {
+            buffer_files.push_back("model.hwx_AnalyticsBuffer_main");
+        }
+    }
+
+    if (buffer_files.empty()) {
         std::cerr << "Warning: Analytics buffer not found (compilation may not have generated it)\n";
         return 1;
     }
 
-    std::cout << "\n=== Performance Analytics ===\n";
+    for (const auto& buffer_file : buffer_files) {
+        std::string analytics_path = model_output_dir + buffer_file;
+        std::string json_filename;
+        if (buffer_files.size() == 1) {
+            json_filename = "analytics.json";
+        } else {
+            // E.g. model.hwx_AnalyticsBuffer_main__bonded -> analytics_main__bonded.json
+            std::string suffix = buffer_file;
+            const std::string prefix = "model.hwx_AnalyticsBuffer_";
+            if (suffix.find(prefix) == 0) {
+                suffix = suffix.substr(prefix.length());
+            }
+            json_filename = "analytics_" + suffix + ".json";
+        }
+        std::string json_path = model_output_dir + json_filename;
 
-    // Dump analytics in human-readable format
-    bool success = ZinDumpAnalytics([analyticsData bytes], [analyticsData length]);
-    if (!success) {
-        std::cerr << "Warning: Failed to dump analytics\n";
+        NSData* analyticsData = [NSData dataWithContentsOfFile:[NSString stringWithUTF8String:analytics_path.c_str()]];
+        if (!analyticsData) {
+            std::cerr << "Warning: Could not read analytics buffer: " << buffer_file << "\n";
+            continue;
+        }
+
+        std::cout << "\n=== Performance Analytics (" << buffer_file << ") ===\n";
+
+        // Dump analytics in human-readable format
+        bool success = ZinDumpAnalytics([analyticsData bytes], [analyticsData length]);
+        if (!success) {
+            std::cerr << "Warning: Failed to dump analytics for " << buffer_file << "\n";
+        }
+
+        // Export to JSON
+        success = ZinDumpAnalyticsInJSON(
+            [analyticsData bytes],
+            [analyticsData length],
+            json_path.c_str()
+        );
+
+        if (success) {
+            std::cout << "\n✓ Analytics exported to: " << json_path << "\n";
+        } else {
+            std::cerr << "Warning: Failed to export analytics to JSON for " << buffer_file << "\n";
+        }
+
+        std::cout << "Analytics buffer: " << analytics_path << "\n";
+        std::cout << "Buffer size: " << [analyticsData length] << " bytes\n";
     }
-
-    // Export to JSON
-    success = ZinDumpAnalyticsInJSON(
-        [analyticsData bytes],
-        [analyticsData length],
-        json_path.c_str()
-    );
-
-    if (success) {
-        std::cout << "\n✓ Analytics exported to: " << json_path << "\n";
-    } else {
-        std::cerr << "Warning: Failed to export analytics to JSON\n";
-    }
-
-    std::cout << "Analytics buffer: " << analytics_path << "\n";
-    std::cout << "Buffer size: " << [analyticsData length] << " bytes\n";
 
     return 0;
 }

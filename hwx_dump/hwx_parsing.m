@@ -2820,6 +2820,8 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
 
   uint32_t offset = 0;
   int task_idx = 0;
+  int stream_idx = 0;
+  int prev_tid = -1;
 
   while (offset + sizeof(ane_header_h16_t) <= total_len) {
     const ane_header_h16_t *m4h = (const ane_header_h16_t *)(ptr + offset);
@@ -2837,10 +2839,22 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
       break;
     }
 
+    // Detect network stream boundaries when TID resets (e.g. nonbonded -> bonded ANE0 -> bonded ANE1)
+    if (prev_tid != -1 && m4h->tid <= prev_tid && (prev_tid - m4h->tid > 10 || m4h->tid <= 1)) {
+      stream_idx++;
+      if (!dump_json) {
+        printf("\n    ================================================================\n");
+        printf("    [Network Stream #%d Transition @ offset 0x%x] (TID reset: %d -> %d)\n",
+               stream_idx, offset, prev_tid, m4h->tid);
+        printf("    ================================================================\n\n");
+      }
+    }
+    prev_tid = m4h->tid;
+
     if (!dump_json) {
       uint32_t size_bytes = m4h->task_size * 4;
-      printf("      [ANE Task %d @ 0x%x] (Size: 0x%x bytes)\n", task_idx++,
-             offset, size_bytes);
+      printf("      [ANE Task %d (Stream %d) @ 0x%x] (Size: 0x%x bytes)\n", task_idx++,
+             stream_idx, offset, size_bytes);
       printf("        TID: 0x%04x TaskSize: 0x%x ExeCycles: %u ENE: %u DTID: "
              "0x%04x\n",
              m4h->tid, m4h->task_size, m4h->exe_cycles, m4h->ctrl_flags.ene,

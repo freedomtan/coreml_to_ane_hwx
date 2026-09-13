@@ -2429,6 +2429,8 @@ def decode_ane_td_m4(section_data, subtype, dump_reg_blocks, dump_json):
         
     offset = 0
     task_idx = 0
+    stream_idx = 0
+    prev_tid = -1
     total_len = len(section_data)
     
     # sizeof(ane_header_h16_t) is 40 bytes (0x28)
@@ -2458,6 +2460,15 @@ def decode_ane_td_m4(section_data, subtype, dump_reg_blocks, dump_json):
             if not dump_json:
                 print(f"      [M4 Parser] Found likely end of tasks at offset 0x{offset:x} (TID: 0x{tid:04x})")
             break
+
+        # Detect network stream boundaries when TID resets
+        if prev_tid != -1 and tid <= prev_tid and (prev_tid - tid > 10 or tid <= 1):
+            stream_idx += 1
+            if not dump_json:
+                print("\n    ================================================================")
+                print(f"    [Network Stream #{stream_idx} Transition @ offset 0x{offset:x}] (TID reset: {prev_tid} -> {tid})")
+                print("    ================================================================\n")
+        prev_tid = tid
             
         size_bytes = task_size * 4
         if not dump_json:

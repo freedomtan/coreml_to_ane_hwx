@@ -168,7 +168,7 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x0030** | `+0x228` | **UnicastCfg** | **UnicastEn**: 14, **UnicastCin**: 16-31. |
 | **0x0034** | `+0x22c` | **TileHeight** | **TileHeight**: 0-16. |
 | **0x0038** | `+0x230` | **TileOverlap** | **Overlap**: 16-20, **PadTop**: 21-25, **PadBottom**: 26-30. |
-| **0x003C** | `+0x234` | **MacCfg** | **TaskType**: 4-7, **ActiveNE**: 19-21, **ReluType**: 24-27. (Verified via `SetCommonTaskType`, `SetCommonMacCfgActiveNE`, `SetCommonMacCfgReluType`). |
+| **0x003C** | `+0x234` | **MacCfg** | **SmallSrc**: 2-3, **TaskType**: 4-7, **SpatialPref/Min/Max**: 8-18, **ActiveNE**: 19-21, **TraceEn**: 22, **L2Barrier**: 23, **ReluType**: 24-26, **OutTrans**: 28, **FillLowerNE**: 29. *(Note: 1D Winograd is NOT supported in H16; ZinAneTd<17u>::Set1DWinogradMode asserts '1D Winograd is not supported')*. |
 | **0x0040** | `+0x238` | **NECfg** | **OCGSize**: 0-2 (1=16, 2=32, 4=64), **FatTileEnable**: 3, **WUStackLog2**: 4-5. |
 | **0x0044** | `+0x23c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
 | **0x0048** | `+0x240` | **PECfg** | **Src1Broadcast**: 0-3, **Src2Broadcast**: 4-7, **Src1Transpose**: 8, **Src2Transpose**: 9, **OutputTranspose**: 10, **IdxTranspose**: 14, **IdxBroadcast**: 15, **PEPrimarySource**: 16-18, **ActiveNE**: 19-21. |

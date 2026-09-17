@@ -248,16 +248,22 @@ typedef struct {
   } tile_overlap;
 
   struct {
-    uint32_t pad0 : 2;
+    uint32_t pad0 : 2;            // [1:0]
     uint32_t small_src_mode : 2;  // [3:2]
     uint32_t task_type : 4;       // [7:4]
-    uint32_t pad1 : 11;
-    uint32_t active_ne : 3;      // [21:19]
-    uint32_t pad2 : 2;           // [23:22]
-    uint32_t relu_type : 4;      // [27:24]
-    uint32_t out_trans : 1;      // [28] (Verified via binary)
-    uint32_t fill_lower_ne : 1;  // [29]
-    uint32_t pad4 : 2;
+    uint32_t sh_pref : 3;         // [10:8]
+    uint32_t pad1 : 1;            // [11]
+    uint32_t sh_min : 3;          // [14:12]
+    uint32_t pad2 : 1;            // [15]
+    uint32_t sh_max : 3;          // [18:16]
+    uint32_t active_ne : 3;       // [21:19]
+    uint32_t trace_en : 1;        // [22]
+    uint32_t l2_barrier : 1;      // [23]
+    uint32_t relu_type : 3;       // [26:24]
+    uint32_t pad3 : 1;            // [27] (1D Winograd unsupported in H16)
+    uint32_t out_trans : 1;       // [28] (Verified via binary)
+    uint32_t fill_lower_ne : 1;   // [29]
+    uint32_t pad4 : 2;            // [31:30]
   } maccfg;
 
   struct {
@@ -348,15 +354,22 @@ typedef struct {
   } tile_overlap;
 
   struct {
-    uint32_t pad0 : 2;
-    uint32_t small_src_mode : 2;
-    uint32_t task_type : 4;
-    uint32_t pad1 : 11;
-    uint32_t active_ne : 3;
-    uint32_t pad2 : 6;
-    uint32_t out_trans : 1;
-    uint32_t fill_lower_ne : 1;
-    uint32_t pad4 : 2;
+    uint32_t pad0 : 2;            // [1:0]
+    uint32_t small_src_mode : 2;  // [3:2]
+    uint32_t task_type : 4;       // [7:4]
+    uint32_t sh_pref : 3;         // [10:8]
+    uint32_t pad1 : 1;            // [11]
+    uint32_t sh_min : 3;          // [14:12]
+    uint32_t pad2 : 1;            // [15]
+    uint32_t sh_max : 3;          // [18:16]
+    uint32_t active_ne : 3;       // [21:19]
+    uint32_t trace_en : 1;        // [22]
+    uint32_t l2_barrier : 1;      // [23]
+    uint32_t relu_type : 3;       // [26:24]
+    uint32_t wino1d : 1;          // [27]
+    uint32_t out_trans : 1;       // [28]
+    uint32_t fill_lower_ne : 1;   // [29]
+    uint32_t pad4 : 2;            // [31:30]
   } maccfg;
 
   struct {
@@ -445,15 +458,22 @@ typedef struct {
   } tile_overlap;
 
   struct {
-    uint32_t pad0 : 2;
-    uint32_t small_src_mode : 2;
-    uint32_t task_type : 4;
-    uint32_t pad1 : 11;
-    uint32_t active_ne : 3;
-    uint32_t pad2 : 6;
-    uint32_t out_trans : 1;
-    uint32_t fill_lower_ne : 1;
-    uint32_t pad3 : 2;
+    uint32_t pad0 : 2;            // [1:0]
+    uint32_t small_src_mode : 2;  // [3:2]
+    uint32_t task_type : 4;       // [7:4]
+    uint32_t sh_pref : 3;         // [10:8]
+    uint32_t pad1 : 1;            // [11]
+    uint32_t sh_min : 3;          // [14:12]
+    uint32_t pad2 : 1;            // [15]
+    uint32_t sh_max : 3;          // [18:16]
+    uint32_t active_ne : 3;       // [21:19]
+    uint32_t trace_en : 1;        // [22]
+    uint32_t l2_barrier : 1;      // [23]
+    uint32_t relu_type : 3;       // [26:24]
+    uint32_t wino1d : 1;          // [27]
+    uint32_t out_trans : 1;       // [28]
+    uint32_t fill_lower_ne : 1;   // [29]
+    uint32_t pad4 : 2;            // [31:30]
   } maccfg;
 
   struct {
@@ -828,9 +848,22 @@ typedef struct {
     uint32_t pad2 : 7;
   } kernel_cfg;
   struct {
-    uint32_t op_mode : 6;      // [5:0]
-    uint32_t kernel_mode : 5;  // [10:6]
-    uint32_t pad0 : 21;
+    uint32_t op_mode : 3;         // [2:0]
+    uint32_t kernel_mode : 1;     // [3]
+    uint32_t bias_en : 1;         // [4]
+    uint32_t pass_en : 1;         // [5]
+    uint32_t mv_bias_en : 1;      // [6]
+    uint32_t pad0 : 1;            // [7]
+    uint32_t bin_point : 6;       // [13:8]
+    uint32_t post_en : 1;         // [14]
+    uint32_t pad1 : 1;            // [15]
+    uint32_t nl_mode : 2;         // [17:16]
+    uint32_t pad2 : 1;            // [18]
+    uint32_t max_pool_en : 1;     // [19]
+    uint32_t arg_sel : 4;         // [23:20]
+    uint32_t pad3 : 2;            // [25:24]
+    uint32_t double_int8_en : 1;  // [26]
+    uint32_t pad4 : 5;            // [31:27]
   } mac_cfg;
   uint32_t matrix_bias;
   uint32_t ne_bias;
@@ -872,11 +905,22 @@ typedef struct {
     uint32_t pad2 : 3;
   } kernel_cfg;
   struct {
-    uint32_t op_mode : 6;      // [5:0]
-    uint32_t kernel_mode : 5;  // [10:6]
-    uint32_t pad0 : 16;
-    uint32_t small_src_mode : 2;  // [28:27]
-    uint32_t pad1 : 3;
+    uint32_t op_mode : 3;         // [2:0]
+    uint32_t kernel_mode : 1;     // [3]
+    uint32_t bias_en : 1;         // [4]
+    uint32_t pass_en : 1;         // [5]
+    uint32_t mv_bias_en : 1;      // [6]
+    uint32_t pad0 : 1;            // [7]
+    uint32_t bin_point : 6;       // [13:8]
+    uint32_t post_en : 1;         // [14]
+    uint32_t pad1 : 1;            // [15]
+    uint32_t nl_mode : 2;         // [17:16]
+    uint32_t pad2 : 1;            // [18]
+    uint32_t max_pool_en : 1;     // [19]
+    uint32_t arg_sel : 4;         // [23:20]
+    uint32_t pad3 : 2;            // [25:24]
+    uint32_t double_int8_en : 1;  // [26]
+    uint32_t pad4 : 5;            // [31:27]
   } mac_cfg;
   uint32_t matrix_bias;
   uint32_t ne_bias;
@@ -979,10 +1023,12 @@ typedef struct {
     uint32_t post_en : 1;         // [14]
     uint32_t pad1 : 1;            // [15]
     uint32_t nl_mode : 2;         // [17:16]
-    uint32_t max_pool_en : 1;     // [18]
-    uint32_t arg_sel : 4;         // [22:19]
-    uint32_t double_int8_en : 1;  // [23]
-    uint32_t pad2 : 8;
+    uint32_t pad2 : 1;            // [18]
+    uint32_t max_pool_en : 1;     // [19]
+    uint32_t arg_sel : 4;         // [23:20]
+    uint32_t pad3 : 2;            // [25:24]
+    uint32_t double_int8_en : 1;  // [26]
+    uint32_t pad4 : 5;            // [31:27]
   } mac_cfg;
   struct {
     uint32_t matrix_vector_bias : 20;

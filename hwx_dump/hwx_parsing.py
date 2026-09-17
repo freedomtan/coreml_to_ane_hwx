@@ -1076,6 +1076,7 @@ def print_common_h16(state):
     ucin, ucen = 0, 0
     overlap, overlapt, overlapb = 0, 0, 0
     active_ne, small_src, task_type, out_trans, fill_lower = 0, 0, 0, 0, 0
+    wino1d, trace_en = 0, 0
     ocg, fat, wustack, halfwu, relu_type = 0, 0, 0, 0, 0
     pw, ph = 0, 0
     s1br, s2br, s1t, s2t, ot = 0, 0, 0, 0, 0
@@ -1142,6 +1143,9 @@ def print_common_h16(state):
         task_type = (m >> 4) & 0xF
         out_trans = (m >> 28) & 1
         fill_lower = (m >> 29) & 1
+        wino1d = (m >> 27) & 1
+        trace_en = (m >> 22) & 1
+        relu_type = (m >> 24) & 0x7
         ne_cfg = state.values[base + 16]
         ocg = ne_cfg & 7
         fat = (ne_cfg >> 3) & 1
@@ -1200,6 +1204,9 @@ def print_common_h16(state):
         task_type = (m >> 4) & 0xF
         out_trans = (m >> 28) & 1
         fill_lower = (m >> 29) & 1
+        wino1d = (m >> 27) & 1
+        trace_en = (m >> 22) & 1
+        relu_type = (m >> 24) & 0x7
         ne_cfg = state.values[base + 16]
         ocg = ne_cfg & 7
         fat = (ne_cfg >> 3) & 1
@@ -1276,7 +1283,9 @@ def print_common_h16(state):
         task_type = (m >> 4) & 0xF
         out_trans = (m >> 28) & 1
         fill_lower = (m >> 29) & 1
-        relu_type = (m >> 24) & 0xF
+        wino1d = (m >> 27) & 1
+        trace_en = (m >> 22) & 1
+        relu_type = (m >> 24) & 0x7
         ne_cfg = hybrid_values[16]
         ocg = ne_cfg & 7
         fat = (ne_cfg >> 3) & 1
@@ -1379,7 +1388,9 @@ def print_common_h16(state):
     if state.valid[(H16_COMMON_START + 0x3C) // 4]:
         task_type_mapped = get_task_type_mapping(task_type)
         task_str = f"({get_hw_task_type_name(task_type_mapped)})" if task_type_mapped != 0 else "((None))"
-        print(f"        MacCfg    : TaskType={task_type_mapped} {task_str} ActiveNE={active_ne} SmSrc={small_src} ReluType={relu_type} OutTrans={out_trans} FillLowerNE={fill_lower}")
+        trace_str = " TraceEn=1" if trace_en else ""
+        wino_str = " Wino1D=1" if wino1d else ""
+        print(f"        MacCfg    : TaskType={task_type_mapped} {task_str} ActiveNE={active_ne} SmSrc={small_src} ReluType={relu_type} OutTrans={out_trans} FillLowerNE={fill_lower}{trace_str}{wino_str}")
         
     if state.valid[(H16_COMMON_START + 0x40) // 4]:
         if state.instr_ver >= 20:
@@ -1419,9 +1430,17 @@ def print_ne_h16(state):
         sbs_w = (kernel_cfg >> 21) & 0xF
         sbs_a = (kernel_cfg >> 25) & 0xF
         mac_cfg = state.values[base + 1]
-        op = mac_cfg & 0x3F
-        km = (mac_cfg >> 6) & 0x1F
-        ssrc = (mac_cfg >> 27) & 3
+        op = mac_cfg & 7
+        km = (mac_cfg >> 3) & 1
+        bias_en = (mac_cfg >> 4) & 1
+        pass_en = (mac_cfg >> 5) & 1
+        mv_bias_en = (mac_cfg >> 6) & 1
+        bin_point = (mac_cfg >> 8) & 0x3F
+        post_en = (mac_cfg >> 14) & 1
+        nl_mode_ne = (mac_cfg >> 16) & 3
+        max_pool_en = (mac_cfg >> 19) & 1
+        arg_sel = (mac_cfg >> 20) & 0xF
+        double_int8_en = (mac_cfg >> 26) & 1
         mbias = state.values[base + 2]
         nebias = state.values[base + 3]
         ps = state.values[base + 4]
@@ -1441,8 +1460,17 @@ def print_ne_h16(state):
         sbs_w = (kernel_cfg >> 21) & 7
         asym = (kernel_cfg >> 24) & 1
         mac_cfg = state.values[base + 1]
-        op = mac_cfg & 0x3F
-        km = (mac_cfg >> 6) & 0x1F
+        op = mac_cfg & 7
+        km = (mac_cfg >> 3) & 1
+        bias_en = (mac_cfg >> 4) & 1
+        pass_en = (mac_cfg >> 5) & 1
+        mv_bias_en = (mac_cfg >> 6) & 1
+        bin_point = (mac_cfg >> 8) & 0x3F
+        post_en = (mac_cfg >> 14) & 1
+        nl_mode_ne = (mac_cfg >> 16) & 3
+        max_pool_en = (mac_cfg >> 19) & 1
+        arg_sel = (mac_cfg >> 20) & 0xF
+        double_int8_en = (mac_cfg >> 26) & 1
         mbias = state.values[base + 2]
         nebias = state.values[base + 3]
         ps = state.values[base + 4]
@@ -1471,9 +1499,9 @@ def print_ne_h16(state):
         bin_point = (mac_cfg >> 8) & 0x3F
         post_en = (mac_cfg >> 14) & 1
         nl_mode_ne = (mac_cfg >> 16) & 3
-        max_pool_en = (mac_cfg >> 18) & 1
-        arg_sel = (mac_cfg >> 19) & 0xF
-        double_int8_en = (mac_cfg >> 23) & 1
+        max_pool_en = (mac_cfg >> 19) & 1
+        arg_sel = (mac_cfg >> 20) & 0xF
+        double_int8_en = (mac_cfg >> 26) & 1
         mbias = state.values[base + 2] & 0xFFFFF
         nebias = state.values[base + 3] & 0xFFFFFF
         ps = state.values[base + 4] & 0xFFFFFF
@@ -1493,10 +1521,7 @@ def print_ne_h16(state):
             
     if state.valid[base + 1]:
         print(f"        MacCfg: Op={op} ({get_ne_op_mode_name(op)}) KMode={km} BiasEn={bias_en} PassEn={pass_en} MVBiasEn={mv_bias_en}")
-        sys.stdout.write(f"                BinPoint={bin_point} PostEn={post_en} NLMode={nl_mode_ne} MaxPoolEn={max_pool_en} ArgSel={arg_sel} DblInt8={double_int8_en}")
-        if state.instr_ver >= 20:
-            sys.stdout.write(f" SmallSrc={ssrc}")
-        print("")
+        print(f"                BinPoint={bin_point} PostEn={post_en} NLMode={nl_mode_ne} MaxPoolEn={max_pool_en} ArgSel={arg_sel} DblInt8={double_int8_en}")
         
     if state.valid[base + 2]:
         print(f"        MatrixBias: 0x{mbias:08x}")

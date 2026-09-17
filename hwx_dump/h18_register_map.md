@@ -35,7 +35,7 @@ Exhaustive row-by-row mapping for H18 / H18g (A19 / M6) (Instruction Set Version
 | **0x0030** | `+0x258` | **UnicastCin** |  |
 | **0x0034** | `+0x25c` | **TileHeight** | 0-16. |
 | **0x0038** | `+0x260` | **TileOverlap** | **Overlap**: 16-20, **PadTop**: 21-25, **PadBottom**: 26-30, **Reflect**: 31. |
-| **0x003C** | `+0x264` | **MacCfg** | **TaskType**: 4-7, **TraceEn**, **1DWinograd**. |
+| **0x003C** | `+0x264` | **MacCfg** | **SmallSrc**: 2-3, **TaskType**: 4-7, **SpatialPref/Min/Max**: 8-18, **ActiveNE**: 19-21, **TraceEn**: 22, **L2Barrier**: 23, **ReluType**: 24-26, **1DWinograd**: 27, **OutTrans**: 28, **FillLowerNE**: 29. |
 | **0x0040** | `+0x268` | **NECfg** | **OCGSize**, **PaddingMode**, **HalfWU**. |
 | **0x0044** | `+0x26c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
 | **0x0048** | `+0x270` | **PECfg** | **Src1Transpose**, **Src1Broadcast**, etc. |
@@ -131,7 +131,7 @@ Exhaustive row-by-row mapping for H18 / H18g (A19 / M6) (Instruction Set Version
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
 | :--- | :--- | :--- | :--- |
 | **0x4900** | `+0x4d4` | **KernelCfg** |  |
-| **0x4904** | `+0x4d8` | **MacCfg** |  |
+| **0x4904** | `+0x4d8` | **MacCfg** | **OpMode**: 0-2 (0:Conv, 1:EW, 2:RCAS, 3:EWSqrt, 4:Bypass, 5:Transconv), **KMode**: 3, **BiasEn**: 4, **PassEn**: 5, **MVBiasEn**: 6, **BinPoint**: 8-13, **PostEn**: 14, **NLMode**: 16-17, **MaxPoolEn**: 19, **ArgSel**: 20-23, **DoubleInt8En**: 26. |
 | **0x4908** | `+0x4dc` | **MatVecBias** |  |
 | **0x490C** | `+0x4e0` | **Bias** | 0-31. |
 | **0x4910** | `+0x4e4` | **PostScale** | 0-31. |

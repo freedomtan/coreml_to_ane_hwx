@@ -1150,7 +1150,7 @@ void print_common_h16(const hwx_state_t *state) {
   uint32_t k3d = 0, s3d = 0, p3d = 0, o3d = 0;
   uint32_t ucin = 0, ucen = 0, overlap = 0, overlapt = 0, overlapb = 0;
   uint32_t active_ne = 0, small_src = 0, task_type = 0, out_trans = 0,
-           fill_lower = 0;
+           fill_lower = 0, wino1d = 0, trace_en = 0;
   uint32_t ocg = 0, fat = 0, wustack = 0, halfwu = 0, relu_type = 0;
   uint32_t pw = 0, ph = 0;
   uint32_t s1br = 0, s2br = 0, s1t = 0, s2t = 0, ot = 0, nid = 0, dpe = 0;
@@ -1210,6 +1210,9 @@ void print_common_h16(const hwx_state_t *state) {
     task_type = c.maccfg.task_type;
     out_trans = c.maccfg.out_trans;
     fill_lower = c.maccfg.fill_lower_ne;
+    wino1d = c.maccfg.wino1d;
+    trace_en = c.maccfg.trace_en;
+    relu_type = c.maccfg.relu_type;
     ocg = c.ne_cfg.ocg_size;
     fat = c.ne_cfg.fat_tile_en;
     halfwu = c.ne_cfg.half_wu_mode;
@@ -1259,6 +1262,9 @@ void print_common_h16(const hwx_state_t *state) {
     task_type = c.maccfg.task_type;
     out_trans = c.maccfg.out_trans;
     fill_lower = c.maccfg.fill_lower_ne;
+    wino1d = c.maccfg.wino1d;
+    trace_en = c.maccfg.trace_en;
+    relu_type = c.maccfg.relu_type;
     ocg = c.ne_cfg.ocg_size;
     fat = c.ne_cfg.fat_tile_en;
     wustack = c.ne_cfg.wustack_log2;
@@ -1309,6 +1315,7 @@ void print_common_h16(const hwx_state_t *state) {
     task_type = c.maccfg.task_type;
     out_trans = c.maccfg.out_trans;
     fill_lower = c.maccfg.fill_lower_ne;
+    trace_en = c.maccfg.trace_en;
     relu_type = c.maccfg.relu_type;
     ocg = c.ne_cfg.ocg_size;
     fat = c.ne_cfg.fat_tile_en;
@@ -1383,13 +1390,15 @@ void print_common_h16(const hwx_state_t *state) {
     task_type = get_task_type_mapping(task_type);
     printf(
         "        MacCfg    : TaskType=%u %s ActiveNE=%u SmSrc=%u ReluType=%u "
-        "OutTrans=%d FillLowerNE=%d\n",
+        "OutTrans=%d FillLowerNE=%d%s%s\n",
         task_type,
         (task_type != 0)
             ? [[NSString stringWithFormat:@"(%s)", get_hw_task_type_name(
                                                        task_type)] UTF8String]
             : "((None))",
-        active_ne, small_src, relu_type, out_trans, fill_lower);
+        active_ne, small_src, relu_type, out_trans, fill_lower,
+        trace_en ? " TraceEn=1" : "",
+        wino1d ? " Wino1D=1" : "");
   }
 
   if (state->valid[(H16_COMMON_START + 0x40) / 4]) {
@@ -1422,7 +1431,7 @@ void print_ne_h16(const hwx_state_t *state) {
 
   uint32_t kfmt = 0, pen = 0, pbits = 0, sen = 0, reuse = 0, sbs_w = 0,
            sbs_a = 0, asym = 0;
-  uint32_t op = 0, km = 0, ssrc = 0;
+  uint32_t op = 0, km = 0;
   uint32_t bias_en = 0, pass_en = 0, mv_bias_en = 0, bin_point = 0, post_en = 0;
   uint32_t nl_mode_ne = 0, max_pool_en = 0, arg_sel = 0, double_int8_en = 0;
   uint32_t mbias = 0, nebias = 0, ps = 0, rcas = 0, rmode = 0, rbits = 0,
@@ -1440,7 +1449,15 @@ void print_ne_h16(const hwx_state_t *state) {
     sbs_a = ne.kernel_cfg.sparse_block_size_a;
     op = ne.mac_cfg.op_mode;
     km = ne.mac_cfg.kernel_mode;
-    ssrc = ne.mac_cfg.small_src_mode;
+    bias_en = ne.mac_cfg.bias_en;
+    pass_en = ne.mac_cfg.pass_en;
+    mv_bias_en = ne.mac_cfg.mv_bias_en;
+    bin_point = ne.mac_cfg.bin_point;
+    post_en = ne.mac_cfg.post_en;
+    nl_mode_ne = ne.mac_cfg.nl_mode;
+    max_pool_en = ne.mac_cfg.max_pool_en;
+    arg_sel = ne.mac_cfg.arg_sel;
+    double_int8_en = ne.mac_cfg.double_int8_en;
     mbias = ne.matrix_bias;
     nebias = ne.ne_bias;
     ps = ne.post_scale;
@@ -1460,6 +1477,15 @@ void print_ne_h16(const hwx_state_t *state) {
     asym = ne.kernel_cfg.asym_quant_en;
     op = ne.mac_cfg.op_mode;
     km = ne.mac_cfg.kernel_mode;
+    bias_en = ne.mac_cfg.bias_en;
+    pass_en = ne.mac_cfg.pass_en;
+    mv_bias_en = ne.mac_cfg.mv_bias_en;
+    bin_point = ne.mac_cfg.bin_point;
+    post_en = ne.mac_cfg.post_en;
+    nl_mode_ne = ne.mac_cfg.nl_mode;
+    max_pool_en = ne.mac_cfg.max_pool_en;
+    arg_sel = ne.mac_cfg.arg_sel;
+    double_int8_en = ne.mac_cfg.double_int8_en;
     mbias = ne.matrix_bias;
     nebias = ne.ne_bias;
     ps = ne.post_scale;
@@ -1516,8 +1542,6 @@ void print_ne_h16(const hwx_state_t *state) {
            "ArgSel=%u DblInt8=%u",
            bin_point, post_en, nl_mode_ne, max_pool_en, arg_sel,
            double_int8_en);
-    if (state->instr_ver >= 20)
-      printf(" SmallSrc=%u", ssrc);
     printf("\n");
   }
 

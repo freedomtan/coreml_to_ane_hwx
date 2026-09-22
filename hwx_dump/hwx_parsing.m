@@ -372,12 +372,32 @@ const char *get_hw_tensor_format_name_v17(uint32_t mode, uint32_t mem_fmt,
 const char *get_ch_fmt_name(uint32_t fmt) {
   switch (fmt) {
   case 0:
-  case 5:
-    return "INT8";
+    return "int8";
   case 1:
-    return "UINT8";
+    return "uint8";
   case 2:
-    return "FLOAT16";
+    return "float16";
+  case 4:
+    return "e4m3";
+  default:
+    return "Unknown";
+  }
+}
+
+const char *get_kernel_fmt_name(uint32_t fmt) {
+  switch (fmt) {
+  case 0:
+    return "int8";
+  case 1:
+    return "uint8";
+  case 2:
+    return "fp16";
+  case 3:
+    return "e4m3";
+  case 4:
+    return "int4";
+  case 5:
+    return "e2m1";
   default:
     return "Unknown";
   }
@@ -588,7 +608,7 @@ void print_ne_h13(const hwx_state_t *state) {
          ne->mac_cfg.binary_point);
   printf("        NE KernelCfg: Fmt=%s PalettizedEn=%d PalettizeBits=%u "
          "SparseFmt=%d GroupKernelReuse=%d\n",
-         get_ch_fmt_name(ne->kernel_cfg.kernel_fmt),
+         get_kernel_fmt_name(ne->kernel_cfg.kernel_fmt),
          ne->kernel_cfg.palettized_en, ne->kernel_cfg.palettized_bits,
          ne->kernel_cfg.sparse_fmt, ne->kernel_cfg.group_kernel_reuse);
   printf("        NE MatrixVectorBias: 0x%04x\n",
@@ -782,7 +802,7 @@ void print_ne_h14(const hwx_state_t *state) {
   uint32_t rmode = state->values[H14_NE_START/4 + 4]; // 0x0D10 RoundModeCfg
 
   printf("        KernelCfg: Fmt=%s PalEn=%u SparseEn=%u Reuse=%u\n",
-         get_ch_fmt_name((kcfg >> 0) & 3),
+         get_kernel_fmt_name((kcfg >> 0) & 3),
          (kcfg >> 2) & 1, (kcfg >> 8) & 1, (kcfg >> 10) & 1);
   printf("        MacCfg: OpMode=%s KMode=%u BiasEn=%u BinPoint=%u NLMode=%u\n",
          get_ne_op_mode_name((mcfg >> 0) & 7),
@@ -935,7 +955,7 @@ void print_ne_h15(const hwx_state_t *state) {
   uint32_t rmode = state->values[H16_NE_START/4 + 4]; // RoundModeCfg
 
   printf("        KernelCfg: Fmt=%s PalEn=%u SparseEn=%u Reuse=%u\n",
-         get_ch_fmt_name((kcfg >> 0) & 3),
+         get_kernel_fmt_name((kcfg >> 0) & 3),
          (kcfg >> 2) & 1, (kcfg >> 8) & 1, (kcfg >> 10) & 1);
   printf("        MacCfg: OpMode=%s KMode=%u BiasEn=%u BinPoint=%u NLMode=%u\n",
          get_ne_op_mode_name((mcfg >> 0) & 7),
@@ -1526,7 +1546,7 @@ void print_ne_h16(const hwx_state_t *state) {
 
   if (state->valid[H16_NE_START / 4]) {
     printf("        KernelCfg: Fmt=%s Pal=%d(%dbit) SparseEn=%d Reuse=%d",
-           get_ch_fmt_name(kfmt), pen, pbits, sen, reuse);
+           get_kernel_fmt_name(kfmt), pen, pbits, sen, reuse);
     if (state->instr_ver >= 20) {
       printf(" SBS(W/A)=%d/%d\n", sbs_w, sbs_a);
     } else {

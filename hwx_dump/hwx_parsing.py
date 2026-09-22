@@ -1413,7 +1413,7 @@ def print_ne_h16(state):
     print("        --- Neural Engine (0x4900) ---")
     base = H16_NE_START // 4
     
-    kfmt, pen, pbits, sen, reuse, sbs_w, sbs_a, asym = 0, 0, 0, 0, 0, 0, 0, 0
+    kfmt, pen, pbits, sen, reuse, sbs_w, asym, detect_zeros = 0, 0, 0, 0, 0, 0, 0, 0
     op, km, ssrc = 0, 0, 0
     bias_en, pass_en, mv_bias_en, bin_point, post_en = 0, 0, 0, 0, 0
     nl_mode_ne, max_pool_en, arg_sel, double_int8_en = 0, 0, 0, 0
@@ -1427,8 +1427,9 @@ def print_ne_h16(state):
         pbits = (kernel_cfg >> 4) & 0xF
         sen = (kernel_cfg >> 8) & 1
         reuse = (kernel_cfg >> 10) & 1
-        sbs_w = (kernel_cfg >> 21) & 0xF
-        sbs_a = (kernel_cfg >> 25) & 0xF
+        sbs_w = (kernel_cfg >> 21) & 7
+        asym = (kernel_cfg >> 24) & 1
+        detect_zeros = (kernel_cfg >> 28) & 1
         mac_cfg = state.values[base + 1]
         op = mac_cfg & 7
         km = (mac_cfg >> 3) & 1
@@ -1459,6 +1460,7 @@ def print_ne_h16(state):
         reuse = (kernel_cfg >> 10) & 1
         sbs_w = (kernel_cfg >> 21) & 7
         asym = (kernel_cfg >> 24) & 1
+        detect_zeros = (kernel_cfg >> 28) & 1
         mac_cfg = state.values[base + 1]
         op = mac_cfg & 7
         km = (mac_cfg >> 3) & 1
@@ -1479,7 +1481,7 @@ def print_ne_h16(state):
         rbits = (state.values[base + 6] >> 4) & 0xF
         seeds = [state.values[base + 7 + idx] for idx in range(4)]
         qzp = state.values[base + 11]
-        
+
     else:
         # H16 layout
         kernel_cfg = state.values[base]
@@ -1514,11 +1516,12 @@ def print_ne_h16(state):
 
     if state.valid[base]:
         sys.stdout.write(f"        KernelCfg: Fmt={get_ch_fmt_name(kfmt)} Pal={pen}({pbits}bit) SparseEn={sen} Reuse={reuse}")
-        if state.instr_ver >= 20:
-            print(f" SBS(W/A)={sbs_w}/{sbs_a}")
+        sys.stdout.write(f" SBS={sbs_w} Asym={asym}")
+        if state.instr_ver >= 19:
+            print(f" DetectZeros={detect_zeros}")
         else:
-            print(f" SBS={sbs_w} Asym={asym}")
-            
+            print("")
+
     if state.valid[base + 1]:
         print(f"        MacCfg: Op={op} ({get_ne_op_mode_name(op)}) KMode={km} BiasEn={bias_en} PassEn={pass_en} MVBiasEn={mv_bias_en}")
         print(f"                BinPoint={bin_point} PostEn={post_en} NLMode={nl_mode_ne} MaxPoolEn={max_pool_en} ArgSel={arg_sel} DblInt8={double_int8_en}")

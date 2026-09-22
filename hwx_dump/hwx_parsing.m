@@ -1450,7 +1450,7 @@ void print_ne_h16(const hwx_state_t *state) {
   printf("        --- Neural Engine (0x4900) ---\n");
 
   uint32_t kfmt = 0, pen = 0, pbits = 0, sen = 0, reuse = 0, sbs_w = 0,
-           sbs_a = 0, asym = 0;
+           asym = 0, detect_zeros = 0;
   uint32_t op = 0, km = 0;
   uint32_t bias_en = 0, pass_en = 0, mv_bias_en = 0, bin_point = 0, post_en = 0;
   uint32_t nl_mode_ne = 0, max_pool_en = 0, arg_sel = 0, double_int8_en = 0;
@@ -1465,8 +1465,9 @@ void print_ne_h16(const hwx_state_t *state) {
     pbits = ne.kernel_cfg.palettized_bits;
     sen = ne.kernel_cfg.sparse_en;
     reuse = ne.kernel_cfg.group_kernel_reuse;
-    sbs_w = ne.kernel_cfg.sparse_block_size_w;
-    sbs_a = ne.kernel_cfg.sparse_block_size_a;
+    sbs_w = ne.kernel_cfg.sparse_block_size;
+    asym = ne.kernel_cfg.asym_quant_en;
+    detect_zeros = ne.kernel_cfg.detect_zeros;
     op = ne.mac_cfg.op_mode;
     km = ne.mac_cfg.kernel_mode;
     bias_en = ne.mac_cfg.bias_en;
@@ -1495,6 +1496,7 @@ void print_ne_h16(const hwx_state_t *state) {
     reuse = ne.kernel_cfg.group_kernel_reuse;
     sbs_w = ne.kernel_cfg.sparse_block_size;
     asym = ne.kernel_cfg.asym_quant_en;
+    detect_zeros = ne.kernel_cfg.detect_zeros;
     op = ne.mac_cfg.op_mode;
     km = ne.mac_cfg.kernel_mode;
     bias_en = ne.mac_cfg.bias_en;
@@ -1547,10 +1549,11 @@ void print_ne_h16(const hwx_state_t *state) {
   if (state->valid[H16_NE_START / 4]) {
     printf("        KernelCfg: Fmt=%s Pal=%d(%dbit) SparseEn=%d Reuse=%d",
            get_kernel_fmt_name(kfmt), pen, pbits, sen, reuse);
-    if (state->instr_ver >= 20) {
-      printf(" SBS(W/A)=%d/%d\n", sbs_w, sbs_a);
+    printf(" SBS=%d Asym=%d", sbs_w, asym);
+    if (state->instr_ver >= 19) {
+      printf(" DetectZeros=%d\n", detect_zeros);
     } else {
-      printf(" SBS=%d Asym=%d\n", sbs_w, asym);
+      printf("\n");
     }
   }
 

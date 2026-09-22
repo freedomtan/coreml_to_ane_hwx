@@ -845,7 +845,9 @@ typedef struct {
     uint32_t pad1_1 : 10;             // [20:11]
     uint32_t sparse_block_size : 3;   // [23:21]
     uint32_t asym_quant_en : 1;       // [24]
-    uint32_t pad2 : 7;
+    uint32_t pad2a : 3;                // [27:25]
+    uint32_t detect_zeros : 1;        // [28]
+    uint32_t pad2b : 3;                // [31:29]
   } kernel_cfg;
   struct {
     uint32_t op_mode : 3;         // [2:0]
@@ -900,9 +902,11 @@ typedef struct {
     uint32_t pad1_0 : 1;               // [9]
     uint32_t group_kernel_reuse : 1;   // [10]
     uint32_t pad1_1 : 10;              // [20:11]
-    uint32_t sparse_block_size_w : 4;  // [24:21]
-    uint32_t sparse_block_size_a : 4;  // [28:25]
-    uint32_t pad2 : 3;
+    uint32_t sparse_block_size : 3;    // [23:21]
+    uint32_t asym_quant_en : 1;        // [24]
+    uint32_t pad2a : 3;                // [27:25]
+    uint32_t detect_zeros : 1;         // [28]
+    uint32_t pad2b : 3;                // [31:29]
   } kernel_cfg;
   struct {
     uint32_t op_mode : 3;         // [2:0]
@@ -957,9 +961,11 @@ typedef struct {
     uint32_t pad1_0 : 1;               // [9]
     uint32_t group_kernel_reuse : 1;   // [10]
     uint32_t pad1_1 : 10;              // [20:11]
-    uint32_t sparse_block_size_w : 4;  // [24:21]
-    uint32_t sparse_block_size_a : 4;  // [28:25]
-    uint32_t pad2 : 3;
+    uint32_t sparse_block_size : 3;    // [23:21]
+    uint32_t asym_quant_en : 1;        // [24]
+    uint32_t pad2a : 3;                // [27:25]
+    uint32_t detect_zeros : 1;         // [28]
+    uint32_t pad2b : 3;                // [31:29]
   } kernel_cfg;
   struct {
     uint32_t op_mode : 6;      // [5:0]

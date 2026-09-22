@@ -168,7 +168,7 @@ The `ZinAneTd<17u>` object (descriptor) is divided into these hardware-mapped re
 | **0x0030** | `+0x228` | **UnicastCfg** | **UnicastEn**: 14, **UnicastCin**: 16-31. |
 | **0x0034** | `+0x22c` | **TileHeight** | **TileHeight**: 0-16. |
 | **0x0038** | `+0x230` | **TileOverlap** | **Overlap**: 16-20, **PadTop**: 21-25, **PadBottom**: 26-30. |
-| **0x003C** | `+0x234` | **MacCfg** | **SmallSrc**: 2-3, **TaskType**: 4-7, **SpatialPref/Min/Max**: 8-18, **ActiveNE**: 19-21, **TraceEn**: 22, **L2Barrier**: 23, **ReluType**: 24-26, **OutTrans**: 28, **FillLowerNE**: 29. *(Note: 1D Winograd is NOT supported in H16; ZinAneTd<17u>::Set1DWinogradMode asserts '1D Winograd is not supported')*. |
+| **0x003C** | `+0x234` | **MacCfg** | **SmallSrc**: 2-3, **TaskType**: 4-7, **SpatialPref/Min/Max**: 8-18, **ActiveNE**: 19-21, **TraceEn**: 22, **L2Barrier**: 23, **ReluType**: 24-26, **OutTrans**: 28, **FillLowerNE**: 29. *(Note: 1D Winograd is NOT supported in H16; ZinAneTd<17u>::Set1DWinogradMode asserts '1D Winograd is not supported'. 2D Winograd is also asserted as unsupported here, and has never been enabled on any generation through H19 — see [README.md § Feature Support by Generation](README.md#feature-support-by-generation).)* |
 | **0x0040** | `+0x238` | **NECfg** | **OCGSize**: 0-2 (1=16, 2=32, 4=64), **FatTileEnable**: 3, **WUStackLog2**: 4-5. |
 | **0x0044** | `+0x23c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
 | **0x0048** | `+0x240` | **PECfg** | **Src1Broadcast**: 0-3, **Src2Broadcast**: 4-7, **Src1Transpose**: 8, **Src2Transpose**: 9, **OutputTranspose**: 10, **IdxTranspose**: 14, **IdxBroadcast**: 15, **PEPrimarySource**: 16-18, **ActiveNE**: 19-21. |
@@ -362,8 +362,8 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
-| **0x4900** | `+0x498` | **KernelCfg** | **Fmt**: 0-1, **PalettizedEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **Reuse**: 10, **SparseBinary**: 15, **Align**: 16, **BlockSize**: 21-23, **AsymQuantEn**: 24. |
-| **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0:Conv, 1:EW, 2:RCAS, 3:EWSqrt, 4:Bypass, 5:Transconv), **KMode**: 3, **BiasEn**: 4, **PassEn**: 5, **MVBiasEn**: 6, **BinPoint**: 8-13, **PostEn**: 14, **NLMode**: 16-17, **MaxPoolEn**: 19, **ArgSel**: 20-23, **DoubleInt8En**: 26. |
+| **0x4900** | `+0x498` | **KernelCfg** | **Fmt**: 0-1, **PalettizedEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **Reuse**: 10, **SparseBinary**: 15, **Align**: 16, **BlockSize**: 21-23, **AsymQuantEn**: 24. *(No DetectZeros bit: `ZinAneTd<17u>::SetKernelDetectZeros` asserts on H16; that bit (28) first becomes real on H17.)* |
+| **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0:Conv, 1:EW, 2:RCAS, 3:EWSqrt, 4:Bypass, 5:Transconv), **KMode**: 3, **BiasEn**: 4, **PassEn**: 5, **MVBiasEn**: 6, **BinPoint**: 8-13, **PostEn**: 14, **NLMode**: 16-17, **MaxPoolEn**: 19, **ArgSel**: 20-23, **DoubleInt8En**: 26. *(H16 is the first generation where DoubleInt8En is real; H14/H13 share a reject stub.)* |
 | **0x4908** | `+0x4a0` | **MatrixVectorBias**| **Bias**: 0-15. |
 | **0x490C** | `+0x4a4` | **NEBias** | **BiasVal**: 0-15, **ExpIdx**: 16-20. |
 | **0x4910** | `+0x4a8` | **NEPostScale** | **ScaleVal**: 0-15, **ExpIdx**: 16-20 (Negated). |

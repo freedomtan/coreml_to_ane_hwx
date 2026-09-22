@@ -32,6 +32,20 @@ The `.hwx` file is a customized Mach-O binary.
 
 - **Location of Tasks**: ANE tasks are stored in the `__TEXT` segment, `__text` section.
 
+### Feature Support by Generation
+
+Determined by disassembling each ISA version's `ZinAneTd<Nu>::Set*` method: versions that share a byte-identical (ICF-folded) address with earlier generations were checked for an unconditional `ZinAssertImpl` call (i.e. a stub that always rejects the feature, regardless of the caller), vs. a genuinely distinct implementation that stores a real bit/field.
+
+| Feature | First Supported | ISA Version | Evidence |
+| :--- | :--- | :--- | :--- |
+| **Int8** | H11 (earliest generation checked) | v1+ | `GetHWKernelFormat` is not per-ISA-templated; int8's jump-table case returns hw code 0 unconditionally, with no version check or assert anywhere. |
+| **DoubleInt8** | **H16** | v17 | `ZinAneTd<Nu>::SetDoubleInt8Enable` is a shared no-op stub for v1,4,5,6,7,8,10,11 (H11-H14 inclusive) that does nothing real; v17 is the first version with a genuine `mov w8,#0x4000000` / store into `MacCfg` bit 26 (`DoubleInt8En`, already documented in NE.MacCfg for H16/H17/H18/H19). |
+| **1D Winograd** | **H17** | v19 | `ZinAneTd<Nu>::Set1DWinogradMode` is a shared stub for v1,4,5,6,7,8,10,11,17 (H11-H16 inclusive) that unconditionally calls `ZinAssertImpl("1D Winograd is not supported")`. v19 is the first version with real code (`mov w8,#0x8000000`, bit 27 of Common.MacCfg). |
+| **2D Winograd** | **Not supported on any documented generation** (H11-H19) | — | `ZinAneTd<Nu>::Set2DWinogradMode` shares one address across every version from v1 through v31 (H11 through H19), and it unconditionally asserts `"2D Winograd is not supported"`. The `Set2DWinogradMode` symbol exists on every generation, but it has never actually worked on real silicon covered by this repo. |
+| **FP8 / E4M3 (ChCfg, activation format)** | **H18** | v20 | H17 (v19) asserts `"E4M3 is not supported"` in `SetCommonOutFmt`; H18 (v20) and H19 (v24) accept it as field value 4 (see `hwx_dump/hwx_parsing.m`'s `get_ch_fmt_name()`). |
+| **FP8 / E4M3 (KernelCfg, weight format)** | Inconclusive from ANECompiler alone | — | `GetHWKernelFormat` (weight-format path) is a single non-templated function, not gated per ISA version the way the activation path is; its only assert is a generic `"Unknown kernel format in codegen"` for out-of-range values. `get_kernel_fmt_name()`'s `case 3: e4m3` may be reachable in software before it's meaningful on real HW — needs empirical confirmation on a per-generation basis, not just static analysis. |
+| **DetectZeros** | **H17** | v19 | `ZinAneTd<Nu>::SetKernelDetectZeros` is a shared stub for v4,5,6,7,8,10,11,17 (H12-H16 inclusive) that unconditionally asserts (embedded string is oddly `"On-the-fly Sparse Encoding is not supported"` — likely a copy/paste artifact in Apple's own source, not evidence against this being the DetectZeros setter). v19 is the first version with real code (`mov w8,#0x10000000`, bit 28 of `KernelCfg` — see `hwx_dump/ane_hwx_regs.h`). |
+
 ## 2. Register Naming Discovery (H16/M4)
 
 To discover register names and bit-accurate fields for the H16 (M4) architecture, analyze the `ANECompiler` binary using two primary classes: `ZinAneTd<17u>` (setters/descriptor state) and `ZinGetRegisterProgramming<17u>` (getters/hardware constraints).

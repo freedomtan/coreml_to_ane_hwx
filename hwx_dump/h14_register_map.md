@@ -318,6 +318,9 @@ Bit extraction for 0x00e000e0:
 | **0x0D14** | `0x4914` | `+0x3b8` | **Spare0** | NE Spare 0 register. |
 | **0x0D18** | `0x4918` | `+0x3bc` | **Spare1** | NE Spare 1 register. |
 
+> [!NOTE]
+> **DoubleInt8**, **1D Winograd**, and **DetectZeros** are NOT supported on H14. `ZinAneTd<11u>` shares an unconditional reject stub with H13 and earlier for `SetDoubleInt8Enable`, `Set1DWinogradMode`, and `SetKernelDetectZeros` — these bits only become real starting H16 (DoubleInt8) and H17 (1D Winograd, DetectZeros). Basic **Int8** (KernelFmt=0) has been supported since the earliest ANE generation. See [README.md § Feature Support by Generation](README.md#feature-support-by-generation) for the full table and disassembly evidence.
+
 ### TileDMA Destination (0x1500 OLD / 0x5100 Modern, Object `+0x3c0`)
 - **Count**: 9 registers (`0x09` words, `0x24` bytes).
 - **Object Layout**: Starts at `+0x3c0` of the `ZinAneTd` object.

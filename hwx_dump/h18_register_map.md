@@ -35,7 +35,7 @@ Exhaustive row-by-row mapping for H18 / H18g (A19 / M6) (Instruction Set Version
 | **0x0030** | `+0x258` | **UnicastCin** |  |
 | **0x0034** | `+0x25c` | **TileHeight** | 0-16. |
 | **0x0038** | `+0x260` | **TileOverlap** | **Overlap**: 16-20, **PadTop**: 21-25, **PadBottom**: 26-30, **Reflect**: 31. |
-| **0x003C** | `+0x264` | **MacCfg** | **SmallSrc**: 2-3, **TaskType**: 4-7, **SpatialPref/Min/Max**: 8-18, **ActiveNE**: 19-21, **TraceEn**: 22, **L2Barrier**: 23, **ReluType**: 24-26, **1DWinograd**: 27, **OutTrans**: 28, **FillLowerNE**: 29. |
+| **0x003C** | `+0x264` | **MacCfg** | **SmallSrc**: 2-3, **TaskType**: 4-7, **SpatialPref/Min/Max**: 8-18, **ActiveNE**: 19-21, **TraceEn**: 22, **L2Barrier**: 23, **ReluType**: 24-26, **1DWinograd**: 27, **OutTrans**: 28, **FillLowerNE**: 29. *(`Set2DWinogradMode` still asserts unconditionally on H18 — 2D Winograd has never been enabled on any generation through H19. See [README.md § Feature Support by Generation](README.md#feature-support-by-generation).)* |
 | **0x0040** | `+0x268` | **NECfg** | **OCGSize**, **PaddingMode**, **HalfWU**. |
 | **0x0044** | `+0x26c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
 | **0x0048** | `+0x270` | **PECfg** | **Src1Transpose**, **Src1Broadcast**, etc. |

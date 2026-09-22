@@ -127,7 +127,7 @@ Exhaustive row-by-row mapping for H19 (A20 Pro) (Instruction Set Version 24, CPU
 
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping / Description |
 | :--- | :--- | :--- | :--- |
-| **0x4900** | `+0x4fc` | **KernelCfg** |  |
+| **0x4900** | `+0x4fc` | **KernelCfg** | **Fmt**: 0-1, **PalettizedEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **Reuse**: 10, **SparseBinary**: 15, **Align**: 16, **BlockSize**: 21-23, **AsymQuantEn**: 24, **DetectZeros**: 28. |
 | **0x4904** | `+0x500` | **MacCfg** | **OpMode**: 0-2 (0:Conv, 1:EW, 2:RCAS, 3:EWSqrt, 4:Bypass, 5:Transconv), **KMode**: 3, **BiasEn**: 4, **PassEn**: 5, **MVBiasEn**: 6, **BinPoint**: 8-13, **PostEn**: 14, **NLMode**: 16-17, **MaxPoolEn**: 19, **ArgSel**: 20-23, **DoubleInt8En**: 26. |
 | **0x4908** | `+0x504` | **MatrixVectorBias** |  |
 | **0x490C** | `+0x508` | **NEBias** | 0-31. |

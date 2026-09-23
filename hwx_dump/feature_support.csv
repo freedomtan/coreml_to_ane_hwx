@@ -1,0 +1,107 @@
+feature,setter,first_chip,first_isa_version,H11,H12,H13,H14,H15,H16,H17,H18,H19,unmapped_isa_versions_seen,evidence_at_first_real
+1DWinogradMode,Set1DWinogradMode,H17,19,STUB,STUB,STUB,STUB,STUB,STUB,REAL,REAL,REAL,1;4;10;26;28;31;36,addr=0x20bce6bb0
+2DWinogradMode,Set2DWinogradMode,never (through H19),,STUB,STUB,STUB,STUB,STUB,STUB,STUB,STUB,STUB,1;4;10;26;28;31;36,
+AlignedKernelPaletteLut,SetAlignedKernelPaletteLut,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccc3bc
+BroadcastCfg,SetBroadcastCfg,never (through H19),,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,1,
+CacheDmaPreEnable,SetCacheDmaPreEnable,H15,8,STUB,STUB,STUB,STUB,REAL,REAL,REAL,REAL,REAL,1;4;10;26;28;31;36,addr=0x20bcd2c68
+CcdmaAtomicEn,SetCcdmaAtomicEn,H11,5,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,1;4;10;26;28;31;36,addr=0x20bd0ca44
+CropOffsetForTexture,SetCropOffsetForTexture,H16,17,n/a,n/a,n/a,n/a,n/a,REAL,REAL,REAL,REAL,26;28;31;36,addr=0x20baa9254
+CustomCodegenTd,SetCustomCodegenTd,H17,19,n/a,n/a,n/a,n/a,n/a,n/a,REAL,REAL,REAL,26,addr=0x20bce7f70
+DP2AddMode,SetDP2AddMode,never (through H19),,STUB,STUB,STUB,STUB,STUB,STUB,STUB,STUB,STUB,4;10;26;28;31;36,
+DoubleInt8Enable,SetDoubleInt8Enable,H16,17,STUB,STUB,STUB,STUB,STUB,REAL,REAL,REAL,REAL,4;10;26;28;31;36,addr=0x20bce13d0
+FillLowerNEFirst,SetFillLowerNEFirst,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bcdbf08
+GroupKernelReuse,SetGroupKernelReuse,H11,5,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,4;10;26;28;31;36,addr=0x20bcc9d8c
+KernelAsymQuantEn,SetKernelAsymQuantEn,H16,17,STUB,STUB,STUB,STUB,STUB,REAL,REAL,REAL,REAL,4;10;26;28;31;36,addr=0x20bce1788
+KernelDetectZeros,SetKernelDetectZeros,H17,19,STUB,STUB,STUB,STUB,STUB,STUB,REAL,REAL,REAL,4;10;26;28;31;36,addr=0x20bce6f44
+KernelDmaSrcKBufByp,SetKernelDmaSrcKBufByp,never (through H19),,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,1,
+KernelDmaSrcNoReuseHint,SetKernelDmaSrcNoReuseHint,H14,11,n/a,n/a,NOOP,REAL,REAL,n/a,n/a,n/a,n/a,10,addr=0x20bccfaac
+KernelDmaSrcPaletteLutDmaCacheHint,SetKernelDmaSrcPaletteLutDmaCacheHint,H15,8,n/a,n/a,DELEGATES,DELEGATES,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccfc80
+KernelDmaSrcPaletteLutUserTag,SetKernelDmaSrcPaletteLutUserTag,H14,11,NOOP,NOOP,NOOP,REAL,REAL,REAL,REAL,REAL,REAL,1;4;10;26;28;31;36,addr=0x20bcdc4f0
+KernelPalettizedBits,SetKernelPalettizedBits,H11,5,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,1;4;10;26;28;31;36,addr=0x20bccad80
+KernelPalettizedEn,SetKernelPalettizedEn,H11,5,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,1;4;10;26;28;31;36,addr=0x20bccad10
+KernelSparseBinary,SetKernelSparseBinary,H13,7,STUB,STUB,REAL,REAL,REAL,REAL,REAL,REAL,REAL,4;10;26;28;31;36,addr=0x20bccdc78
+KernelSparseBlockSize,SetKernelSparseBlockSize,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bcdc030
+KernelSparseFmt,SetKernelSparseFmt,H11,5,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,4;10;26;28;31;36,addr=0x20bcc9dac
+L2BfrMode,SetL2BfrMode,H11,5,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,4;10;26;28;31;36,addr=0x20bcc982c
+L2DstNumInterleavedChannels,SetL2DstNumInterleavedChannels,never (through H19),,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,1,
+L2ResultCfgForCompression,SetL2ResultCfgForCompression,H15,8,n/a,n/a,NOOP,NOOP,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccf818
+L2ResultInterleave,SetL2ResultInterleave,H11,5,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,4;10;26;28;31;36,addr=0x20bcc9c28
+L2Src1CfgForCompression,SetL2Src1CfgForCompression,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccbe48
+L2Src1DmaDoubleRateMode,SetL2Src1DmaDoubleRateMode,H19,24,STUB,STUB,STUB,STUB,STUB,STUB,STUB,STUB,REAL,1;4;10;26;28;31;36,addr=0x20bcedc08
+L2Src1FIFOMode,SetL2Src1FIFOMode,H17,19,STUB,STUB,STUB,STUB,STUB,STUB,REAL,REAL,REAL,1;4;10;26;28;31;36,addr=0x20bce2dec
+L2Src1Interleave,SetL2Src1Interleave,H11,5,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,4;10;26;28;31;36,addr=0x20bcc92bc
+L2Src2CfgForCompression,SetL2Src2CfgForCompression,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccbe48
+L2Src2DmaDoubleRateMode,SetL2Src2DmaDoubleRateMode,H19,24,n/a,n/a,STUB,STUB,STUB,STUB,STUB,STUB,REAL,1;10;26;28;31;36,addr=0x20bcedcbc
+L2Src2FIFOMode,SetL2Src2FIFOMode,H17,19,n/a,n/a,STUB,STUB,STUB,STUB,REAL,REAL,REAL,1;10;26;28;31;36,addr=0x20bce33d4
+L2Src2Interleave,SetL2Src2Interleave,H14,11,n/a,n/a,STUB,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bcd97dc
+L2Src2NumInterleavedChannels,SetL2Src2NumInterleavedChannels,never (through H19),,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,1,
+L2SrcNumInterleavedChannels,SetL2SrcNumInterleavedChannels,never (through H19),,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,1,
+MultiPaletteEnable,SetMultiPaletteEnable,H19,24,STUB,STUB,STUB,STUB,STUB,STUB,STUB,STUB,REAL,4;10;26;28;31;36,addr=0x20bcf1ed8
+MultiPaletteSizeOneLut,SetMultiPaletteSizeOneLut,H19,24,STUB,STUB,STUB,STUB,STUB,STUB,STUB,STUB,REAL,4;10;26;28;31;36,addr=0x20bcf1f40
+NEInputTranspose,SetNEInputTranspose,never (through H19),,STUB,STUB,STUB,STUB,STUB,STUB,STUB,STUB,STUB,1;4;10;26;28;31;36,
+NEKBufBypEn,SetNEKBufBypEn,never (through H19),,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,1,
+NEKeepKernel,SetNEKeepKernel,H13,7,n/a,n/a,REAL,NOOP,NOOP,n/a,n/a,n/a,n/a,10,addr=0x20bcce030
+NEUsePrevKernel,SetNEUsePrevKernel,H13,7,n/a,n/a,REAL,NOOP,NOOP,n/a,n/a,n/a,n/a,10,addr=0x20bcce050
+OutputTranspose,SetOutputTranspose,H13,7,NOOP,NOOP,REAL,REAL,REAL,REAL,REAL,REAL,REAL,1;4;10;26;28;31;36,addr=0x20bccdf88
+PEBypass,SetPEBypass,H16,17,n/a,n/a,n/a,n/a,n/a,REAL,REAL,REAL,REAL,26;28;31;36,addr=0x20bcdee08
+PEIndexBroadcast,SetPEIndexBroadcast,H15,8,n/a,n/a,NOOP,NOOP,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bcd05c0
+PEIndexTranspose,SetPEIndexTranspose,H15,8,n/a,n/a,NOOP,NOOP,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bcd05a0
+PEOutputCtoW,SetPEOutputCtoW,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccc7d0
+PEOutputQuantization,SetPEOutputQuantization,H16,17,n/a,n/a,STUB,STUB,STUB,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bcde8ac
+PESrc1Broadcast,SetPESrc1Broadcast,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccc524
+PESrc1ReLu,SetPESrc1ReLu,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccc4b0
+PESrc1Transpose,SetPESrc1Transpose,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccc4e4
+PESrc2Broadcast,SetPESrc2Broadcast,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccc560
+PESrc2ReLu,SetPESrc2ReLu,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccc4c4
+PESrc2Transpose,SetPESrc2Transpose,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccc504
+PaletteBlockSize,SetPaletteBlockSize,H17,19,STUB,STUB,STUB,STUB,STUB,STUB,REAL,REAL,REAL,4;10;26;28;31;36,addr=0x20bce6c78
+PaletteGroupSize,SetPaletteGroupSize,H19,24,STUB,STUB,STUB,STUB,STUB,STUB,STUB,STUB,REAL,4;10;26;28;31;36,addr=0x20bcf1ef4
+PassthroughEnable,SetPassthroughEnable,H15,8,STUB,STUB,STUB,STUB,REAL,REAL,REAL,REAL,REAL,1;4;10;26;28;31;36,addr=0x20bccf9fc
+PublishBit,SetPublishBit,H19,24,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,REAL,31;36,addr=0x20bced790
+QuantizationOutputZeroOffset,SetQuantizationOutputZeroOffset,H16,17,STUB,STUB,STUB,STUB,STUB,REAL,REAL,REAL,REAL,4;10;26;28;31;36,addr=0x20bce1804
+QuantizationSrc1InputOffset,SetQuantizationSrc1InputOffset,H16,17,n/a,n/a,STUB,STUB,STUB,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bcde89c
+QuantizationSrc2InputOffset,SetQuantizationSrc2InputOffset,H16,17,n/a,n/a,STUB,STUB,STUB,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bcde8a4
+ReswizzleConfigEn,SetReswizzleConfigEn,never (through H19),,STUB,STUB,STUB,STUB,STUB,STUB,STUB,STUB,STUB,1;4;10;26;28;31;36,
+ReswizzleConfigInputInterleave,SetReswizzleConfigInputInterleave,H11,5,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,1;4;10;26;28;31;36,addr=0x20bd6a27c
+ReswizzleConfigKernelBitDepth,SetReswizzleConfigKernelBitDepth,H11,5,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,1;4;10;26;28;31;36,addr=0x20bd6a27c
+ReswizzleConfigKernelTranspose,SetReswizzleConfigKernelTranspose,never (through H19),,STUB,STUB,STUB,STUB,STUB,STUB,STUB,STUB,STUB,1;4;10;26;28;31;36,
+SplitRowCompute,SetSplitRowCompute,never (through H19),,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,1,
+TdHeaderPerfTraceEn,SetTdHeaderPerfTraceEn,H17,19,n/a,n/a,n/a,n/a,n/a,n/a,REAL,REAL,REAL,26;28;31;36,addr=0x20bbb9dc4
+TextureBackgroundEn,SetTextureBackgroundEn,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb99ed0
+TextureBackgroundVal,SetTextureBackgroundVal,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb99ef0
+TextureBypassFilter,SetTextureBypassFilter,H19,24,n/a,n/a,n/a,STUB,STUB,STUB,STUB,STUB,REAL,10;26;28;31;36,addr=0x20bba004c
+TextureCropBatchSplit,SetTextureCropBatchSplit,H16,17,n/a,n/a,n/a,STUB,STUB,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb9c308
+TextureCropCfg,SetTextureCropCfg,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb9a7b0
+TextureCropCoeff,SetTextureCropCoeff,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb9ad18
+TextureDepthValue,SetTextureDepthValue,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb9adec
+TextureExtMax,SetTextureExtMax,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb99d18
+TextureFilter,SetTextureFilter,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb99e0c
+TextureGroupValue,SetTextureGroupValue,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb9ad24
+TextureIdxPermute,SetTextureIdxPermute,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb9a4c8
+TextureIndPermute,SetTextureIndPermute,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb9a1e0
+TextureIndexTensorInterleave,SetTextureIndexTensorInterleave,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb99e80
+TextureMode,SetTextureMode,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb99bbc
+TextureNormalization,SetTextureNormalization,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb99c3c
+TexturePreserveFraction,SetTexturePreserveFraction,H16,17,n/a,n/a,n/a,STUB,STUB,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb9b200
+TextureSrcPermute,SetTextureSrcPermute,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb99ef8
+TextureWrap,SetTextureWrap,H14,11,n/a,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bb99e60
+TileDmaDstAtomicEn,SetTileDmaDstAtomicEn,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccdabc
+TileDmaDstCompressedInfo,SetTileDmaDstCompressedInfo,H15,8,n/a,n/a,STUB,STUB,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bcd2ac4
+TileDmaDstCompressedSize,SetTileDmaDstCompressedSize,H15,8,n/a,n/a,NOOP,NOOP,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bcd2a28
+TileDmaDstandL2DstFifoMode,SetTileDmaDstandL2DstFifoMode,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccd7d0
+TileDmaDstandL2DstInterleave,SetTileDmaDstandL2DstInterleave,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,1;10;26;28;31;36,addr=0x20bccd6d4
+TileDmaSrc1CompressedInfo,SetTileDmaSrc1CompressedInfo,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccd1e8
+TileDmaSrc1CompressedSize,SetTileDmaSrc1CompressedSize,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccd278
+TileDmaSrc1DoubleRateMode,SetTileDmaSrc1DoubleRateMode,H19,24,n/a,n/a,STUB,STUB,STUB,STUB,STUB,STUB,REAL,10;26;28;31;36,addr=0x20bcf0438
+TileDmaSrc1FIFOMode,SetTileDmaSrc1FIFOMode,H17,19,n/a,n/a,STUB,STUB,STUB,STUB,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bce4928
+TileDmaSrc1Interleave,SetTileDmaSrc1Interleave,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccccd8
+TileDmaSrc2CompressedInfo,SetTileDmaSrc2CompressedInfo,H15,8,n/a,n/a,STUB,STUB,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bcd1ea4
+TileDmaSrc2CompressedSize,SetTileDmaSrc2CompressedSize,H13,7,n/a,n/a,REAL,REAL,REAL,REAL,REAL,REAL,REAL,10;26;28;31;36,addr=0x20bccd39c
+TileDmaSrc2DoubleRateMode,SetTileDmaSrc2DoubleRateMode,H19,24,n/a,n/a,n/a,n/a,n/a,n/a,n/a,n/a,REAL,26;28;31;36,addr=0x20bcf0af0
+TileDmaSrc2FIFOMode,SetTileDmaSrc2FIFOMode,H17,19,n/a,n/a,n/a,n/a,n/a,n/a,REAL,REAL,REAL,26;28;31;36,addr=0x20bce57a4
+TileDmaSrc2Interleave,SetTileDmaSrc2Interleave,H15,8,n/a,n/a,n/a,n/a,REAL,n/a,n/a,n/a,n/a,10,addr=0x20bcd1c5c
+TileDmaSrcCompressed2MdUserTag,SetTileDmaSrcCompressed2MdUserTag,H15,8,NOOP,NOOP,NOOP,NOOP,REAL,REAL,REAL,REAL,REAL,1;4;10;26;28;31;36,addr=0x20bcd35e0
+TileDmaSrcCompressedMdUserTag,SetTileDmaSrcCompressedMdUserTag,H14,11,NOOP,NOOP,NOOP,REAL,REAL,REAL,REAL,REAL,REAL,1;4;10;26;28;31;36,addr=0x20bcdc4a8
+TileOverlapPadReflect,SetTileOverlapPadReflect,H18,20,n/a,n/a,STUB,STUB,STUB,STUB,STUB,REAL,REAL,10;26;28;31;36,addr=0x20bcece98
+TraceEn,SetTraceEn,H17,19,n/a,n/a,n/a,n/a,n/a,n/a,REAL,REAL,REAL,26;28;31;36,addr=0x20bbb9e44
+UnicastEn,SetUnicastEn,H11,5,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,REAL,4;10;26;28;31;36,addr=0x20bccaa34

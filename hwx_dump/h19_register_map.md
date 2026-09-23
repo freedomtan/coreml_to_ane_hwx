@@ -36,7 +36,7 @@ Exhaustive row-by-row mapping for H19 (A20 Pro) (Instruction Set Version 24, CPU
 | **0x0030** | `+0x268` | **UnicastCin** |  |
 | **0x0034** | `+0x26c` | **TileHeight** | 0-16. |
 | **0x0038** | `+0x270` | **TileOverlap** | **Overlap**: 16-20, **PadTop**: 21-25, **PadBottom**: 26-30, **Reflect**: 31. |
-| **0x003C** | `+0x274` | **MacCfg** | **SmallSrc**: 2-3, **TaskType**: 4-7, **SpatialPref/Min/Max**: 8-18, **ActiveNE**: 19-21, **TraceEn**: 22, **L2Barrier**: 23, **ReluType**: 24-26, **1DWinograd**: 27, **OutTrans**: 28, **FillLowerNE**: 29. *(`Set2DWinogradMode` still asserts unconditionally on H19 — 2D Winograd has never been enabled on any documented generation. See [README.md § Feature Support by Generation](README.md#feature-support-by-generation).)* |
+| **0x003C** | `+0x274` | **MacCfg** | **SmallSrc**: 2-3, **TaskType**: 4-7, **SpatialPref/Min/Max**: 8-18, **ActiveNE**: 19-21, **TraceEn**: 22, **L2Barrier**: 23, **ReluType**: 24-26, **1DWinograd**: 27, **OutTrans**: 28, **FillLowerNE**: 29. *(`Set2DWinogradMode` still asserts unconditionally on H19 — 2D Winograd has never been enabled on any documented generation. See [docs/GUIDE_ANE_FEATURE_SUPPORT_BY_GENERATION.md](../docs/GUIDE_ANE_FEATURE_SUPPORT_BY_GENERATION.md).)* |
 | **0x0040** | `+0x278` | **NECfg** | **OCGSize**, **PaddingMode**, **HalfWU**. |
 | **0x0044** | `+0x27c` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
 | **0x0048** | `+0x280` | **PECfg** | **Src1Transpose**, **Src1Broadcast**, etc. |

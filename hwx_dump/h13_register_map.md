@@ -138,7 +138,7 @@ Base HW Addr: `0xC800`
 | **0xC810** | **0x250** | **PostScale** | `this + 0x310` | **PostScale**: 0-15, **PostScaleRightShift**: 16-20. |
 
 > [!NOTE]
-> **DoubleInt8**, **1D/2D Winograd**, and **DetectZeros** are all NOT supported on H13 — `ZinAneTd<7u>` shares an unconditional reject stub with every other pre-H16/H17 generation for these setters. Basic **Int8** (KernelFmt=0) has been supported since the earliest ANE generation. See [README.md § Feature Support by Generation](README.md#feature-support-by-generation).
+> **DoubleInt8**, **1D/2D Winograd**, and **DetectZeros** are all NOT supported on H13 — `ZinAneTd<7u>` shares an unconditional reject stub with every other pre-H16/H17 generation for these setters. Basic **Int8** (KernelFmt=0) has been supported since the earliest ANE generation. See [docs/GUIDE_ANE_FEATURE_SUPPORT_BY_GENERATION.md](../docs/GUIDE_ANE_FEATURE_SUPPORT_BY_GENERATION.md).
 
 ### TileDMADst Block (TD 0x258)
 Source: `this + 0x31C`

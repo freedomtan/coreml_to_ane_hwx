@@ -35,7 +35,7 @@ Exhaustive row-by-row mapping for H17 (A18).
 | **0x0030** | `+0x234` | **UnicastCfg** | **UnicastEn**: 14. |
 | **0x0034** | `+0x238` | **TileHeight** | 0-16. |
 | **0x0038** | `+0x23c` | **TileOverlap** | **PadBottom**, **PadTop**. |
-| **0x003C** | `+0x240` | **MacCfg** | **SmallSrc**: 2-3, **TaskType**: 4-7, **SpatialPref/Min/Max**: 8-18, **ActiveNE**: 19-21, **TraceEn**: 22, **L2Barrier**: 23, **ReluType**: 24-26, **1DWinograd**: 27, **OutTrans**: 28, **FillLowerNE**: 29. *(H17 is the first generation where 1D Winograd is real; `Set2DWinogradMode` still asserts unconditionally here and on every later generation through H19 — see [README.md § Feature Support by Generation](README.md#feature-support-by-generation).)* |
+| **0x003C** | `+0x240` | **MacCfg** | **SmallSrc**: 2-3, **TaskType**: 4-7, **SpatialPref/Min/Max**: 8-18, **ActiveNE**: 19-21, **TraceEn**: 22, **L2Barrier**: 23, **ReluType**: 24-26, **1DWinograd**: 27, **OutTrans**: 28, **FillLowerNE**: 29. *(H17 is the first generation where 1D Winograd is real; `Set2DWinogradMode` still asserts unconditionally here and on every later generation through H19 — see [docs/GUIDE_ANE_FEATURE_SUPPORT_BY_GENERATION.md](../docs/GUIDE_ANE_FEATURE_SUPPORT_BY_GENERATION.md).)* |
 | **0x0040** | `+0x244` | **NECfg** | **OCGSize**, etc. |
 | **0x0044** | `+0x248` | **PatchCfg** | **PatchWidth**: 0-3, **PatchHeight**: 4-8. |
 | **0x0048** | `+0x24c` | **PECfg** | **Src1Transpose**, **Src1Broadcast**, etc. |

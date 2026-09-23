@@ -48,6 +48,67 @@ This writes `hwx_dump/feature_support.csv` and prints the markdown table below. 
 
 **Known limitation — renames aren't tracked.** `TileDmaSrc2Interleave` shows `REAL` only at H15 and `n/a` everywhere else, which looks like a feature that vanished. It didn't: Apple renamed the setter to `SetTileDmaSrc2FormatMode` starting at H17 (folding the interleave value into a broader tensor-format enum parameter). Per-setter-name tracking can't see through renames — treat isolated single-generation `REAL` islands as a signal to grep for a renamed sibling before concluding the feature was removed.
 
+## Future ISA Versions Beyond H19 (Unreleased)
+
+ANECompiler contains no `TargetH20`/`TargetH21`/`TargetH22` and no literal "H20"/"H21"/"H22" string anywhere in the binary — there is no evidence of future chips using the established H-number scheme. There is, however, clear evidence of unreleased future hardware under a *different* naming scheme.
+
+### New target classes
+
+Beyond the H-series (`TargetH11` ... `TargetH19`, `TargetH18g`), the binary defines 9 additional `Target` subclasses with no H-number at all: `TargetM9`, `TargetT0`, `TargetT1`, `TargetU1`, `TargetU2`, `TargetU3`, `TargetU4`, `TargetM11`, `TargetM12`. Each has:
+- a full constructor (`TargetM9::TargetM9()` etc.) following the exact same pattern as `TargetH18`/`TargetH19` (vtable setup, then a call into its own `ZinIrSocVariantParams::<Name>()` factory),
+- its own `ZinIrSocVariantParams::M9()` / `T0()` / `T1()` / `U1()`-`U4()` / `M11()` / `M12()` factory function,
+- its own typeinfo/vtable — these are not stubs or placeholders, they are fully linked-in classes.
+
+`ZinIrSocVariantParams` also exposes a `GetSupportsLLM()` accessor as one of its per-chip capability fields, which is suggestive (though not proof) that some of these new targets are oriented around on-device LLM support rather than being a simple continuation of the M-series/H-series numbering (the M9-M12 names don't fit the established M1-M4 = H13-H16 mapping, and T-/U- prefixes haven't been used for ANE targets in this repo before).
+
+**What we could not determine statically:** which of these 9 target classes maps to which ISA version below. Attempts that didn't pan out:
+- Diffing the `Target` vtable slots for `TargetH19` vs `TargetU1` — the differing pointers turned out to belong to `std::shared_ptr` control-block internals (an artifact of how `Target` is held via `shared_ptr<ZinIrTarget>`), not real per-target virtual overrides.
+- Diffing the `ZinIrSocVariantParams::<Name>()` factory bodies for a literal ISA-version constant — they only encode SoC/die parameters (DRAM channels, frequency tables, the `GetSupportsLLM` flag), not a compiler-target version number.
+- No `CreateAneTd`/`SelectAneTd`-style dispatcher function exists that switches on target name to pick a `ZinAneTd<N>`; the binding is presumably data-driven elsewhere (e.g. a build-time flag or plist outside this framework).
+
+### New ISA versions found
+
+Separately from the target-class question, the binary contains four **fully-implemented, non-stub** ISA versions beyond H19's `ZinAneTd<24u>`: **v26, v28, v31, v36**. Each has its own complete vtable, typeinfo, and dedicated hardware register types (e.g. `ZinAneTdHw_v26`, `ane_common_cfg_small_source_mode_ssm_v28`, `_ane_ccdma_counter_address_lo_v28`) — these are genuine future generations' worth of compiler support, not speculative placeholders.
+
+ICF-folding patterns suggest these four cluster into two pairs rather than four independent generations: v26 folds much of its code with v24/v28, while v31 and v36 diverge further — consistent with v26/v28 being two die variants of one future generation (analogous to H18/H18g) and v31/v36 being a subsequent generation.
+
+#### What's new at each version (relative to H19 / v24)
+
+Determined the same way as the rest of this document: comparing `ZinAneTd<Nu>::Set*` disassembly across versions, plus a direct diff of which setter *names* exist at all at each version vs. every H11-H19 version combined.
+
+| Version | New setter names (never seen at H11-H19) | Previously-dead features that activate |
+| :--- | :--- | :--- |
+| **v26** | none | none — identical feature surface to v24; likely a die/config sibling rather than a real step forward |
+| **v28** | 19 new setters — see below | `NEInputTranspose`, `ReswizzleConfigEn`, `ReswizzleConfigKernelTranspose` (all permanently `STUB` "not supported" since H11 through H19) |
+| **v31** | none | keeps v28's three activations real; otherwise no further change vs v28 — looks like v28's successor/refinement, not its own wave |
+| **v36** | 4 new setters — see below | `2DWinogradMode`, `DP2AddMode` (both permanently `STUB` "not supported" since H11 through v31) |
+
+**v28's 19 new setters — a "UserSlot" DMA addressing layer**, spanning CCDMA, Kernel DMA, and all three Tile DMA engines:
+- `SetCcdmaSrcUserSlotDim`, `SetCcdmaSrcUserSlotId`, `SetCcdmaSrcUserSlotMode`
+- `SetCcdmaDstUserSlotDim`, `SetCcdmaDstUserSlotId`, `SetCcdmaDstUserSlotMode`
+- `SetKernelDmaSrcUserSlotId`, `SetKernelDmaSrcUserSlotCoeffMode`
+- `SetTileDmaDstUserSlotDim`, `SetTileDmaDstUserSlotId`, `SetTileDmaDstUserSlotMode`
+- `SetTileDmaSrc1UserSlotDim`, `SetTileDmaSrc1UserSlotId`, `SetTileDmaSrc1UserSlotMode`
+- `SetTileDmaSrc2UserSlotDim`, `SetTileDmaSrc2UserSlotId`, `SetTileDmaSrc2UserSlotMode`
+- `SetTileDmaSrc2WaitEventAddr`, `SetTileDmaSrc2WaitEventValue`
+
+This reads as an indirect "user slot" indexing scheme added across essentially every DMA engine at once, plus an explicit wait-event address/value pair specifically for `TileDmaSrc2` (the other DMA engines don't gain a wait-event setter at v28, only Src2 does).
+
+**v36's 4 new setters — 4D strided addressing for TileDmaSrc2**:
+- `SetTileDmaSrc2ChannelStride`, `SetTileDmaSrc2DepthStride`, `SetTileDmaSrc2GroupStride`, `SetTileDmaSrc2RowStride`
+
+Curiosity: these exact setter names also exist at the unexplained `v1` (see "Unmapped ISA versions" below) and nowhere in between — the idea appears to have existed early, been dropped, and been revived at v36.
+
+**Two long-dead features finally ship at v36**: `Set2DWinogradMode` and `SetDP2AddMode` had asserted "not supported" unconditionally on every version from H11 through v31 (part of this doc's "Permanently dead API surface" list above) — at v36 they become genuine `REAL` implementations for the first time.
+
+### Summary
+
+| | v26 | v28 | v31 | v36 |
+| :--- | :--- | :--- | :--- | :--- |
+| New DMA addressing setters | — | UserSlot layer (19 setters, CCDMA + Kernel DMA + all Tile DMA) | — | TileDmaSrc2 4D stride (4 setters) |
+| Dead features revived | — | `NEInputTranspose`, `ReswizzleConfigEn`, `ReswizzleConfigKernelTranspose` | (inherits v28's) | `2DWinogradMode`, `DP2AddMode` |
+| Relationship to neighbors | sibling of v24/v28 | own wave | successor of v28 | own wave |
+
 ## Full Table
 
 | Feature | First Real | H11 | H12 | H13 | H14 | H15 | H16 | H17 | H18 | H19 |

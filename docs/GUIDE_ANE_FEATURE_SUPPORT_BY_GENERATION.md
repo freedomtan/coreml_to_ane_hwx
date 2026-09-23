@@ -50,111 +50,111 @@ This writes `hwx_dump/feature_support.csv` and prints the markdown table below. 
 
 ## Full Table
 
-| Feature | First Real | Chip Status (H11, H12, H13, H14, H15, H16, H17, H18, H19) |
-| :--- | :--- | :--- |
-| 1DWinogradMode | H17 | STUB / STUB / STUB / STUB / STUB / STUB / REAL / REAL / REAL |
-| 2DWinogradMode | never (through H19) | STUB / STUB / STUB / STUB / STUB / STUB / STUB / STUB / STUB |
-| AlignedKernelPaletteLut | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| BroadcastCfg | never (through H19) | n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a |
-| CacheDmaPreEnable | H15 | STUB / STUB / STUB / STUB / REAL / REAL / REAL / REAL / REAL |
-| CcdmaAtomicEn | H11 | REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| CropOffsetForTexture | H16 | n/a / n/a / n/a / n/a / n/a / REAL / REAL / REAL / REAL |
-| CustomCodegenTd | H17 | n/a / n/a / n/a / n/a / n/a / n/a / REAL / REAL / REAL |
-| DP2AddMode | never (through H19) | STUB / STUB / STUB / STUB / STUB / STUB / STUB / STUB / STUB |
-| DoubleInt8Enable | H16 | STUB / STUB / STUB / STUB / STUB / REAL / REAL / REAL / REAL |
-| FillLowerNEFirst | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| GroupKernelReuse | H11 | REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| KernelAsymQuantEn | H16 | STUB / STUB / STUB / STUB / STUB / REAL / REAL / REAL / REAL |
-| KernelDetectZeros | H17 | STUB / STUB / STUB / STUB / STUB / STUB / REAL / REAL / REAL |
-| KernelDmaSrcKBufByp | never (through H19) | n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a |
-| KernelDmaSrcNoReuseHint | H14 | n/a / n/a / NOOP / REAL / REAL / n/a / n/a / n/a / n/a |
-| KernelDmaSrcPaletteLutDmaCacheHint | H15 | n/a / n/a / DELEGATES / DELEGATES / REAL / REAL / REAL / REAL / REAL |
-| KernelDmaSrcPaletteLutUserTag | H14 | NOOP / NOOP / NOOP / REAL / REAL / REAL / REAL / REAL / REAL |
-| KernelPalettizedBits | H11 | REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| KernelPalettizedEn | H11 | REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| KernelSparseBinary | H13 | STUB / STUB / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| KernelSparseBlockSize | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| KernelSparseFmt | H11 | REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| L2BfrMode | H11 | REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| L2DstNumInterleavedChannels | never (through H19) | n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a |
-| L2ResultCfgForCompression | H15 | n/a / n/a / NOOP / NOOP / REAL / REAL / REAL / REAL / REAL |
-| L2ResultInterleave | H11 | REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| L2Src1CfgForCompression | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| L2Src1DmaDoubleRateMode | H19 | STUB / STUB / STUB / STUB / STUB / STUB / STUB / STUB / REAL |
-| L2Src1FIFOMode | H17 | STUB / STUB / STUB / STUB / STUB / STUB / REAL / REAL / REAL |
-| L2Src1Interleave | H11 | REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| L2Src2CfgForCompression | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| L2Src2DmaDoubleRateMode | H19 | n/a / n/a / STUB / STUB / STUB / STUB / STUB / STUB / REAL |
-| L2Src2FIFOMode | H17 | n/a / n/a / STUB / STUB / STUB / STUB / REAL / REAL / REAL |
-| L2Src2Interleave | H14 | n/a / n/a / STUB / REAL / REAL / REAL / REAL / REAL / REAL |
-| L2Src2NumInterleavedChannels | never (through H19) | n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a |
-| L2SrcNumInterleavedChannels | never (through H19) | n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a |
-| MultiPaletteEnable | H19 | STUB / STUB / STUB / STUB / STUB / STUB / STUB / STUB / REAL |
-| MultiPaletteSizeOneLut | H19 | STUB / STUB / STUB / STUB / STUB / STUB / STUB / STUB / REAL |
-| NEInputTranspose | never (through H19) | STUB / STUB / STUB / STUB / STUB / STUB / STUB / STUB / STUB |
-| NEKBufBypEn | never (through H19) | n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a |
-| NEKeepKernel | H13 | n/a / n/a / REAL / NOOP / NOOP / n/a / n/a / n/a / n/a |
-| NEUsePrevKernel | H13 | n/a / n/a / REAL / NOOP / NOOP / n/a / n/a / n/a / n/a |
-| OutputTranspose | H13 | NOOP / NOOP / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| PEBypass | H16 | n/a / n/a / n/a / n/a / n/a / REAL / REAL / REAL / REAL |
-| PEIndexBroadcast | H15 | n/a / n/a / NOOP / NOOP / REAL / REAL / REAL / REAL / REAL |
-| PEIndexTranspose | H15 | n/a / n/a / NOOP / NOOP / REAL / REAL / REAL / REAL / REAL |
-| PEOutputCtoW | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| PEOutputQuantization | H16 | n/a / n/a / STUB / STUB / STUB / REAL / REAL / REAL / REAL |
-| PESrc1Broadcast | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| PESrc1ReLu | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| PESrc1Transpose | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| PESrc2Broadcast | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| PESrc2ReLu | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| PESrc2Transpose | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| PaletteBlockSize | H17 | STUB / STUB / STUB / STUB / STUB / STUB / REAL / REAL / REAL |
-| PaletteGroupSize | H19 | STUB / STUB / STUB / STUB / STUB / STUB / STUB / STUB / REAL |
-| PassthroughEnable | H15 | STUB / STUB / STUB / STUB / REAL / REAL / REAL / REAL / REAL |
-| PublishBit | H19 | n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a / REAL |
-| QuantizationOutputZeroOffset | H16 | STUB / STUB / STUB / STUB / STUB / REAL / REAL / REAL / REAL |
-| QuantizationSrc1InputOffset | H16 | n/a / n/a / STUB / STUB / STUB / REAL / REAL / REAL / REAL |
-| QuantizationSrc2InputOffset | H16 | n/a / n/a / STUB / STUB / STUB / REAL / REAL / REAL / REAL |
-| ReswizzleConfigEn | never (through H19) | STUB / STUB / STUB / STUB / STUB / STUB / STUB / STUB / STUB |
-| ReswizzleConfigInputInterleave | H11 | REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| ReswizzleConfigKernelBitDepth | H11 | REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| ReswizzleConfigKernelTranspose | never (through H19) | STUB / STUB / STUB / STUB / STUB / STUB / STUB / STUB / STUB |
-| SplitRowCompute | never (through H19) | n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a |
-| TdHeaderPerfTraceEn | H17 | n/a / n/a / n/a / n/a / n/a / n/a / REAL / REAL / REAL |
-| TextureBackgroundEn | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TextureBackgroundVal | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TextureBypassFilter | H19 | n/a / n/a / n/a / STUB / STUB / STUB / STUB / STUB / REAL |
-| TextureCropBatchSplit | H16 | n/a / n/a / n/a / STUB / STUB / REAL / REAL / REAL / REAL |
-| TextureCropCfg | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TextureCropCoeff | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TextureDepthValue | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TextureExtMax | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TextureFilter | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TextureGroupValue | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TextureIdxPermute | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TextureIndPermute | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TextureIndexTensorInterleave | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TextureMode | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TextureNormalization | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TexturePreserveFraction | H16 | n/a / n/a / n/a / STUB / STUB / REAL / REAL / REAL / REAL |
-| TextureSrcPermute | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TextureWrap | H14 | n/a / n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL |
-| TileDmaDstAtomicEn | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| TileDmaDstCompressedInfo | H15 | n/a / n/a / STUB / STUB / REAL / REAL / REAL / REAL / REAL |
-| TileDmaDstCompressedSize | H15 | n/a / n/a / NOOP / NOOP / REAL / REAL / REAL / REAL / REAL |
-| TileDmaDstandL2DstFifoMode | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| TileDmaDstandL2DstInterleave | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| TileDmaSrc1CompressedInfo | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| TileDmaSrc1CompressedSize | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| TileDmaSrc1DoubleRateMode | H19 | n/a / n/a / STUB / STUB / STUB / STUB / STUB / STUB / REAL |
-| TileDmaSrc1FIFOMode | H17 | n/a / n/a / STUB / STUB / STUB / STUB / REAL / REAL / REAL |
-| TileDmaSrc1Interleave | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| TileDmaSrc2CompressedInfo | H15 | n/a / n/a / STUB / STUB / REAL / REAL / REAL / REAL / REAL |
-| TileDmaSrc2CompressedSize | H13 | n/a / n/a / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
-| TileDmaSrc2DoubleRateMode | H19 | n/a / n/a / n/a / n/a / n/a / n/a / n/a / n/a / REAL |
-| TileDmaSrc2FIFOMode | H17 | n/a / n/a / n/a / n/a / n/a / n/a / REAL / REAL / REAL |
-| TileDmaSrc2Interleave | H15 | n/a / n/a / n/a / n/a / REAL / n/a / n/a / n/a / n/a |
-| TileDmaSrcCompressed2MdUserTag | H15 | NOOP / NOOP / NOOP / NOOP / REAL / REAL / REAL / REAL / REAL |
-| TileDmaSrcCompressedMdUserTag | H14 | NOOP / NOOP / NOOP / REAL / REAL / REAL / REAL / REAL / REAL |
-| TileOverlapPadReflect | H18 | n/a / n/a / STUB / STUB / STUB / STUB / STUB / REAL / REAL |
-| TraceEn | H17 | n/a / n/a / n/a / n/a / n/a / n/a / REAL / REAL / REAL |
-| UnicastEn | H11 | REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL / REAL |
+| Feature | First Real | H11 | H12 | H13 | H14 | H15 | H16 | H17 | H18 | H19 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 1DWinogradMode | H17 | STUB | STUB | STUB | STUB | STUB | STUB | REAL | REAL | REAL |
+| 2DWinogradMode | never (through H19) | STUB | STUB | STUB | STUB | STUB | STUB | STUB | STUB | STUB |
+| AlignedKernelPaletteLut | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| BroadcastCfg | never (through H19) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
+| CacheDmaPreEnable | H15 | STUB | STUB | STUB | STUB | REAL | REAL | REAL | REAL | REAL |
+| CcdmaAtomicEn | H11 | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| CropOffsetForTexture | H16 | n/a | n/a | n/a | n/a | n/a | REAL | REAL | REAL | REAL |
+| CustomCodegenTd | H17 | n/a | n/a | n/a | n/a | n/a | n/a | REAL | REAL | REAL |
+| DP2AddMode | never (through H19) | STUB | STUB | STUB | STUB | STUB | STUB | STUB | STUB | STUB |
+| DoubleInt8Enable | H16 | STUB | STUB | STUB | STUB | STUB | REAL | REAL | REAL | REAL |
+| FillLowerNEFirst | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| GroupKernelReuse | H11 | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| KernelAsymQuantEn | H16 | STUB | STUB | STUB | STUB | STUB | REAL | REAL | REAL | REAL |
+| KernelDetectZeros | H17 | STUB | STUB | STUB | STUB | STUB | STUB | REAL | REAL | REAL |
+| KernelDmaSrcKBufByp | never (through H19) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
+| KernelDmaSrcNoReuseHint | H14 | n/a | n/a | NOOP | REAL | REAL | n/a | n/a | n/a | n/a |
+| KernelDmaSrcPaletteLutDmaCacheHint | H15 | n/a | n/a | DELEGATES | DELEGATES | REAL | REAL | REAL | REAL | REAL |
+| KernelDmaSrcPaletteLutUserTag | H14 | NOOP | NOOP | NOOP | REAL | REAL | REAL | REAL | REAL | REAL |
+| KernelPalettizedBits | H11 | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| KernelPalettizedEn | H11 | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| KernelSparseBinary | H13 | STUB | STUB | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| KernelSparseBlockSize | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| KernelSparseFmt | H11 | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| L2BfrMode | H11 | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| L2DstNumInterleavedChannels | never (through H19) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
+| L2ResultCfgForCompression | H15 | n/a | n/a | NOOP | NOOP | REAL | REAL | REAL | REAL | REAL |
+| L2ResultInterleave | H11 | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| L2Src1CfgForCompression | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| L2Src1DmaDoubleRateMode | H19 | STUB | STUB | STUB | STUB | STUB | STUB | STUB | STUB | REAL |
+| L2Src1FIFOMode | H17 | STUB | STUB | STUB | STUB | STUB | STUB | REAL | REAL | REAL |
+| L2Src1Interleave | H11 | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| L2Src2CfgForCompression | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| L2Src2DmaDoubleRateMode | H19 | n/a | n/a | STUB | STUB | STUB | STUB | STUB | STUB | REAL |
+| L2Src2FIFOMode | H17 | n/a | n/a | STUB | STUB | STUB | STUB | REAL | REAL | REAL |
+| L2Src2Interleave | H14 | n/a | n/a | STUB | REAL | REAL | REAL | REAL | REAL | REAL |
+| L2Src2NumInterleavedChannels | never (through H19) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
+| L2SrcNumInterleavedChannels | never (through H19) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
+| MultiPaletteEnable | H19 | STUB | STUB | STUB | STUB | STUB | STUB | STUB | STUB | REAL |
+| MultiPaletteSizeOneLut | H19 | STUB | STUB | STUB | STUB | STUB | STUB | STUB | STUB | REAL |
+| NEInputTranspose | never (through H19) | STUB | STUB | STUB | STUB | STUB | STUB | STUB | STUB | STUB |
+| NEKBufBypEn | never (through H19) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
+| NEKeepKernel | H13 | n/a | n/a | REAL | NOOP | NOOP | n/a | n/a | n/a | n/a |
+| NEUsePrevKernel | H13 | n/a | n/a | REAL | NOOP | NOOP | n/a | n/a | n/a | n/a |
+| OutputTranspose | H13 | NOOP | NOOP | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| PEBypass | H16 | n/a | n/a | n/a | n/a | n/a | REAL | REAL | REAL | REAL |
+| PEIndexBroadcast | H15 | n/a | n/a | NOOP | NOOP | REAL | REAL | REAL | REAL | REAL |
+| PEIndexTranspose | H15 | n/a | n/a | NOOP | NOOP | REAL | REAL | REAL | REAL | REAL |
+| PEOutputCtoW | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| PEOutputQuantization | H16 | n/a | n/a | STUB | STUB | STUB | REAL | REAL | REAL | REAL |
+| PESrc1Broadcast | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| PESrc1ReLu | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| PESrc1Transpose | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| PESrc2Broadcast | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| PESrc2ReLu | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| PESrc2Transpose | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| PaletteBlockSize | H17 | STUB | STUB | STUB | STUB | STUB | STUB | REAL | REAL | REAL |
+| PaletteGroupSize | H19 | STUB | STUB | STUB | STUB | STUB | STUB | STUB | STUB | REAL |
+| PassthroughEnable | H15 | STUB | STUB | STUB | STUB | REAL | REAL | REAL | REAL | REAL |
+| PublishBit | H19 | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | REAL |
+| QuantizationOutputZeroOffset | H16 | STUB | STUB | STUB | STUB | STUB | REAL | REAL | REAL | REAL |
+| QuantizationSrc1InputOffset | H16 | n/a | n/a | STUB | STUB | STUB | REAL | REAL | REAL | REAL |
+| QuantizationSrc2InputOffset | H16 | n/a | n/a | STUB | STUB | STUB | REAL | REAL | REAL | REAL |
+| ReswizzleConfigEn | never (through H19) | STUB | STUB | STUB | STUB | STUB | STUB | STUB | STUB | STUB |
+| ReswizzleConfigInputInterleave | H11 | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| ReswizzleConfigKernelBitDepth | H11 | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| ReswizzleConfigKernelTranspose | never (through H19) | STUB | STUB | STUB | STUB | STUB | STUB | STUB | STUB | STUB |
+| SplitRowCompute | never (through H19) | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
+| TdHeaderPerfTraceEn | H17 | n/a | n/a | n/a | n/a | n/a | n/a | REAL | REAL | REAL |
+| TextureBackgroundEn | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TextureBackgroundVal | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TextureBypassFilter | H19 | n/a | n/a | n/a | STUB | STUB | STUB | STUB | STUB | REAL |
+| TextureCropBatchSplit | H16 | n/a | n/a | n/a | STUB | STUB | REAL | REAL | REAL | REAL |
+| TextureCropCfg | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TextureCropCoeff | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TextureDepthValue | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TextureExtMax | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TextureFilter | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TextureGroupValue | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TextureIdxPermute | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TextureIndPermute | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TextureIndexTensorInterleave | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TextureMode | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TextureNormalization | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TexturePreserveFraction | H16 | n/a | n/a | n/a | STUB | STUB | REAL | REAL | REAL | REAL |
+| TextureSrcPermute | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TextureWrap | H14 | n/a | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL |
+| TileDmaDstAtomicEn | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| TileDmaDstCompressedInfo | H15 | n/a | n/a | STUB | STUB | REAL | REAL | REAL | REAL | REAL |
+| TileDmaDstCompressedSize | H15 | n/a | n/a | NOOP | NOOP | REAL | REAL | REAL | REAL | REAL |
+| TileDmaDstandL2DstFifoMode | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| TileDmaDstandL2DstInterleave | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| TileDmaSrc1CompressedInfo | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| TileDmaSrc1CompressedSize | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| TileDmaSrc1DoubleRateMode | H19 | n/a | n/a | STUB | STUB | STUB | STUB | STUB | STUB | REAL |
+| TileDmaSrc1FIFOMode | H17 | n/a | n/a | STUB | STUB | STUB | STUB | REAL | REAL | REAL |
+| TileDmaSrc1Interleave | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| TileDmaSrc2CompressedInfo | H15 | n/a | n/a | STUB | STUB | REAL | REAL | REAL | REAL | REAL |
+| TileDmaSrc2CompressedSize | H13 | n/a | n/a | REAL | REAL | REAL | REAL | REAL | REAL | REAL |
+| TileDmaSrc2DoubleRateMode | H19 | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | REAL |
+| TileDmaSrc2FIFOMode | H17 | n/a | n/a | n/a | n/a | n/a | n/a | REAL | REAL | REAL |
+| TileDmaSrc2Interleave | H15 | n/a | n/a | n/a | n/a | REAL | n/a | n/a | n/a | n/a |
+| TileDmaSrcCompressed2MdUserTag | H15 | NOOP | NOOP | NOOP | NOOP | REAL | REAL | REAL | REAL | REAL |
+| TileDmaSrcCompressedMdUserTag | H14 | NOOP | NOOP | NOOP | REAL | REAL | REAL | REAL | REAL | REAL |
+| TileOverlapPadReflect | H18 | n/a | n/a | STUB | STUB | STUB | STUB | STUB | REAL | REAL |
+| TraceEn | H17 | n/a | n/a | n/a | n/a | n/a | n/a | REAL | REAL | REAL |
+| UnicastEn | H11 | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL | REAL |

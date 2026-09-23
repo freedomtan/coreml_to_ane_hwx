@@ -294,11 +294,14 @@ def main():
             )
     print(f"wrote {out_csv}", file=sys.stderr)
 
-    print("| Feature | First Real | Chip Status (" + ", ".join(chip_names) + ") |")
-    print("| :--- | :--- | :--- |")
+    header = ["Feature", "First Real"] + chip_names
+    print("| " + " | ".join(header) + " |")
+    print("| " + " | ".join([":---"] * len(header)) + " |")
     for r in rows:
-        status_str = " / ".join(r["status_by_chip"].get(c, "-") for c in chip_names)
-        print(f"| {r['feature']} | {r['first_chip']} | {status_str} |")
+        cells = [r["feature"], r["first_chip"]] + [
+            r["status_by_chip"].get(c, "-") for c in chip_names
+        ]
+        print("| " + " | ".join(cells) + " |")
 
 
 if __name__ == "__main__":

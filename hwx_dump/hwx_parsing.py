@@ -47,6 +47,20 @@ H16_KERNELDMA_START = 0x5500
 H16_CACHEDMA_START = 0x5900
 H16_PE_EXT_START = 0x44D0
 
+# L2 Cache register offsets (for dimension recovery heuristics)
+REG_L2_PACKED_CHANNELS_1 = 0x1044  # L2+0x10: Packed value with channels in high 16 bits
+REG_L2_POOL_STRIDE = 0x1045        # L2+0x14: Pooling stride register
+REG_L2_OP_DISCRIMINATOR = 0x1046   # L2+0x18: Operation type discriminator
+REG_L2_CACHE_STRIDE = 0x1047       # L2+0x1c: Cache stride (width x factor)
+REG_L2_PACKED_CHANNELS_2 = 0x1053  # L2+0x4c: Alternative packed channels location
+
+# TileDMA Src1/Dst register offsets (for dimension recovery heuristics)
+REG_TILEDMA_SRC_START = H16_TILEDMA_SRC_START // 4
+REG_TILEDMA_SRC1_ROW_STRIDE = REG_TILEDMA_SRC_START + 6
+REG_TILEDMA_SRC1_PLANE_STRIDE = REG_TILEDMA_SRC_START + 7
+REG_TILEDMA_SRC1_FMT = REG_TILEDMA_SRC_START + 26
+REG_TDMA_DST_CHANNELS = 0x1442      # TileDMA Dst+0x8: Destination channels (high 16 bits)
+
 H17_COMMON_COUNT = 23
 H17_L2_COUNT = 42
 H17_PE_COUNT = 16
@@ -1062,10 +1076,116 @@ def print_kerneldmasrc_h15(state):
         if (ccfg >> 0) & 1:
             print(f"        Coeff[{i}]: En=1 DataSetId={(ccfg>>8)&0xFF} CacheHint={(ccfg>>4)&0xF} Base=0x{cbase>>6:08x} Size=0x{csz>>6:08x}")
 
+def recover_dimensions_from_l2_cache(state):
+    """Recover input W/H/C from L2 Cache/TileDMA registers.
+
+    Used for operations (Add, ReLU, etc.) that don't write Common block
+    dimensions directly, and to help locate the Common block if it's shifted.
+    """
+    inw, inh, inc = 0, 0, 0
+
+    # Try TileDMA Source strides first (most reliable for input dimensions)
+    if state.valid[REG_TILEDMA_SRC1_ROW_STRIDE] and state.valid[REG_TILEDMA_SRC1_FMT]:
+        row_stride = state.values[REG_TILEDMA_SRC1_ROW_STRIDE]
+        fmt = state.values[REG_TILEDMA_SRC1_FMT]
+        mem_fmt = (fmt >> 12) & 3
+        bytes_per_pixel = 4 if mem_fmt == 3 else (2 if mem_fmt == 2 else 1)
+
+        if row_stride > 0 and bytes_per_pixel > 0:
+            w = row_stride // bytes_per_pixel
+            if 7 <= w <= 4096:
+                inw = w
+                if state.valid[REG_TILEDMA_SRC1_PLANE_STRIDE]:
+                    plane_stride = state.values[REG_TILEDMA_SRC1_PLANE_STRIDE]
+                    if plane_stride > 0:
+                        inh = plane_stride // row_stride
+
+    # Decide which register to use based on operation discriminator pattern
+    # Pooling pattern: discriminator ends in 0x10
+    # Other operations: use cache stride register
+    use_pool_stride = False
+
+    if state.valid[REG_L2_OP_DISCRIMINATOR]:
+        op_disc = state.values[REG_L2_OP_DISCRIMINATOR]
+        if (op_disc & 0xF0) == 0x10:
+            use_pool_stride = True
+    elif state.valid[REG_L2_POOL_STRIDE] and not state.valid[REG_L2_CACHE_STRIDE]:
+        # Only pool stride exists -> likely pooling
+        use_pool_stride = True
+
+    # Try pooling stride register (for pooling operations)
+    if use_pool_stride and state.valid[REG_L2_POOL_STRIDE]:
+        small_stride = state.values[REG_L2_POOL_STRIDE]
+        candidate = small_stride // 4
+        if 7 <= candidate <= 224:
+            inw = candidate
+            inh = candidate
+
+    # Check L2 Cache stride register (for other operations)
+    # This register contains width x stride_factor
+    if inw == 0 and state.valid[REG_L2_CACHE_STRIDE]:
+        stride = state.values[REG_L2_CACHE_STRIDE]
+
+        # Common neural network dimensions in order of preference
+        common_dims = [224, 112, 56, 28, 14, 7]
+        factors = [16, 32, 64, 128, 256, 512]  # Corresponding factors
+
+        # First pass: try to match common dimensions exactly
+        for dim, factor in zip(common_dims, factors):
+            if stride % factor == 0 and stride // factor == dim:
+                inw = dim
+                inh = dim
+                break
+
+        # Second pass: if no exact match, try all factors and accept reasonable range
+        if inw == 0:
+            all_factors = [4, 8, 16, 32, 64, 128]
+            for factor in all_factors:
+                candidate = stride // factor
+                if 7 <= candidate <= 224:  # Accept common dimension range
+                    inw = candidate
+                    inh = candidate
+                    break
+
+    # Try to extract channels from packed register values
+    # Check L2 Cache register (high 16 bits often contain channels)
+    if inc == 0 and state.valid[REG_L2_PACKED_CHANNELS_2]:
+        candidate_c = (state.values[REG_L2_PACKED_CHANNELS_2] >> 16) & 0xFFFF
+        if 0 < candidate_c < 512:
+            inc = candidate_c
+
+    # Alternative: check alternative L2 packed channels register
+    if inc == 0 and state.valid[REG_L2_PACKED_CHANNELS_1]:
+        candidate_c = (state.values[REG_L2_PACKED_CHANNELS_1] >> 16) & 0xFFFF
+        if 0 < candidate_c < 512:
+            inc = candidate_c
+
+    # Alternative: check TileDMA destination register
+    if inc == 0 and state.valid[REG_TDMA_DST_CHANNELS]:
+        candidate_c = (state.values[REG_TDMA_DST_CHANNELS] >> 16) & 0xFFFF
+        if 0 < candidate_c < 512:
+            inc = candidate_c
+
+    return inw, inh, inc
+
+
 # H16/H17/H18 decoders
 def print_common_h16(state):
     print("        --- Common (0x0000) ---")
     base = H16_COMMON_START // 4
+
+    # First, attempt dimension recovery from L2 Cache registers.
+    # We use this to help locate the common block if it's shifted.
+    l2_inw, l2_inh, l2_inc = recover_dimensions_from_l2_cache(state)
+
+    # Common block can be shifted (e.g., to Reg 1 or 2) in some models
+    if l2_inw > 0 and l2_inh > 0:
+        for i in range(0, 5):
+            tw = state.values[base + i + 1] & 0x1FFFF
+            th = state.values[base + i + 2] & 0x1FFFF
+            if tw == l2_inw and th == l2_inh:
+                base = base + i
+                break
     
     infmt, src2infmt, outfmt = 0, 0, 0
     inw, inh, inc, ind = 0, 0, 0, 0
@@ -1301,57 +1421,12 @@ def print_common_h16(state):
         ot = (pe_cfg >> 10) & 1
         nid = hybrid_values[19]
         dpe = hybrid_values[20]
-        
-        # Dimensions L2 Stride Heuristics
-        if inw == 0 and inh == 0 and inc == 0:
-            use_1045 = False
-            if state.valid[0x1046]:
-                r1046 = state.values[0x1046]
-                if (r1046 & 0xF0) == 0x10:
-                    use_1045 = True
-            elif state.valid[0x1045] and not state.valid[0x1047]:
-                use_1045 = True
-                
-            if use_1045 and state.valid[0x1045]:
-                small_stride = state.values[0x1045]
-                candidate = small_stride // 4
-                if 7 <= candidate <= 224:
-                    inw = candidate
-                    inh = candidate
-                    
-            if inw == 0 and state.valid[0x1047]:
-                stride = state.values[0x1047]
-                common_dims = [224, 112, 56, 28, 14, 7]
-                factors = [16, 32, 64, 128, 256, 512]
-                for idx in range(6):
-                    if stride % factors[idx] == 0 and stride // factors[idx] == common_dims[idx]:
-                        inw = common_dims[idx]
-                        inh = common_dims[idx]
-                        break
-                if inw == 0:
-                    all_factors = [4, 8, 16, 32, 64, 128]
-                    for idx in range(6):
-                        candidate = stride // all_factors[idx]
-                        if 7 <= candidate <= 224:
-                            inw = candidate
-                            inh = candidate
-                            break
-                            
-            if inc == 0 and state.valid[0x1053]:
-                packed = state.values[0x1053]
-                candidate_c = (packed >> 16) & 0xFFFF
-                if 0 < candidate_c < 512:
-                    inc = candidate_c
-            if inc == 0 and state.valid[0x1044]:
-                packed = state.values[0x1044]
-                candidate_c = (packed >> 16) & 0xFFFF
-                if 0 < candidate_c < 512:
-                    inc = candidate_c
-            if inc == 0 and state.valid[0x1442]:
-                packed = state.values[0x1442]
-                candidate_c = (packed >> 16) & 0xFFFF
-                if 0 < candidate_c < 512:
-                    inc = candidate_c
+
+    # If L2 found valid dimensions but block was invalid, use them as fallback
+    if inw == 0 and l2_inw > 0:
+        inw = l2_inw
+        inh = l2_inh
+        inc = l2_inc
 
     if not state.valid[H16_COMMON_START // 4]:
         infmt, src2infmt, outfmt = 2, 2, 2

@@ -10,6 +10,7 @@ mlmodelc2hwx
 espressonet2hwx
 mil_to_hwx
 hwx_parser
+hwx_parsing
 
 # Temporary files
 /tmp/

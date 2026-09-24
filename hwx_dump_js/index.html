@@ -770,6 +770,26 @@
                 <span class="detail-lbl">Weight Reuse Enable (reuse)</span>
                 <span class="detail-val" id="val-ne-reuse">N/A</span>
               </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Sparse Block Size (SBS)</span>
+                <span class="detail-val" id="val-ne-sbs">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Asym Quant Enable</span>
+                <span class="detail-val" id="val-ne-asym">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Detect Zeros (H17+)</span>
+                <span class="detail-val" id="val-ne-detectzeros">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Input Format (ChCfg.InFmt)</span>
+                <span class="detail-val" id="val-common-infmt">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Output Format (ChCfg.OutFmt)</span>
+                <span class="detail-val" id="val-common-outfmt">N/A</span>
+              </div>
             </div>
 
             <!-- L2 Cache & DMA Buffers -->
@@ -1056,7 +1076,12 @@
         document.getElementById('val-ne-pen').innerText = dec.ne.pen || "N/A";
         document.getElementById('val-ne-sen').innerText = dec.ne.sen || "N/A";
         document.getElementById('val-ne-reuse').innerText = dec.ne.reuse || "N/A";
+        document.getElementById('val-ne-sbs').innerText = dec.ne.sbs !== undefined ? dec.ne.sbs : "N/A";
+        document.getElementById('val-ne-asym').innerText = dec.ne.asym || "N/A";
+        document.getElementById('val-ne-detectzeros').innerText = dec.ne.detectZeros || "N/A";
       }
+      document.getElementById('val-common-infmt').innerText = dec.inFormat || "N/A";
+      document.getElementById('val-common-outfmt').innerText = dec.outFormat || "N/A";
 
       // Update L2 details
       if (dec.l2) {

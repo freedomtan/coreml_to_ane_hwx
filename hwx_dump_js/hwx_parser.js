@@ -29,6 +29,17 @@ function getArchitectureName(subtype) {
   }
 }
 
+// Map Common.ChCfg format field value to name (mirrors hwx_parsing.m's get_ch_fmt_name)
+function getChFmtName(fmt) {
+  switch (fmt) {
+    case 0: return "INT8";
+    case 1: return "UINT8";
+    case 2: return "FLOAT16";
+    case 4: return "E4M3";
+    default: return "Unknown(" + fmt + ")";
+  }
+}
+
 // Convert FP16 uint16 to standard FP32 float (from binary representation)
 function fp16ToFloat32(h) {
   const s = (h & 0x8000) >> 15;
@@ -138,13 +149,6 @@ function parseHwxFile(arrayBuffer) {
   const sectionEnd = textSection.offset + textSection.size;
   let taskNum = 0;
 
-  // Initialize stateful register updates across the tasks
-  const hwState = {
-    values: new Uint32Array(8192),
-    valid: new Uint8Array(8192),
-    subtype: cpusubtype
-  };
-
   if (cpusubtype < 5) {
     // H13 or earlier linked list traversal
     let offset = 0;
@@ -214,7 +218,7 @@ function parseHwxFile(arrayBuffer) {
       }
 
       const taskRawBytes = new Uint8Array(arrayBuffer, taskOffset + offset, taskSizeInBytes);
-      const parsedTask = decodeInstructionStream(view, taskOffset + offset, task_size, cpusubtype, hwState);
+      const parsedTask = decodeInstructionStream(view, taskOffset + offset, task_size, cpusubtype);
       
       parsedTask.taskIndex = taskNum++;
       parsedTask.fileOffset = taskOffset + offset;
@@ -235,7 +239,18 @@ function parseHwxFile(arrayBuffer) {
 }
 
 // Decode H14+ task and instructions
-function decodeInstructionStream(view, taskOffset, taskSizeWords, cpusubtype, runningState) {
+function decodeInstructionStream(view, taskOffset, taskSizeWords, cpusubtype) {
+  // Each task gets a fresh, zeroed register-state array -- hwx_parsing.m
+  // and hwx_parsing.py both allocate a new state per task (they do NOT
+  // carry register values over between tasks), so a task that doesn't
+  // itself write e.g. ChCfg must be treated as "not valid", not as
+  // inheriting an earlier task's value.
+  const runningState = {
+    values: new Uint32Array(8192),
+    valid: new Uint8Array(8192),
+    subtype: cpusubtype
+  };
+
   // Read Universal Header (first 36 bytes)
   const tid_and_size = view.getUint32(taskOffset + 0, true);
   const exe_cycles_raw = view.getUint32(taskOffset + 4, true);
@@ -492,17 +507,47 @@ function parseStateRegisters(state, cpusubtype) {
     cout = state.values[7] & 0x1FFFF;
     dout = (state.values[8] & 0x1FFFF) || 1;
 
-    // Shifted dimensions heuristic (primarily for H16)
-    if (win === 0 || win >= 65536 || hin >= 65536) {
+    // Shifted-Common-block heuristic (H16 only; hwx_parsing.py's "hybrid
+    // values" path). If the dims at the base location look invalid, or
+    // ChCfg (word 0) was never written, check whether the whole Common
+    // block was shifted to word 0xa instead -- and if so, re-read ChCfg
+    // from the *shifted* location too, not just the dimensions, matching
+    // hwx_parsing.py's decode exactly.
+    let chCfgBase = 0;
+    if (cpusubtype === 7 &&
+        (win === 0 || win >= 65536 || hin >= 65536 || cin >= 65536 || state.values[0] === 0)) {
       const test_w = state.values[0x0b] & 0x1FFFF;
       const test_h = state.values[0x0c] & 0x1FFFF;
       const test_c = state.values[0x0d] & 0x1FFFF;
-      if (test_w > 0 && test_w < 10000 && test_h <= test_w) {
+      if (test_w > 0 && test_w < 10000 && test_h <= test_w && test_h < 10000 && test_c > 0 && test_c < 10000) {
         win = test_w;
         hin = test_h;
         cin = test_c;
+        chCfgBase = 0x0a;
       }
     }
+
+    // Common.ChCfg: InFmt/OutFmt/Src2InFmt. Widened from 2-bit to 3-bit
+    // starting at H18 (cpusubtype 10) to fit the new fp8/e4m3 value.
+    let inFmtVal, outFmtVal;
+    if (!state.valid[0]) {
+      // ChCfg word was never written for this task (many ops reuse the
+      // previous task's Common block); hwx_parsing.m/.py default to
+      // FLOAT16 (value 2) in this case rather than reading garbage/zero.
+      inFmtVal = 2;
+      outFmtVal = 2;
+    } else {
+      const chCfgWord = state.values[chCfgBase];
+      if (cpusubtype >= 10) {
+        inFmtVal = chCfgWord & 7;
+        outFmtVal = (chCfgWord >> 6) & 7;
+      } else {
+        inFmtVal = chCfgWord & 3;
+        outFmtVal = (chCfgWord >> 4) & 3;
+      }
+    }
+    inFmtName = getChFmtName(inFmtVal);
+    outFmtName = getChFmtName(outFmtVal);
   } else {
     // H14/H15 Packed
     const indim = state.values[0];
@@ -604,21 +649,31 @@ function parseStateRegisters(state, cpusubtype) {
   const kernel_cfg = state.values[neBase + 0];
   const ne_maccfg = state.values[neBase + 1];
 
-  let kfmt = 0, pen = 0, pbits = 0, sen = 0, reuse = 0;
+  let kfmt = 0, pen = 0, pbits = 0, sen = 0, reuse = 0, sbs = 0, asym = 0, detectZeros = 0;
   if (cpusubtype >= 7) {
     kfmt = kernel_cfg & 3;
     pen = (kernel_cfg >> 2) & 1;
     pbits = (kernel_cfg >> 4) & 0xF;
     sen = (kernel_cfg >> 8) & 1;
     reuse = (kernel_cfg >> 10) & 1;
+    sbs = (kernel_cfg >> 21) & 7;
+    asym = (kernel_cfg >> 24) & 1;
+    // DetectZeros (bit 28) is a real hardware feature starting at H17
+    // (cpusubtype 9); on H16 the bit is unassigned padding.
+    if (cpusubtype >= 9) {
+      detectZeros = (kernel_cfg >> 28) & 1;
+    }
   }
 
-  const kfmtNames = ["INT8", "UINT8", "FLOAT16", "Unknown"];
+  const kfmtNames = ["INT8", "UINT8", "FLOAT16", "E4M3"];
   ne.kfmt = kfmtNames[kfmt] || "INT8";
   ne.pen = pen ? "YES" : "NO";
   ne.pbits = pbits;
   ne.sen = sen ? "YES" : "NO";
   ne.reuse = reuse ? "YES" : "NO";
+  ne.sbs = sbs;
+  ne.asym = asym ? "YES" : "NO";
+  ne.detectZeros = cpusubtype >= 9 ? (detectZeros ? "YES" : "NO") : "N/A";
 
   let activeNE = 0, smallSrc = 0, opMode = 0, biasEn = 0, nlMode = 0;
   if (cpusubtype >= 7) {

@@ -1,5 +1,8 @@
 # Register Name Refactoring - hwx_parsing.m
 
+> [!NOTE]
+> **Historical snapshot.** This document describes the state of `hwx_parsing.m` immediately after the refactor landed (commit `73270a1`). The absolute line counts below (e.g. "Refactored hwx_parsing.m: 2373 lines") are no longer current — the file has since grown well past that (H19 support and other features added on top). The structural point still holds: register name arrays live in `hwx_register_names.h` rather than being duplicated per-function.
+
 ## Summary
 
 Successfully refactored the register name definitions in `hwx_parsing.m` to eliminate massive code duplication across hardware versions.

@@ -137,9 +137,18 @@ bool Validate1DWinograd(const ZinAneTdHw_v20& hw, bool double_int8) {
     } else if (bit24_of_0x4cc != 0) {
         if (hw.ne_config.kernel_cfg.asym_quant_en != 0) return false;  // cold.9
     } else {
-        // Exact bitmask semantics of the `& 0x1fffff00 & 0xf00001ff == 0x100`
-        // pattern test feeding this branch are NOT fully pinned down -- flagged
-        // as an open item in §7 rather than guessed at further.
+        // The `(reg & 0x1fffff00) & 0xf00001ff == 0x100` pattern fully decodes:
+        // 0x1fffff00 = bits[8:28], 0xf00001ff = bits{0-8, 28-31}; intersected,
+        // only bit8 and bit28 survive. So the test is exactly `bit8==1 && bit28==0`
+        // on the same register ([0x4cc] at v20/24, [0x65c] at v36) that also
+        // carries kernel_fmt (bits 0-1/0-2) and asym_quant_en (bit24):
+        //   bit8  = sparse_fmt   (nonzero/"enabled" bit -- bit8==1 means sparse_fmt!=0)
+        //   bit28 = detect_zeros (bit28==0 means detect_zeros!=1)
+        // The remaining `cbz w8` (w8 built via a csinc from double_int8 and a
+        // `cmp in_fmt,#2` (FP16)) collapses to exactly "double_int8 || in_fmt==FP16",
+        // i.e. the negation of "!double_int8 && in_fmt != FP16". Reject fires
+        // only when ALL THREE of the assert string's disjuncts are false at
+        // once -- fully consistent, bit-for-bit, with the literal cold.14 string.
         if (!(hw.ne_config.kernel_cfg.sparse_fmt == 0 ||
               (!double_int8 && in_fmt != FP16) ||
               hw.ne_config.kernel_cfg.detect_zeros == 1))
@@ -274,7 +283,7 @@ Winograd also exists as a first-class op in the `anehlo` MLIR dialect: `polylang
 - ~~Whether the accumulator-budget checks (32/16/8) are simultaneous or alternative~~ — **resolved**: they are alternative branches over a single computed cost value, selected by a 2-bit mode field (`ubfx([0x25c],2,2)`) and a 3-bit format field (`[0x220]&0x7`); at most one threshold applies per task descriptor — see §4.
 - ~~The exact `ssm`/`in_fmt` edge case for `ssm==1`~~ — **resolved**: `ZinSmallSourceMode` enum is `[Normal, SSM, SSM_Tiny, NP2_6, NP2_10, SSM_Diminutive]`; `ssm==SSM(1)` is unconditionally rejected (satisfies neither disjunct of `ssm==Normal || (ssm>1 && in_fmt<2)`), while `SSM_Tiny`/`NP2_6`/`NP2_10`/`SSM_Diminutive` are allowed only for INT8/UINT8 — see §4 and §5.
 - ~~Independent re-verification of the shared-cold-path risk for `kernel_mode != Kernel` and the `sparse_fmt` compound check~~ — **resolved**: `kernel_mode` is a direct, adjacent-bitfield read, not mislabeled. The `sparse_fmt`/`asym_quant_en`/`ssm` trio isn't mislabeled either, but turned out to be alternative branches sharing the accumulator-budget's selector fields, not three sequential `if`s — restructured in §4. Also surfaced a previously-missing unconditional `kernel_fmt == E4M3` rejection now added to the pseudocode.
-- **Exact bitmask semantics of the `sparse_fmt` branch's selector test** — the disassembly computes `([0x4cc] & 0x1fffff00) & 0xf00001ff == 0x100` combined with a `csinc`-derived flag from `[0x4d0] bit 26`, gating which of `asym_quant_en`/`sparse_fmt` is checked; the precise field-level meaning of that composite mask wasn't pinned down and is stated only structurally in §4, not decoded bit-by-bit.
+- ~~Exact bitmask semantics of the `sparse_fmt` branch's selector test~~ — **resolved**: `0x1fffff00 & 0xf00001ff` intersects to exactly bits {8, 28} of the same register that also carries `kernel_fmt` (bits 0-1) and `asym_quant_en` (bit 24) — `[0x4cc]` at v20/v24, `[0x65c]` at v36. Bit 8 = `sparse_fmt`, bit 28 = `detect_zeros`; the accompanying `csinc`-built flag collapses to `double_int8 || in_fmt==FP16`. All three pieces line up bit-for-bit with the three disjuncts of the `cold.14` assert string — see §4.
 - ~~The exact numeric identity of v36 kernel-format values 4 and 5~~ — **resolved, with a correction**: confirmed via a directly enum-named condition string (`kernel_fmt == ...kernel_fmt_int4 || kernel_fmt == ...kernel_fmt_e2_m1`) that raw values 4 and 5 are literally **INT4** and **E2M1**. However, an earlier draft's "E2M1/**MX**" label was imprecise: MX/microscaled support is a *separate*, orthogonal field (`ZinHWKernelFmtMx`, `kernel_fmt_mx`), not folded into these two `kernel_fmt` raw values — see the corrected §4.1. `Validate1DWinograd<36u>` never reads that orthogonal field, so whether a *microscaled* INT4/E2M1 weight is Winograd-eligible remains genuinely open (this specific sub-question is not resolved, unlike the base raw-value identity).
 - ~~The `ValidateHalfWUMode<36u>` cross-check on `winograd1_d_en`~~ — **resolved**: not a contradiction. `ValidateHalfWUMode` is HalfWU's own dedicated validator (a no-op success when `half_wu` itself is unset), and `winograd1_d_en == 0` inside it is a plain, expected mutual-exclusion check — see the updated note in §4.1.
 - **2D Winograd's actual format contract, at any version** — re-confirmed absent: no `Validate2DWinogradMode` (or similarly named) symbol exists for *any* templated version (v1 through v36 all checked via `nm`), despite `Set2DWinogradModeE` existing at every version. Whatever validates 2D Winograd's format/shape constraints, if anything does, is not a per-task-descriptor `ZinValidateTd` function — likely a generic/shared codegen-time check not yet identified, or simply unvalidated at this layer (consistent with 2D Winograd's assert-string still reading as version-independent/dead — see §3).

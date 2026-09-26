@@ -45,6 +45,7 @@ Comprehensive guides and architecture deep dives are available in the [`docs/`](
 - 📖 **[WORKFLOW_MLPACKAGE_TO_HWX_ANALYSIS.md](docs/WORKFLOW_MLPACKAGE_TO_HWX_ANALYSIS.md)**: End-to-end compilation pipeline walkthrough (PyTorch/TensorFlow $\rightarrow$ CoreML `.mlpackage` $\rightarrow$ `.mlmodelc` $\rightarrow$ MIL $\rightarrow$ `.hwx` generation and parsing).
 - 📖 **[GUIDE_ANE_HWX_FORMAT.md](docs/GUIDE_ANE_HWX_FORMAT.md)**: Comprehensive architectural reference on the `.hwx` Mach-O container, task descriptor headers, and instruction stream formatting across generations (H11–H19).
 - 📖 **[GUIDE_H18G_H19_BONDED_NETWORKS.md](docs/GUIDE_H18G_H19_BONDED_NETWORKS.md)**: Architectural analysis of the major shift in H18g/H19: dual-network bundling (`main__nonbonded` + `main__bonded`), cooperative multi-engine execution across ANE 0/1, 2D spatial DAG slicing, and the new `__RUNTIME` segment.
+- 📖 **[GUIDE_ANE_WINOGRAD.md](docs/GUIDE_ANE_WINOGRAD.md)**: Decompiled validation logic for 1D/2D Winograd convolution — allowed kernel/stride shapes, the fp8/UINT8 weight-format exclusions, per-generation support history, and the compiler's cost-model decision logic for when Winograd is actually used.
 - 📖 **[HOWTO_VERIFY_H18G_ISA_AND_SUBTYPE.md](docs/HOWTO_VERIFY_H18G_ISA_AND_SUBTYPE.md)**: Step-by-step reverse-engineering guide explaining how to discover and verify `h18g`'s true CPU subtype and ISA version.
   > [!NOTE]
   > **Why a dedicated guide for H18g?**

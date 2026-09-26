@@ -109,7 +109,10 @@ bool Validate1DWinograd(const ZinAneTdHw_v20& hw, bool double_int8) {
     // computed later, only once the (kernel_width, stride) shape check below passes.
     if (!(skd == 1 || !double_int8)) return false;  // cold.15: "skd == 1 || !double_int8"
 
-    // Shared cold-path with ValidateOnTheFlySparseEncoding<20u>
+    // Shared cold-path with ValidateOnTheFlySparseEncoding<20u> -- RE-VERIFIED
+    // (not just string-trusted): bit3 of the byte at [0x4d0] is tested directly,
+    // immediately adjacent to the op_mode bits (0-2) tested above via `tst w8,#0x7`.
+    // Same byte, adjacent bitfield -- this one is NOT mislabeled.
     if (hw.ne_config.mac_cfg.kernel_mode != Kernel) return false;
 
     // Only these three (kernel_width, stride) shapes are Winograd-eligible
@@ -120,29 +123,46 @@ bool Validate1DWinograd(const ZinAneTdHw_v20& hw, bool double_int8) {
 
     if (!(skh <= 5)) return false;
 
-    if (!(hw.ne_config.kernel_cfg.sparse_fmt == 0 ||
-          (!double_int8 && in_fmt != FP16) ||
-          hw.ne_config.kernel_cfg.detect_zeros == 1))
-        return false;
-
-    if (hw.ne_config.kernel_cfg.asym_quant_en != 0) return false;
-
-    // ssm: ZinSmallSourceMode enum = [Normal=0, SSM=1, SSM_Tiny=2, NP2_6=3,
-    // NP2_10=4, SSM_Diminutive=5]. Note ssm==SSM(1) satisfies NEITHER disjunct
-    // (ssm==Normal is false, and ssm>1 is false) -- so ssm==SSM is an
-    // UNCONDITIONAL reject regardless of in_fmt, distinct from the other four
-    // non-Normal modes, which are allowed but only for in_fmt < 2 (INT8/UINT8).
-    if (!(ssm == Normal || (ssm > 1 /* Tiny, NP2_6, NP2_10, Diminutive */ && in_fmt < 2))) return false;
+    // --- sparse_fmt / asym_quant_en / ssm: ALSO alternative branches, not three
+    // independent sequential ifs, and re-using the SAME (mode_sel, fmt_sel)
+    // selector pair from the accumulator-budget block above:
+    if (mode_sel == 1 || fmt_sel >= 2) {
+        // ssm: ZinSmallSourceMode enum = [Normal=0, SSM=1, SSM_Tiny=2, NP2_6=3,
+        // NP2_10=4, SSM_Diminutive=5]. ssm==SSM(1) satisfies NEITHER disjunct
+        // (ssm==Normal is false, and ssm>1 is false) -- so ssm==SSM is an
+        // UNCONDITIONAL reject, distinct from the other four non-Normal modes,
+        // which are allowed but only for in_fmt < 2 (INT8/UINT8).
+        if (!(ssm == Normal || (ssm > 1 /* Tiny, NP2_6, NP2_10, Diminutive */ && in_fmt < 2)))
+            return false;  // cold.8
+    } else if (bit24_of_0x4cc != 0) {
+        if (hw.ne_config.kernel_cfg.asym_quant_en != 0) return false;  // cold.9
+    } else {
+        // Exact bitmask semantics of the `& 0x1fffff00 & 0xf00001ff == 0x100`
+        // pattern test feeding this branch are NOT fully pinned down -- flagged
+        // as an open item in §7 rather than guessed at further.
+        if (!(hw.ne_config.kernel_cfg.sparse_fmt == 0 ||
+              (!double_int8 && in_fmt != FP16) ||
+              hw.ne_config.kernel_cfg.detect_zeros == 1))
+            return false;  // cold.14
+    }
 
     // Weight format: reachable only when kernel_fmt == INT8 (0) -- the
     // `cbnz` guarding this branch skips it entirely for UINT8/FP16/anything
     // else. So this is NOT "INT8 is fine, everything else is checked"; it's
     // "INT8 requires double_int8, and nothing else is gated here at all."
-    if (hw.ne_config.kernel_cfg.kernel_fmt == Int8 && !double_int8) return false;
+    // RE-VERIFIED by tracing the actual guard bits (not just string-trust):
+    // reached exactly when `double_int8==false` (tested via `tbnz w20,#0`,
+    // where x20 == the function's own `double_int8` argument) AND the raw
+    // 2-bit kernel_fmt field at `[0x4cc] & 0x3 == 0` (INT8).
+    if (hw.ne_config.kernel_cfg.kernel_fmt == Int8 && !double_int8) return false;  // cold.10
 
-    if (hw.common_config.ch_cfg.in_fmt == E4M3) return false;   // activation fmt
+    // Separate, unconditional check missing from earlier passes at this guide:
+    // kernel_fmt == E4M3 is rejected outright, regardless of double_int8.
+    if (hw.ne_config.kernel_cfg.kernel_fmt == E4M3) return false;  // cold.13
 
-    if (hw.common_config.ne_cfg.half_wu != 0) return false;
+    if (hw.common_config.ch_cfg.in_fmt == E4M3) return false;  // cold.12, activation fmt
+
+    if (hw.common_config.ne_cfg.half_wu != 0) return false;  // cold.11
 
     return true;  // Winograd is valid for this task descriptor
 }
@@ -150,6 +170,8 @@ bool Validate1DWinograd(const ZinAneTdHw_v20& hw, bool double_int8) {
 
 > [!IMPORTANT]
 > **Correction to an earlier pass at this analysis.** The disassembly contains a branch whose `.cold` function embeds the string `"kernel_fmt != ane_ne_kernel_cfg_kernel_fmt_uint8_v20"`, and it is only reachable when `kernel_fmt == INT8 (0)` — the code explicitly skips this branch (`cbnz w8, [skip]`) for every other `kernel_fmt` value, including UINT8. Read literally, the embedded string says "reject unless UINT8"; read from the actual control flow, the real condition is "reject INT8 unless `double_int8` is set." These are different assertions. The most likely explanation is that the compiler merged two textually-different `assert()` call sites (from different source lines) into one shared `.cold` block during optimization, keeping only one of the two original strings. **Do not trust an embedded assert string in isolation — always trace the branch condition that reaches it.** This is corrected in the pseudocode above: UINT8 and FP16 kernel/weight formats are **not** gated by this check at all, and pass through unconditionally.
+>
+> **#3 follow-up (re-verification pass):** independently re-traced two other checks flagged as at-risk of the same mislabeling. `kernel_mode != Kernel` checks out fine — it's a direct, adjacent bitfield read, not a suspect shared string. The `sparse_fmt`/`asym_quant_en`/`ssm` trio turned out to have a *different* problem: they aren't mislabeled, but they *are* alternative branches (same `mode_sel`/`fmt_sel` selector reused from the accumulator-budget block), not three independent sequential `if`s as earlier drafts of this guide implied — restructured above. This pass also turned up a genuinely missing check (unconditional `kernel_fmt == E4M3` rejection, `cold.13`) that no earlier draft of this pseudocode included at all.
 >
 > The same caveat applies in reverse to the accumulator-budget block above: the three thresholds (32/16/8) are correctly attributed to distinct `.cold` sites with distinct, self-consistent strings (`<= 32`, `<= 16`, `<= 8`), confirmed by resolving each `.cold.N` independently — so unlike the kernel_fmt case, there is no mislabeling here, just a branchy/alternative structure that a flat sequential reading of the disassembly obscures.
 
@@ -247,7 +269,8 @@ Winograd also exists as a first-class op in the `anehlo` MLIR dialect: `polylang
 - ~~What `skd`/`skh` are~~ — **resolved**: both are the return value of `perfmodel::SubchannelKernelDimension(...)`, called twice with different bit-slices of the packed registers at `[0x24c]` (depth) and `[0x248]` (height) — see §4.
 - ~~Whether the accumulator-budget checks (32/16/8) are simultaneous or alternative~~ — **resolved**: they are alternative branches over a single computed cost value, selected by a 2-bit mode field (`ubfx([0x25c],2,2)`) and a 3-bit format field (`[0x220]&0x7`); at most one threshold applies per task descriptor — see §4.
 - ~~The exact `ssm`/`in_fmt` edge case for `ssm==1`~~ — **resolved**: `ZinSmallSourceMode` enum is `[Normal, SSM, SSM_Tiny, NP2_6, NP2_10, SSM_Diminutive]`; `ssm==SSM(1)` is unconditionally rejected (satisfies neither disjunct of `ssm==Normal || (ssm>1 && in_fmt<2)`), while `SSM_Tiny`/`NP2_6`/`NP2_10`/`SSM_Diminutive` are allowed only for INT8/UINT8 — see §4 and §5.
-- **Independent re-verification of the shared-cold-path risk for two other checks** (`kernel_mode != Kernel`, and the `sparse_fmt`/`in_fmt`/`detect_zeros` compound condition) — these were resolved by string-resolution alone, not by tracing branch reachability the way the mislabeled `kernel_fmt != uint8` case was caught; not yet independently re-verified for the same mislabeling risk.
+- ~~Independent re-verification of the shared-cold-path risk for `kernel_mode != Kernel` and the `sparse_fmt` compound check~~ — **resolved**: `kernel_mode` is a direct, adjacent-bitfield read, not mislabeled. The `sparse_fmt`/`asym_quant_en`/`ssm` trio isn't mislabeled either, but turned out to be alternative branches sharing the accumulator-budget's selector fields, not three sequential `if`s — restructured in §4. Also surfaced a previously-missing unconditional `kernel_fmt == E4M3` rejection now added to the pseudocode.
+- **Exact bitmask semantics of the `sparse_fmt` branch's selector test** — the disassembly computes `([0x4cc] & 0x1fffff00) & 0xf00001ff == 0x100` combined with a `csinc`-derived flag from `[0x4d0] bit 26`, gating which of `asym_quant_en`/`sparse_fmt` is checked; the precise field-level meaning of that composite mask wasn't pinned down and is stated only structurally in §4, not decoded bit-by-bit.
 - **The exact numeric identity of v36 kernel-format values 4 and 5** — inferred as INT4 and E2M1/MX respectively from `SetKernelFmt<36u>`'s identity mapping plus generic condition strings elsewhere in the binary, but not confirmed against a definitive enum-to-name table.
 - **2D Winograd's actual format contract at v36** — no dedicated `ZinValidateTd<36u>::Validate2DWinogradMode` (or similarly named) symbol was found; whatever validates it may be folded into `Validate1DWinograd` or into a generic codegen path not yet identified.
 - **The `ValidateHalfWUMode<36u>` cross-check on `winograd1_d_en`** (§4.1) — flagged as unresolved, not explained.

@@ -287,11 +287,54 @@ Winograd also exists as a first-class op in the `anehlo` MLIR dialect: `polylang
 - ~~The exact numeric identity of v36 kernel-format values 4 and 5~~ — **resolved, with a correction**: confirmed via a directly enum-named condition string (`kernel_fmt == ...kernel_fmt_int4 || kernel_fmt == ...kernel_fmt_e2_m1`) that raw values 4 and 5 are literally **INT4** and **E2M1**. However, an earlier draft's "E2M1/**MX**" label was imprecise: MX/microscaled support is a *separate*, orthogonal field (`ZinHWKernelFmtMx`, `kernel_fmt_mx`), not folded into these two `kernel_fmt` raw values — see the corrected §4.1.
 - **Microscaled INT4/E2M1 Winograd eligibility — narrowed further, still not fully closed**: a whole-binary search turned up **zero** references anywhere that combine Winograd with `kernel_fmt_mx`/MX/microscaled/int4/e2m1 in the same condition string, and no code anywhere (searched for the bit-8/9 extraction pattern of the `[+0x334]` field across the *entire* `__text` section, ~1.8M instructions) reads `kernel_fmt_mx` at all outside its own setter. That's about as strong as static string/pattern search can get: there is no explicit cross-check gating microscaled weights out of (or into) Winograd anywhere in this binary. This doesn't prove the combination is *supported* — it could equally mean the MIR-level cost model (§6) simply never considers Winograd for MX-format layers for unrelated reasons, with no need for an explicit gate. But at the `ZinValidateTd` layer specifically, the answer is now as settled as it can be from static analysis alone: **unconstrained, not merely "unchecked because we stopped looking."**
 - ~~The `ValidateHalfWUMode<36u>` cross-check on `winograd1_d_en`~~ — **resolved**: not a contradiction. `ValidateHalfWUMode` is HalfWU's own dedicated validator (a no-op success when `half_wu` itself is unset), and `winograd1_d_en == 0` inside it is a plain, expected mutual-exclusion check — see the updated note in §4.1.
-- **2D Winograd's actual format contract, at any version — narrowed, still not found**: `ZinIrTdValidationUtil::ValidateWinograd2DMode<HWVersion>` is a **real function that exists only as a `__PRETTY_FUNCTION__`-style string literal**, not as an out-of-line symbol — it was fully inlined at every call site, which is why `nm` never turns it up. Tracing every cross-reference to that string's page in the binary (~40 xrefs, all checked) found exactly **one** real consumer: `ZinValidateTd<36u>::ValidateDoubleMacMode`, which reads the `winograd2d_en` bit as a single OR-clause exemption —
-  ```cpp
-  // ValidateDoubleMacMode<36u>, only reached when double_mac_mode itself is set:
-  if (!(hw.ne_config.mac_cfg.binary_point == 0 || !both_are_int8 || winograd2d_en))
-      return false;
-  ```
-  i.e. 2D Winograd being enabled *exempts* a task from DoubleMacMode's `binary_point == 0` requirement — a real, meaningful consumer of the flag, but not a shape/format validator for 2D Winograd itself. No other function anywhere in the binary reads this bit. So the honest conclusion is no longer just "not found yet": there appears to be **no dedicated format/shape gate for 2D Winograd at the `ZinValidateTd` layer, at any version** — consistent with its assert-string reading as dead/stub code through v31, and, even at v36 where the feature is finally real, its only cross-reference is this one incidental exemption clause in an unrelated validator.
+- **2D Winograd's actual format contract, at any version — narrowed, still not found**: `ZinIrTdValidationUtil::ValidateWinograd2DMode<HWVersion>` is a **real function that exists only as a `__PRETTY_FUNCTION__`-style string literal**, not as an out-of-line symbol — it was fully inlined at every call site, which is why `nm` never turns it up. Tracing every cross-reference to that string's page in the binary (~40 xrefs, all checked) found exactly **one** real consumer: `ZinValidateTd<36u>::ValidateDoubleMacMode`, which reads the `winograd2d_en` bit as a single OR-clause exemption. No other function anywhere in the binary reads this bit. So the honest conclusion is no longer just "not found yet": there appears to be **no dedicated format/shape gate for 2D Winograd at the `ZinValidateTd` layer, at any version** — consistent with its assert-string reading as dead/stub code through v31, and, even at v36 where the feature is finally real, its only cross-reference is this one incidental exemption clause in an unrelated validator.
+  > [!IMPORTANT]
+  > **Correction, now fully decoded: `ValidateDoubleMacMode<36u>` does NOT require FP16/BF16 — it hard-rejects them.** A previous pass at this guide (and the curated table in [GUIDE_ANE_FEATURE_SUPPORT_BY_GENERATION.md](GUIDE_ANE_FEATURE_SUPPORT_BY_GENERATION.md)) misread two of this function's assert strings as a positive whitelist. Tracing every branch's actual polarity (not just the embedded string) gives:
+  > ```cpp
+  > // ZinValidateTd<36u>::ValidateDoubleMacMode  (0x20bb8e350)
+  > bool ValidateDoubleMacMode(const ZinAneTdHw_v36& hw) {
+  >     if (hw.ne_config.mac_cfg.double_mac_en == 0) return true;   // bit26 of [+0x664]; no-op if unset
+  >
+  >     // Checked FIRST, before any format/op/kernel check -- this IS the winograd2d_en
+  >     // exemption clause, and it decodes to a 4-way AND whose last three terms match
+  >     // the assert string's three OR-disjuncts one-for-one:
+  >     if (hw.ne_config.mac_cfg.binary_point != 0 && both_are_int8 && !winograd2d_en)
+  >         return false;  // cold.5: "binary_point==0 || !both_are_int8 || winograd2d_en"
+  >     //   binary_point  = bits[8:13] of [+0x664] (6-bit fixed-point scale field)
+  >     //   winograd2d_en = bit26 of [+0x328]
+  >     //   both_are_int8 = NOT(in_fmt_nibble ∈ {0,1,13,15} OR (in_fmt_nibble & 9)==8)
+  >     //                   AND (kernel_fmt register's bit1 == 0)
+  >     //   -- a compound bit-test over packed internal-object nibbles, not a clean
+  >     //   single enum compare; the exact named-enumerator identity of the {0,1,13,15}
+  >     //   set isn't resolved (see caveat below), but the 4-term structure is confirmed
+  >     //   bit-for-bit against the assert string.
+  >
+  >     // in_fmt and kernel_fmt must NOT be FP16 or BF16 -- opposite of the earlier draft.
+  >     // (kernel_fmt's check tests its low 2 bits == 0b10, which is true for BOTH raw
+  >     // value 2 (FP16) and raw value 6 (BF16) -- a deliberate truncation trick, not
+  >     // a coincidence, matching the assert string's "kernel_fmt != fp16 && != bf16".)
+  >     if (in_fmt == FP16 || in_fmt == BF16) return false;         // cold.1
+  >     if (kernel_fmt == FP16 || kernel_fmt == BF16) return false; // cold.4
+  >
+  >     if (hw.ne_config.mac_cfg.op_mode != Conv) return false;     // cold.2
+  >
+  >     // bit3 of [+0x664] is a precomputed single-bit "kernel_mode == Unity" flag,
+  >     // not a multi-value enum compare at this call site.
+  >     if (kernel_mode_is_unity) return false;                     // cold.3
+  >
+  >     return true;
+  > }
+  > ```
+  > This is now independently corroborated by the cost-model helper `ZinDoubleMacMode::CanUseDoubleMacModeBasedOnFormats(ZinTensorFormat, ZinKernelFormat)`, decompiled from `0x20bfcc3c8`:
+  > ```cpp
+  > bool CanUseDoubleMacModeBasedOnFormats(ZinTensorFormat in_fmt, ZinKernelFormat kernel_fmt) {
+  >     if (IsMicroscaledFormat(in_fmt)) return false;
+  >     if (!IsPrimaryFormat(in_fmt)) return false;
+  >     if (ZinTensorFormatGetSizeInBytes(in_fmt) > 1) return false;              // rules out FP16/BF16 (2 bytes)
+  >     if (ZinKernelFormatGetUnderlyingTypeSizeInBytes(kernel_fmt) > 1) return false;
+  >     return IsFloatFormat(in_fmt) == ZinKernelFormatIsFloat(kernel_fmt);       // matched float/non-float class
+  > }
+  > ```
+  > A ≤1-byte format requirement is flatly incompatible with FP16/BF16 (both 2 bytes) — so this helper agrees with the corrected register-level trace, not the earlier "FP16/BF16 only" claim. **DoubleMacMode is an INT8-class throughput-doubling feature (the same family as `DoubleInt8Enable`), not an FP16/BF16 one** — which also makes far more sense of the `both_are_int8` clause name: DoubleMac's own eligible-format space *is* int8-class, so a clause specifically about "both operands being int8" is a meaningful, reachable condition inside it, not dead code as the earlier (incorrect) tension implied.
+  > The only remaining loose end: the exact named-enumerator identity of `both_are_int8`'s `{0,1,13,15}` in_fmt-nibble set isn't resolved — those values don't obviously correspond to a plain 0-3 in_fmt enum, and may fold in extra bits packed into the same internal-object nibble (possibly related to the wider MX/microscaled `in_fmt` family documented in §4.1, which `CanUseDoubleMacModeBasedOnFormats` explicitly excludes via `IsMicroscaledFormat`). This is a genuinely open, low-priority detail, not a correctness concern for the "not FP16/BF16" conclusion above.
 - **No local `.hwx` samples exist for H17/H18/H19** in this repo to empirically confirm Winograd's on-the-wire register encoding the way H13/H16 findings elsewhere in this repo have been confirmed against real compiled models. Everything in this guide is derived from static ANECompiler disassembly only.

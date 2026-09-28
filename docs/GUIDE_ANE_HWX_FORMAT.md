@@ -1,6 +1,6 @@
-# Comprehensive Guide to Apple ANE .hwx File Format (H13-H18)
+# Comprehensive Guide to Apple ANE .hwx File Format (H13-H19)
 
-**Purpose**: A complete, beginner-friendly reference for understanding, parsing, and analyzing Apple Neural Engine (ANE) `.hwx` files from scratch. This guide covers all hardware architectures from H13 (A14/M1) through H18 (A19).
+**Purpose**: A complete, beginner-friendly reference for understanding, parsing, and analyzing Apple Neural Engine (ANE) `.hwx` files from scratch. This guide covers all hardware architectures from H13 (A14/M1) through H18g/H19 (A20 Pro).
 
 **Audience**: Novice developers, reverse engineers, and compiler enthusiasts who want to understand how Apple's machine learning accelerator works at the hardware-register level.
 
@@ -356,11 +356,23 @@ Here is the exact name-to-index mapping for registers within their respective fu
 
 #### Data Format Encoding (ChannelCfg Register)
 
-The ChannelCfg register encodes data types using 2-bit fields:
-* `0x0` (0): INT8 - 8-bit signed integer (quantized)
-* `0x1` (1): UINT8 - 8-bit unsigned integer
-* `0x2` (2): FLOAT16 - 16-bit IEEE 754 half-precision float
-* `0x3` (3): Reserved/Unknown
+> [!IMPORTANT]
+> **The H16+ raw values below were corrected** after empirical verification against real compiled `.hwx` output cross-checked with known model weight/activation dtypes (see [GUIDE_ANE_WINOGRAD.md §7](GUIDE_ANE_WINOGRAD.md) for the full evidence trail: decompiling `GetHWKernelFormat`/`GetHWChannelFormat`, LLDB-tracing a real compile, and matching raw register values against a model's own MIL source). An earlier pass at this guide (and at `hwx_dump/hwx_parsing.m`/`.py`) had H16+'s raw 0/1 pair backwards. **H14/H15's own raw values below are unverified** — they were never independently re-checked the same way, and may or may not share the same convention.
+
+The ChannelCfg register encodes data types using 2-bit fields on H14-H17, widening to 3 bits at H18+ (to fit `E4M3`/`INT4`/`E2M1`, added at H18/v20 and the newest known future ISA version respectively — see the Winograd guide for where those values come from):
+
+* **H14/H15** (unverified raw mapping):
+  * `0x0` (0): INT8 - 8-bit signed integer (quantized)
+  * `0x1` (1): UINT8 - 8-bit unsigned integer
+  * `0x2` (2): FLOAT16 - 16-bit IEEE 754 half-precision float
+  * `0x3` (3): Reserved/Unknown
+* **H16+** (confirmed raw mapping):
+  * `0x0` (0): UINT8 - 8-bit unsigned integer
+  * `0x1` (1): INT8 - 8-bit signed integer (quantized)
+  * `0x2` (2): FLOAT16 - 16-bit IEEE 754 half-precision float
+  * `0x3` (3): E4M3 (fp8) - H18+ only (3-bit field)
+  * `0x4` (4): INT4 - newest known future ISA version only
+  * `0x5` (5): E2M1 - newest known future ISA version only
 
 **Critical Implementation Detail**: The ChannelCfg register is **frequently not written** in the instruction stream when tasks use the architecture's default format. Your parser must handle missing ChannelCfg values by applying architecture-specific defaults:
 
@@ -458,16 +470,19 @@ Below are the exact bitwise equations to unpack crucial ANE registers.
 ### 1. Neural Engine Core Block Unpacking
 
 #### A. KernelCfg Register (NE Block + 0)
-Controls the layout, datatype, and density of model weights:
-* **kfmt** (`bits [1:0]`): Weight Data Format
-  * `0`: INT8 (Quantized integers)
-  * `1`: UINT8 (Unsigned quantized integers)
+Controls the layout, datatype, and density of model weights. This section describes the H16+ layout (`kernel_cfg` in `hwx_parsing.py`'s `print_ne_h16`); H14/H15's `KernelCfg` uses a different, unverified layout (see §5's Data Format Encoding note).
+* **kfmt** (`bits [1:0]` on H16/H17, widened to `bits [2:0]` at H18+): Weight Data Format
+  * `0`: UINT8 (Unsigned quantized integers)
+  * `1`: INT8 (Quantized integers)
   * `2`: FLOAT16 (16-bit floating point precision)
+  * `3`: E4M3 (fp8) - H18+ only
+  * `4`: INT4 - newest known future ISA version only
+  * `5`: E2M1 - newest known future ISA version only
 * **pen** (`bit [2]`): Palette Enable. If `1`, weights are compressed as indexed palette entries.
 * **pbits** (`bits [7:4]`): Palette Bit-width. Quantization depth of the index table.
 * **sen** (`bit [8]`): Sparse Compression Enable. If `1`, zero-weight pruning is active (skips processing zero weights to save cycles).
 * **reuse** (`bit [10]`): Core weight buffer reuse. If `1`, the engine reuses the weights already stored in the local buffer from the previous layer, avoiding a slow DRAM reload.
-* **sbs_w** (`bits [24:21]`): Sparse block size selector for weights.
+* **sbs_w** (`bits [23:21]`): Sparse block size selector for weights.
 
 #### B. MacCfg Register (NE Block + 1)
 Determines what mathematical operation the core execution units perform:

@@ -751,8 +751,40 @@
                 <span class="detail-val" id="val-ne-bias">N/A</span>
               </div>
               <div class="detail-row">
-                <span class="detail-lbl">Small Source Optimization</span>
+                <span class="detail-lbl">Small Source Mode (raw ssm)</span>
                 <span class="detail-val" id="val-ne-smallsrc">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Kernel Mode</span>
+                <span class="detail-val" id="val-ne-kmode">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Pass-Through Enable</span>
+                <span class="detail-val" id="val-ne-passen">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">MV Bias Enable</span>
+                <span class="detail-val" id="val-ne-mvbiasen">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Binary Point</span>
+                <span class="detail-val" id="val-ne-binpoint">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Post-Scale Enable</span>
+                <span class="detail-val" id="val-ne-posten">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Max Pool Enable</span>
+                <span class="detail-val" id="val-ne-maxpoolen">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Arg Select</span>
+                <span class="detail-val" id="val-ne-argsel">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Double Int8 Enable (DblInt8)</span>
+                <span class="detail-val" id="val-ne-doubleint8">N/A</span>
               </div>
               <div class="detail-row">
                 <span class="detail-lbl">Weight Format (kfmt)</span>
@@ -789,6 +821,37 @@
               <div class="detail-row">
                 <span class="detail-lbl">Output Format (ChCfg.OutFmt)</span>
                 <span class="detail-val" id="val-common-outfmt">N/A</span>
+              </div>
+            </div>
+
+            <!-- Task Control (Common.MacCfg) -->
+            <div class="detail-card">
+              <div class="detail-header">
+                <span>🎛️</span> Task Control (Common.MacCfg)
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Task Type</span>
+                <span class="detail-val" id="val-task-tasktype">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">ReLU Type (raw)</span>
+                <span class="detail-val" id="val-task-relutype">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">1D Winograd (Wino1D)</span>
+                <span class="detail-val" id="val-task-wino1d">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Output Transpose</span>
+                <span class="detail-val" id="val-task-outtrans">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Fill Lower NE</span>
+                <span class="detail-val" id="val-task-filllowerne">N/A</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-lbl">Trace Enable</span>
+                <span class="detail-val" id="val-task-traceen">N/A</span>
               </div>
             </div>
 
@@ -1079,9 +1142,27 @@
         document.getElementById('val-ne-sbs').innerText = dec.ne.sbs !== undefined ? dec.ne.sbs : "N/A";
         document.getElementById('val-ne-asym').innerText = dec.ne.asym || "N/A";
         document.getElementById('val-ne-detectzeros').innerText = dec.ne.detectZeros || "N/A";
+        document.getElementById('val-ne-kmode').innerText = dec.ne.kernelMode || "N/A";
+        document.getElementById('val-ne-passen').innerText = dec.ne.passEn || "N/A";
+        document.getElementById('val-ne-mvbiasen').innerText = dec.ne.mvBiasEn || "N/A";
+        document.getElementById('val-ne-binpoint').innerText = dec.ne.binPoint !== undefined ? dec.ne.binPoint : "N/A";
+        document.getElementById('val-ne-posten').innerText = dec.ne.postEn || "N/A";
+        document.getElementById('val-ne-maxpoolen').innerText = dec.ne.maxPoolEn || "N/A";
+        document.getElementById('val-ne-argsel').innerText = dec.ne.argSel !== undefined ? dec.ne.argSel : "N/A";
+        document.getElementById('val-ne-doubleint8').innerText = dec.ne.doubleInt8 || "N/A";
       }
       document.getElementById('val-common-infmt').innerText = dec.inFormat || "N/A";
       document.getElementById('val-common-outfmt').innerText = dec.outFormat || "N/A";
+
+      // Update Task Control (Common.MacCfg) details
+      if (dec.taskInfo) {
+        document.getElementById('val-task-tasktype').innerText = dec.taskInfo.taskType || "N/A";
+        document.getElementById('val-task-relutype').innerText = dec.taskInfo.reluType !== undefined ? dec.taskInfo.reluType : "N/A";
+        document.getElementById('val-task-wino1d').innerText = dec.taskInfo.wino1d || "N/A";
+        document.getElementById('val-task-outtrans').innerText = dec.taskInfo.outTrans || "N/A";
+        document.getElementById('val-task-filllowerne').innerText = dec.taskInfo.fillLowerNE || "N/A";
+        document.getElementById('val-task-traceen').innerText = dec.taskInfo.traceEn || "N/A";
+      }
 
       // Update L2 details
       if (dec.l2) {

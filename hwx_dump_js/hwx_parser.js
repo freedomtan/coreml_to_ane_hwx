@@ -560,8 +560,11 @@ function parseStateRegisters(state, cpusubtype) {
     hout = (outdim >> 16) & 0x7FFF;
   }
 
-  // 2. Convolution Config (COMMON_CONV)
-  const conv = state.values[8];
+  // 2. Convolution Config (COMMON_CONV). Word offset 10 on H16+ (matches
+  // hwx_parsing.py's print_common_h16 conv_cfg=base+10); word offset 8 on
+  // H14/H15 (matches print_common_h14's conv=base+8). These differ --
+  // previously this always read word 8, which was wrong for H16+.
+  const conv = state.values[cpusubtype >= 7 ? 10 : 8];
   let convConfig = null;
   if (conv) {
     const kw = conv & 0x3F;
@@ -590,31 +593,50 @@ function parseStateRegisters(state, cpusubtype) {
     l2.ResBase = state.values[l2Base + 14];
   }
 
+  // 3b. Common.MacCfg (word offset 15 on H16+, word offset 10 on H14/H15).
+  // Bit layout confirmed identical across H16/H17/H18/H19 in
+  // hwx_parsing.py's print_common_h16 (both instr_ver branches agree);
+  // H14's own layout (print_common_h14) uses different bit positions.
+  const task_type_mapped_dict = {0: 0, 1: 2, 2: 6, 3: 5, 4: 7, 5: 4, 6: 3, 7: 0, 8: 1};
+  const hwTaskTypeNames = {
+    0: "None",
+    1: "Pooling w/o input ReLU",
+    2: "Pooling w/ input ReLU",
+    3: "EW w/ Reduction w/o ReLU",
+    4: "EW w/ Reduction w/ ReLU",
+    5: "EW w/o Reduction w/o ReLU",
+    6: "EW w/o Reduction w/ ReLU",
+    7: "GOC"
+  };
+  let activeNE = 0, smallSrc = 0, taskTypeRaw = 0, taskTypeMapped = 0;
+  let reluTypeCommon = 0, outTrans = 0, fillLowerNE = 0, traceEn = 0, wino1d = 0;
+  let commonMacCfgValid = false;
+  if (cpusubtype >= 7) {
+    commonMacCfgValid = state.valid[15] === 1;
+    const m = commonMacCfgValid ? state.values[15] : 0;
+    activeNE = (m >> 19) & 7;
+    smallSrc = (m >> 2) & 3;
+    taskTypeRaw = (m >> 4) & 0xF;
+    traceEn = (m >> 22) & 1;
+    reluTypeCommon = (m >> 24) & 7;
+    wino1d = (m >> 27) & 1;
+    outTrans = (m >> 28) & 1;
+    fillLowerNE = (m >> 29) & 1;
+  } else if (cpusubtype === 5 || cpusubtype === 6) {
+    commonMacCfgValid = state.valid[10] === 1;
+    const m = commonMacCfgValid ? state.values[10] : 0;
+    taskTypeRaw = m & 0xF;
+    activeNE = (m >> 4) & 7;
+    smallSrc = (m >> 7) & 1;
+    reluTypeCommon = (m >> 8) & 7;
+  }
+  taskTypeMapped = task_type_mapped_dict[taskTypeRaw] !== undefined ? task_type_mapped_dict[taskTypeRaw] : 0;
+  const isPEActive = commonMacCfgValid && taskTypeMapped !== 0;
+
   // 4. PE Config
   let pe = {};
   const peBase = (cpusubtype >= 7) ? 0x1140 : 0x0240;
   const pe_cfg = state.values[peBase + 0];
-
-  // Determine if PE is active using task_type from MacCfg in Common block
-  const task_type_mapped_dict = {0: 0, 1: 2, 2: 6, 3: 5, 4: 7, 5: 4, 6: 3, 7: 0, 8: 1};
-  let isPEActive = true;
-  if (cpusubtype >= 7) {
-    const is_valid = state.valid[15] === 1;
-    const m = is_valid ? state.values[15] : 0;
-    const task_type = (m >> 4) & 0xF;
-    const task_type_mapped = task_type_mapped_dict[task_type] !== undefined ? task_type_mapped_dict[task_type] : 0;
-    if (!is_valid || task_type_mapped === 0) {
-      isPEActive = false;
-    }
-  } else if (cpusubtype === 5 || cpusubtype === 6) {
-    const is_valid = state.valid[10] === 1;
-    const m = is_valid ? state.values[10] : 0;
-    const task_type = m & 0xF;
-    const task_type_mapped = task_type_mapped_dict[task_type] !== undefined ? task_type_mapped_dict[task_type] : 0;
-    if (!is_valid || task_type_mapped === 0) {
-      isPEActive = false;
-    }
-  }
 
   if (isPEActive) {
     const pool = pe_cfg & 3;
@@ -675,20 +697,26 @@ function parseStateRegisters(state, cpusubtype) {
   ne.asym = asym ? "YES" : "NO";
   ne.detectZeros = cpusubtype >= 9 ? (detectZeros ? "YES" : "NO") : "N/A";
 
-  let activeNE = 0, smallSrc = 0, opMode = 0, biasEn = 0, nlMode = 0;
+  // NE.MacCfg -- bit layout confirmed identical across H16/H17/H18/H19 in
+  // hwx_parsing.py's print_ne_h16 (all three instr_ver branches agree);
+  // previously this block only decoded a subset (and misread OpMode as a
+  // 6-bit field on H17+, when it's really 3 bits per Op + a separate
+  // KMode bit).
+  let opMode = 0, km = 0, biasEn = 0, passEn = 0, mvBiasEn = 0, binPoint = 0;
+  let postEn = 0, nlMode = 0, maxPoolEn = 0, argSel = 0, doubleInt8 = 0;
   if (cpusubtype >= 7) {
-    const m = state.values[15]; // Common block offset word 15
-    activeNE = (m >> 19) & 7;
-    if (cpusubtype >= 9) {
-      opMode = ne_maccfg & 0x3F;
-    } else {
-      opMode = ne_maccfg & 7;
-      biasEn = (ne_maccfg >> 4) & 1;
-      nlMode = (ne_maccfg >> 16) & 3;
-    }
+    opMode = ne_maccfg & 7;
+    km = (ne_maccfg >> 3) & 1;
+    biasEn = (ne_maccfg >> 4) & 1;
+    passEn = (ne_maccfg >> 5) & 1;
+    mvBiasEn = (ne_maccfg >> 6) & 1;
+    binPoint = (ne_maccfg >> 8) & 0x3F;
+    postEn = (ne_maccfg >> 14) & 1;
+    nlMode = (ne_maccfg >> 16) & 3;
+    maxPoolEn = (ne_maccfg >> 19) & 1;
+    argSel = (ne_maccfg >> 20) & 0xF;
+    doubleInt8 = (ne_maccfg >> 26) & 1;
   } else {
-    activeNE = ne_maccfg & 7;
-    smallSrc = (ne_maccfg >> 3) & 1;
     opMode = (ne_maccfg >> 10) & 0xF;
     biasEn = (ne_maccfg >> 16) & 1;
     nlMode = (ne_maccfg >> 20) & 0xF;
@@ -704,13 +732,42 @@ function parseStateRegisters(state, cpusubtype) {
     7: "OptConv (H14)",
     0xF: "OptConv (H16+)"
   };
+  // hwx_parsing.py leaves NLMode as a raw int for H16+ (it's only 2 bits
+  // there, 0-3, and was never independently named) -- this legacy name
+  // table only applies to the older, 4-bit cpusubtype<7 field.
   const neNlNames = { 0x0: "None", 0x1: "ReLU", 0x2: "ReLU6", 0x3: "Sigmoid", 0x4: "Tanh", 0x5: "GELU" };
 
   ne.activeNE = activeNE;
-  ne.smallSrc = smallSrc ? "YES" : "NO";
+  ne.smallSrc = smallSrc;
   ne.opMode = neOpNames[opMode] || `Unknown(${opMode})`;
   ne.biasEn = biasEn ? "YES" : "NO";
-  ne.activation = neNlNames[nlMode] || `Unknown(${nlMode})`;
+  ne.activation = cpusubtype >= 7 ? nlMode : (neNlNames[nlMode] || `Unknown(${nlMode})`);
+  if (cpusubtype >= 7) {
+    ne.kernelMode = km ? "Unity" : "Kernel";
+    ne.passEn = passEn ? "YES" : "NO";
+    ne.mvBiasEn = mvBiasEn ? "YES" : "NO";
+    ne.binPoint = binPoint;
+    ne.postEn = postEn ? "YES" : "NO";
+    ne.maxPoolEn = maxPoolEn ? "YES" : "NO";
+    ne.argSel = argSel;
+    ne.doubleInt8 = doubleInt8 ? "YES" : "NO";
+  }
+
+  // Common.MacCfg fields, surfaced separately from the NE block above
+  // since they live in a different hardware register (Common+0x3c vs
+  // NE.MacCfg) despite both being colloquially "MacCfg".
+  const taskInfo = {
+    taskType: hwTaskTypeNames[taskTypeMapped] || `Unknown(${taskTypeMapped})`,
+    activeNE,
+    smallSrc,
+    reluType: reluTypeCommon,
+  };
+  if (cpusubtype >= 7) {
+    taskInfo.outTrans = outTrans ? "YES" : "NO";
+    taskInfo.fillLowerNE = fillLowerNE ? "YES" : "NO";
+    taskInfo.traceEn = traceEn ? "YES" : "NO";
+    taskInfo.wino1d = wino1d ? "YES" : "NO";
+  }
 
   // 6. TileDMA base addresses
   let tileDma = {};
@@ -728,7 +785,8 @@ function parseStateRegisters(state, cpusubtype) {
     l2,
     ne,
     pe,
-    tileDma
+    tileDma,
+    taskInfo
   };
 }
 

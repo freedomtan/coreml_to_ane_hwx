@@ -500,8 +500,8 @@ def get_instruction_set_version(subtype):
     }.get(subtype, 0)
 
 def get_ch_fmt_name(fmt_val):
-    if fmt_val in (0, 5): return "INT8"
-    if fmt_val == 1: return "UINT8"
+    if fmt_val == 1: return "INT8"
+    if fmt_val in (0, 5): return "UINT8"
     if fmt_val == 2: return "FLOAT16"
     return f"Unknown({fmt_val})"
 

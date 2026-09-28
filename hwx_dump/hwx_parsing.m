@@ -372,9 +372,9 @@ const char *get_hw_tensor_format_name_v17(uint32_t mode, uint32_t mem_fmt,
 const char *get_ch_fmt_name(uint32_t fmt) {
   switch (fmt) {
   case 0:
-    return "int8";
-  case 1:
     return "uint8";
+  case 1:
+    return "int8";
   case 2:
     return "float16";
   case 4:
@@ -387,9 +387,9 @@ const char *get_ch_fmt_name(uint32_t fmt) {
 const char *get_kernel_fmt_name(uint32_t fmt) {
   switch (fmt) {
   case 0:
-    return "int8";
-  case 1:
     return "uint8";
+  case 1:
+    return "int8";
   case 2:
     return "fp16";
   case 3:

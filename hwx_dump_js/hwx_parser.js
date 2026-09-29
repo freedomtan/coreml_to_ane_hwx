@@ -649,7 +649,17 @@ function parseStateRegisters(state, cpusubtype) {
     const op = (pe_cfg >> 2) & 7;
     const lut_en = (pe_cfg >> 5) & 1;
     const cond = (pe_cfg >> 6) & 0xF;
+    // RedIdx/RedKeep/Src1/Src2 match hwx_parsing.py's print_pe_h16 bit
+    // positions exactly (red_idx uses bits [10:9], not [11:9] -- python's
+    // own inline comment flags this as a fixed-after-the-fact correction).
+    // .m/.py print these as raw ints too (get_pe_src1/src2_name_v17 exist
+    // but are unused dead code in both canonical parsers), so this stays
+    // raw here rather than resolving through a name table nothing else uses.
+    const red_idx = (pe_cfg >> 9) & 3;
+    const red_keep = (pe_cfg >> 11) & 1;
     const nl = (pe_cfg >> 12) & 3;
+    const src1 = (pe_cfg >> 16) & 1;
+    const src2 = (pe_cfg >> 18) & 3;
 
     // LIT:BEGIN(get_pe_pool_mode_name_v17)
     const poolNames = ["None", "Avg", "Max", "Min"];
@@ -674,14 +684,22 @@ function parseStateRegisters(state, cpusubtype) {
     pe.opMode = opNames[op] || "None";
     pe.lutEn = lut_en ? "YES" : "NO";
     pe.cond = condNames[cond] || "None";
+    pe.redIdx = red_idx;
+    pe.redKeep = red_keep ? "YES" : "NO";
     pe.nlMode = nlNames[nl] || "None";
+    pe.src1 = src1;
+    pe.src2 = src2;
     pe.active = true;
   } else {
     pe.poolMode = "None";
     pe.opMode = "None";
     pe.lutEn = "NO";
     pe.cond = "None";
+    pe.redIdx = 0;
+    pe.redKeep = "NO";
     pe.nlMode = "None";
+    pe.src1 = 0;
+    pe.src2 = 0;
     pe.active = false;
   }
 

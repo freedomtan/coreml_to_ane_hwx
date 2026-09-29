@@ -98,8 +98,22 @@ rewrite. Suggested next steps if this is picked up:
    future edit to a tangled region without updating its `.lit.md` source
    fails immediately, the way this session's bug wouldn't have survived
    five commits' worth of manual re-checking.
-3. Pick the next highest-value fact to move under tangle control —
-   `Common.MacCfg`'s bit table (`Wino1D` etc., recently added to
-   `GUIDE_ANE_HWX_FORMAT.md` §6.1.C) is the obvious next candidate since
-   it was *also* just hand-copied across `.m`/`.py`/`.js`/docs this
-   session.
+3. ~~Pick the next highest-value fact~~ — done: `Common.MacCfg`'s bit
+   table (`literate/common_maccfg.lit.md`), NE op-mode/task-type tables
+   (`literate/task_and_opmode_naming.lit.md`), and PE name tables
+   (`literate/pe_naming.lit.md`) are all now tangled. Coverage is 37
+   regions as of this pass.
+4. ~~Fix JS's PE op-mode table~~ — done: it was using H13's *different*
+   PE op-mode encoding by mistake; now matches `.m`/`.py`/docs.
+5. ~~Add JS's missing PE `RedIdx`/`RedKeep`/`Src1`/`Src2` fields~~ — done.
+6. **Newly found, not yet fixed**: JS's PE decode shows a raw-op-derived
+   name (e.g. `opMode: "Add"`) even when Python would suppress it to
+   `"None"` because the task's mapped type is pooling-only, not
+   elementwise (`.py`'s `print_pe_h16` gates `op_str`/`pool_str` by
+   `task_type_mapped`; JS's `isPEActive` doesn't). A real behavioral gap,
+   not a naming/tangle issue — needs its own fix pass in
+   `hwx_dump_js/hwx_parser.js`'s `isPEActive`/PE-decode block.
+7. Add `literate/tangle.py check` to CI (or a pre-commit hook) so any
+   future edit to a tangled region without updating its `.lit.md` source
+   fails immediately, the way this session's bug wouldn't have survived
+   five commits' worth of manual re-checking.

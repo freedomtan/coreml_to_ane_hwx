@@ -911,6 +911,22 @@
                 <span class="detail-lbl">PE Nonlinear Activation</span>
                 <span class="detail-val" id="val-pe-nl">N/A</span>
               </div>
+              <div class="detail-row pe-row">
+                <span class="detail-lbl">PE Reduction Index (RedIdx)</span>
+                <span class="detail-val" id="val-pe-redidx">N/A</span>
+              </div>
+              <div class="detail-row pe-row">
+                <span class="detail-lbl">PE Reduction Keep (RedKeep)</span>
+                <span class="detail-val" id="val-pe-redkeep">N/A</span>
+              </div>
+              <div class="detail-row pe-row">
+                <span class="detail-lbl">PE Source 1 Select</span>
+                <span class="detail-val" id="val-pe-src1">N/A</span>
+              </div>
+              <div class="detail-row pe-row">
+                <span class="detail-lbl">PE Source 2 Select</span>
+                <span class="detail-val" id="val-pe-src2">N/A</span>
+              </div>
             </div>
 
             <!-- Task Header & Flags -->
@@ -1191,6 +1207,10 @@
         document.getElementById('val-pe-luten').innerText = dec.pe.lutEn || "N/A";
         document.getElementById('val-pe-cond').innerText = dec.pe.cond || "N/A";
         document.getElementById('val-pe-nl').innerText = dec.pe.nlMode || "N/A";
+        document.getElementById('val-pe-redidx').innerText = dec.pe.redIdx !== undefined ? dec.pe.redIdx : "N/A";
+        document.getElementById('val-pe-redkeep').innerText = dec.pe.redKeep || "N/A";
+        document.getElementById('val-pe-src1').innerText = dec.pe.src1 !== undefined ? dec.pe.src1 : "N/A";
+        document.getElementById('val-pe-src2').innerText = dec.pe.src2 !== undefined ? dec.pe.src2 : "N/A";
       }
 
       // Update Universal Headers Detail list

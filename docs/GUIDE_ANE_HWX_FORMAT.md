@@ -483,11 +483,22 @@ Controls the layout, datatype, and density of model weights. This section descri
 * **sen** (`bit [8]`): Sparse Compression Enable. If `1`, zero-weight pruning is active (skips processing zero weights to save cycles).
 * **reuse** (`bit [10]`): Core weight buffer reuse. If `1`, the engine reuses the weights already stored in the local buffer from the previous layer, avoiding a slow DRAM reload.
 * **sbs_w** (`bits [23:21]`): Sparse block size selector for weights.
+* **asym** (`bit [24]`): Asymmetric Quantization Enable. If `1`, weights use a non-zero zero-point (vs. symmetric quantization).
+* **detect_zeros** (`bit [28]`, H17+ only): If `1`, the engine skips MAC cycles for zero-valued weights at runtime. Unassigned padding on H16.
 
 #### B. MacCfg Register (NE Block + 1)
 Determines what mathematical operation the core execution units perform:
+* **op** (`bits [2:0]`): Core Operation
+  * `0`: Conv
+  * `1`: ElemWise
+  * `2`: RCAS
+  * `3`: EWSqrt
+  * `4`: Bypass
+  * `5`: TransposedConv
+* **km** (`bit [3]`): Kernel Mode. `0` = Kernel (normal weighted conv), `1` = Unity (identity/passthrough kernel).
 * **bias_en** (`bit [4]`): If `1`, adds a bias tensor to the MAC output.
 * **pass_en** (`bit [5]`): If `1`, bypasses the activation path (runs direct pooling/pooling bypass).
+* **mv_bias_en** (`bit [6]`): Matrix-vector bias enable.
 * **bin_point** (`bits [13:8]`): The fixed-point scaling shift factor.
 * **post_en** (`bit [14]`): Post-scaling multiplier enable.
 * **nl_mode_ne** (`bits [17:16]`): Core Activation Function
@@ -495,8 +506,22 @@ Determines what mathematical operation the core execution units perform:
   * `1`: ReLU
   * `2`: Clamp (ReLU6 / Clamp to [0, 6])
   * `3`: Abs (Absolute value)
+* **max_pool_en** (`bit [19]`): Fused max-pooling enable.
+* **arg_sel** (`bits [23:20]`): Argument/operand selector (exact semantics per-op; not independently decoded beyond the raw value in `hwx_parsing.py`).
+* **double_int8_en** (`bit [26]`, `DblInt8` in `hwx_parsing.py`'s output): Double-Int8 mode enable — packs two INT8 MACs per cycle. Required whenever `kfmt` is `UINT8` (see [GUIDE_ANE_WINOGRAD.md](GUIDE_ANE_WINOGRAD.md) for the full DoubleInt8/DoubleMacMode format-eligibility contract).
 
 **Note**: For H16+, this NE MacCfg activation field (at byte address `0x4904`) is the primary location for activation functions in convolution operations. The PE Config register (at `0x4500`) also has a `nl` field at bits [13:12] with the same encoding, used for element-wise operations.
+
+#### C. Common.MacCfg Register (Common Block, word offset 15 / byte `0x3C` on H16+)
+A **separate register from the NE.MacCfg above** despite the shared name — this one lives in the Common block (task-level control), not the NE block (math-unit control). Controls task classification and the two convolution fast-path modes:
+* **task_type** (`bits [7:4]`): Raw hardware task-type code, remapped through a fixed lookup table before use (see `get_task_type_mapping`/`get_hw_task_type_name` in `hwx_parsing.py`) — `0` after remapping means "None" (a plain conv/elementwise task, not a fused pooling/reduction task).
+* **small_src** (`bits [3:2]`): Small-Source Mode selector (`ZinSmallSourceMode` in the compiler's own terms — see the Winograd guide's §4/§5 for the full enum and its interaction with Winograd/format eligibility).
+* **active_ne** (`bits [21:19]`): Number of active Neural Engine cores for this task.
+* **trace_en** (`bit [22]`): Debug tracing enable for this task.
+* **relu_type** (`bits [26:24]`): Task-level ReLU-type selector (distinct from NE.MacCfg's `nl_mode_ne` above).
+* **wino1d** (`bit [27]`, H17+ only — STUB/always-0 on H16 and earlier): **1D Winograd fast-convolution mode enable.** Set only for `(kernel, stride)` shapes `(3,1)`, `(5,2)`, `(6,2)`, and only for eligible weight/activation formats — see [GUIDE_ANE_WINOGRAD.md](GUIDE_ANE_WINOGRAD.md) for the complete, empirically-verified eligibility contract and real-world `.hwx` measurements.
+* **out_trans** (`bit [28]`): Output transpose enable.
+* **fill_lower_ne** (`bit [29]`): Fill-lower-NE-cores mode (used when a task's active-core count is less than the hardware maximum, to keep the unused cores' outputs deterministic).
 
 ---
 

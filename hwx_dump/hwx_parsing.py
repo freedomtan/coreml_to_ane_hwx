@@ -499,11 +499,25 @@ def get_instruction_set_version(subtype):
         11: 24,
     }.get(subtype, 0)
 
+# LIT:BEGIN(get_ch_fmt_name)
 def get_ch_fmt_name(fmt_val):
+    if fmt_val == 0: return "UINT8"
     if fmt_val == 1: return "INT8"
-    if fmt_val in (0, 5): return "UINT8"
     if fmt_val == 2: return "FLOAT16"
+    if fmt_val == 4: return "E4M3"
     return f"Unknown({fmt_val})"
+# LIT:END(get_ch_fmt_name)
+
+# LIT:BEGIN(get_kernel_fmt_name)
+def get_kernel_fmt_name(fmt_val):
+    if fmt_val == 0: return "UINT8"
+    if fmt_val == 1: return "INT8"
+    if fmt_val == 2: return "FLOAT16"
+    if fmt_val == 3: return "E4M3"
+    if fmt_val == 4: return "INT4"
+    if fmt_val == 5: return "E2M1"
+    return f"Unknown({fmt_val})"
+# LIT:END(get_kernel_fmt_name)
 
 def get_l2_dma_fmt_name(fmt_val):
     if fmt_val == 0: return "8b"
@@ -719,7 +733,7 @@ def print_ne_h13(state):
         print(f"        NE MacCfg: OpMode={m&0xf} NLMode={(m>>16)&3} KernelMode={(m>>4)&1} BiasMode={(m>>5)&1} BinaryPoint={(m>>9)&0xf}")
     if state.valid[base]:
         k = state.values[base]
-        print(f"        NE KernelCfg: Fmt={get_ch_fmt_name(k&3)} PalettizedEn={(k>>2)&1} PalettizeBits={(k>>4)&0xf} SparseFmt={(k>>8)&1} GroupKernelReuse={(k>>10)&1}")
+        print(f"        NE KernelCfg: Fmt={get_kernel_fmt_name(k&3)} PalettizedEn={(k>>2)&1} PalettizeBits={(k>>4)&0xf} SparseFmt={(k>>8)&1} GroupKernelReuse={(k>>10)&1}")
     if state.valid[base + 2]:
         print(f"        NE MatrixVectorBias: 0x{state.values[base+2]&0xffff:04x}")
     if state.valid[base + 3]:
@@ -914,7 +928,7 @@ def print_ne_h14(state):
     ps = state.values[base + 3]
     rmode = state.values[base + 4]
     
-    print(f"        KernelCfg: Fmt={get_ch_fmt_name((kcfg>>0)&3)} PalEn={(kcfg>>2)&1} SparseEn={(kcfg>>8)&1} Reuse={(kcfg>>10)&1}")
+    print(f"        KernelCfg: Fmt={get_kernel_fmt_name((kcfg>>0)&3)} PalEn={(kcfg>>2)&1} SparseEn={(kcfg>>8)&1} Reuse={(kcfg>>10)&1}")
     print(f"        MacCfg: OpMode={get_ne_op_mode_name((mcfg>>0)&7)} KMode={(mcfg>>3)&1} BiasEn={(mcfg>>4)&1} BinPoint={(mcfg>>8)&0x3F} NLMode={(mcfg>>16)&3}")
     if state.valid[base + 2]:
         print(f"        NEBias: 0x{bias:08x}")
@@ -1010,7 +1024,7 @@ def print_ne_h15(state):
     ps = state.values[base + 3]
     rmode = state.values[base + 4]
     
-    print(f"        KernelCfg: Fmt={get_ch_fmt_name((kcfg>>0)&3)} PalEn={(kcfg>>2)&1} SparseEn={(kcfg>>8)&1} Reuse={(kcfg>>10)&1}")
+    print(f"        KernelCfg: Fmt={get_kernel_fmt_name((kcfg>>0)&3)} PalEn={(kcfg>>2)&1} SparseEn={(kcfg>>8)&1} Reuse={(kcfg>>10)&1}")
     print(f"        MacCfg: OpMode={get_ne_op_mode_name((mcfg>>0)&7)} KMode={(mcfg>>3)&1} BiasEn={(mcfg>>4)&1} BinPoint={(mcfg>>8)&0x3F} NLMode={(mcfg>>16)&3}")
     if state.valid[base + 2]:
         print(f"        NEBias: 0x{bias:08x}")
@@ -1590,7 +1604,7 @@ def print_ne_h16(state):
         qzp = state.values[base + 11] & 0xFF
 
     if state.valid[base]:
-        sys.stdout.write(f"        KernelCfg: Fmt={get_ch_fmt_name(kfmt)} Pal={pen}({pbits}bit) SparseEn={sen} Reuse={reuse}")
+        sys.stdout.write(f"        KernelCfg: Fmt={get_kernel_fmt_name(kfmt)} Pal={pen}({pbits}bit) SparseEn={sen} Reuse={reuse}")
         sys.stdout.write(f" SBS={sbs_w} Asym={asym}")
         if state.instr_ver >= 19:
             print(f" DetectZeros={detect_zeros}")

@@ -367,12 +367,14 @@ The ChannelCfg register encodes data types using 2-bit fields on H14-H17, wideni
   * `0x2` (2): FLOAT16 - 16-bit IEEE 754 half-precision float
   * `0x3` (3): Reserved/Unknown
 * **H16+** (confirmed raw mapping):
+<!-- LIT:BEGIN(ch_fmt_doc_table) -->
   * `0x0` (0): UINT8 - 8-bit unsigned integer
   * `0x1` (1): INT8 - 8-bit signed integer (quantized)
   * `0x2` (2): FLOAT16 - 16-bit IEEE 754 half-precision float
   * `0x3` (3): E4M3 (fp8) - H18+ only (3-bit field)
   * `0x4` (4): INT4 - newest known future ISA version only
   * `0x5` (5): E2M1 - newest known future ISA version only
+<!-- LIT:END(ch_fmt_doc_table) -->
 
 **Critical Implementation Detail**: The ChannelCfg register is **frequently not written** in the instruction stream when tasks use the architecture's default format. Your parser must handle missing ChannelCfg values by applying architecture-specific defaults:
 

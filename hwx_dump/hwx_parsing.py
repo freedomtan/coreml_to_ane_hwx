@@ -499,11 +499,13 @@ def get_instruction_set_version(subtype):
         11: 24,
     }.get(subtype, 0)
 
+# LIT:BEGIN(get_ch_fmt_name)
 def get_ch_fmt_name(fmt_val):
     if fmt_val == 1: return "INT8"
     if fmt_val in (0, 5): return "UINT8"
     if fmt_val == 2: return "FLOAT16"
     return f"Unknown({fmt_val})"
+# LIT:END(get_ch_fmt_name)
 
 def get_l2_dma_fmt_name(fmt_val):
     if fmt_val == 0: return "8b"

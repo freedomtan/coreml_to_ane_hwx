@@ -30,6 +30,7 @@ function getArchitectureName(subtype) {
 }
 
 // Map Common.ChCfg format field value to name (mirrors hwx_parsing.m's get_ch_fmt_name)
+// LIT:BEGIN(get_ch_fmt_name)
 function getChFmtName(fmt) {
   switch (fmt) {
     case 0: return "UINT8";
@@ -39,6 +40,7 @@ function getChFmtName(fmt) {
     default: return "Unknown(" + fmt + ")";
   }
 }
+// LIT:END(get_ch_fmt_name)
 
 // Convert FP16 uint16 to standard FP32 float (from binary representation)
 function fp16ToFloat32(h) {

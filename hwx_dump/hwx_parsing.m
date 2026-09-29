@@ -369,6 +369,7 @@ const char *get_hw_tensor_format_name_v17(uint32_t mode, uint32_t mem_fmt,
   return "UNKNOWN";
 }
 
+// LIT:BEGIN(get_ch_fmt_name)
 const char *get_ch_fmt_name(uint32_t fmt) {
   switch (fmt) {
   case 0:
@@ -383,7 +384,9 @@ const char *get_ch_fmt_name(uint32_t fmt) {
     return "Unknown";
   }
 }
+// LIT:END(get_ch_fmt_name)
 
+// LIT:BEGIN(get_kernel_fmt_name)
 const char *get_kernel_fmt_name(uint32_t fmt) {
   switch (fmt) {
   case 0:
@@ -402,6 +405,7 @@ const char *get_kernel_fmt_name(uint32_t fmt) {
     return "Unknown";
   }
 }
+// LIT:END(get_kernel_fmt_name)
 
 const char *get_l2_dma_fmt_name(uint32_t fmt) {
   switch (fmt) {

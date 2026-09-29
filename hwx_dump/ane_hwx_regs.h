@@ -353,6 +353,7 @@ typedef struct {
     uint32_t pad1 : 1;
   } tile_overlap;
 
+  // LIT:BEGIN(common_maccfg_h17)
   struct {
     uint32_t pad0 : 2;            // [1:0]
     uint32_t small_src_mode : 2;  // [3:2]
@@ -371,6 +372,7 @@ typedef struct {
     uint32_t fill_lower_ne : 1;   // [29]
     uint32_t pad4 : 2;            // [31:30]
   } maccfg;
+  // LIT:END(common_maccfg_h17)
 
   struct {
     uint32_t ocg_size : 3;      // [2:0] (Verified 3 bits in A18)
@@ -457,6 +459,7 @@ typedef struct {
     uint32_t pad1 : 1;
   } tile_overlap;
 
+  // LIT:BEGIN(common_maccfg_h18)
   struct {
     uint32_t pad0 : 2;            // [1:0]
     uint32_t small_src_mode : 2;  // [3:2]
@@ -475,6 +478,7 @@ typedef struct {
     uint32_t fill_lower_ne : 1;   // [29]
     uint32_t pad4 : 2;            // [31:30]
   } maccfg;
+  // LIT:END(common_maccfg_h18)
 
   struct {
     uint32_t ocg_size : 3;      // [2:0] (Verified 3 bits in A19)

@@ -516,6 +516,7 @@ Determines what mathematical operation the core execution units perform:
 
 #### C. Common.MacCfg Register (Common Block, word offset 15 / byte `0x3C` on H16+)
 A **separate register from the NE.MacCfg above** despite the shared name — this one lives in the Common block (task-level control), not the NE block (math-unit control). Controls task classification and the two convolution fast-path modes:
+<!-- LIT:BEGIN(common_maccfg_doc_table) -->
 * **task_type** (`bits [7:4]`): Raw hardware task-type code, remapped through a fixed lookup table before use (see `get_task_type_mapping`/`get_hw_task_type_name` in `hwx_parsing.py`) — `0` after remapping means "None" (a plain conv/elementwise task, not a fused pooling/reduction task).
 * **small_src** (`bits [3:2]`): Small-Source Mode selector (`ZinSmallSourceMode` in the compiler's own terms — see the Winograd guide's §4/§5 for the full enum and its interaction with Winograd/format eligibility).
 * **active_ne** (`bits [21:19]`): Number of active Neural Engine cores for this task.
@@ -524,6 +525,7 @@ A **separate register from the NE.MacCfg above** despite the shared name — thi
 * **wino1d** (`bit [27]`, H17+ only — STUB/always-0 on H16 and earlier): **1D Winograd fast-convolution mode enable.** Set only for `(kernel, stride)` shapes `(3,1)`, `(5,2)`, `(6,2)`, and only for eligible weight/activation formats — see [GUIDE_ANE_WINOGRAD.md](GUIDE_ANE_WINOGRAD.md) for the complete, empirically-verified eligibility contract and real-world `.hwx` measurements.
 * **out_trans** (`bit [28]`): Output transpose enable.
 * **fill_lower_ne** (`bit [29]`): Fill-lower-NE-cores mode (used when a task's active-core count is less than the hardware maximum, to keep the unused cores' outputs deterministic).
+<!-- LIT:END(common_maccfg_doc_table) -->
 
 ---
 

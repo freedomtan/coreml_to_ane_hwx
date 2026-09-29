@@ -1290,6 +1290,7 @@ def print_common_h16(state):
         overlapt = (tile_overlap >> 21) & 0x1F
         overlapb = (tile_overlap >> 26) & 0x1F
         m = state.values[base + 15]
+        # LIT:BEGIN(common_maccfg_h16_bits)
         active_ne = (m >> 19) & 7
         small_src = (m >> 2) & 3
         task_type = (m >> 4) & 0xF
@@ -1298,6 +1299,7 @@ def print_common_h16(state):
         wino1d = (m >> 27) & 1
         trace_en = (m >> 22) & 1
         relu_type = (m >> 24) & 0x7
+        # LIT:END(common_maccfg_h16_bits)
         ne_cfg = state.values[base + 16]
         ocg = ne_cfg & 7
         fat = (ne_cfg >> 3) & 1
@@ -1351,6 +1353,7 @@ def print_common_h16(state):
         overlapt = (tile_overlap >> 21) & 0x1F
         overlapb = (tile_overlap >> 26) & 0x1F
         m = state.values[base + 15]
+        # LIT:BEGIN(common_maccfg_h16_bits)
         active_ne = (m >> 19) & 7
         small_src = (m >> 2) & 3
         task_type = (m >> 4) & 0xF
@@ -1359,6 +1362,7 @@ def print_common_h16(state):
         wino1d = (m >> 27) & 1
         trace_en = (m >> 22) & 1
         relu_type = (m >> 24) & 0x7
+        # LIT:END(common_maccfg_h16_bits)
         ne_cfg = state.values[base + 16]
         ocg = ne_cfg & 7
         fat = (ne_cfg >> 3) & 1
@@ -1430,6 +1434,7 @@ def print_common_h16(state):
         overlapt = (tile_overlap >> 21) & 0x1F
         overlapb = (tile_overlap >> 26) & 0x1F
         m = hybrid_values[15]
+        # LIT:BEGIN(common_maccfg_h16_bits)
         active_ne = (m >> 19) & 7
         small_src = (m >> 2) & 3
         task_type = (m >> 4) & 0xF
@@ -1438,6 +1443,7 @@ def print_common_h16(state):
         wino1d = (m >> 27) & 1
         trace_en = (m >> 22) & 1
         relu_type = (m >> 24) & 0x7
+        # LIT:END(common_maccfg_h16_bits)
         ne_cfg = hybrid_values[16]
         ocg = ne_cfg & 7
         fat = (ne_cfg >> 3) & 1

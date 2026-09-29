@@ -72,14 +72,19 @@ def marker_regex(id_, start_or_end, open_c, close_c):
     return re.compile(pattern)
 
 
-def find_markers(lines, id_, suffix):
+def find_marker_regions(lines, id_, suffix):
+    """Return a list of (begin_idx, end_idx, indent) for every BEGIN/END(id)
+    pair in lines -- a fact may legitimately repeat verbatim more than once
+    in the same file (e.g. one bit-layout duplicated across several
+    instr_ver branches), and every occurrence must stay in sync."""
     styles = MARKER_STYLES.get(suffix)
     if not styles:
         raise ValueError(f"no marker style registered for suffix {suffix!r}")
     for open_c, close_c in styles:
         begin_re = marker_regex(id_, "BEGIN", open_c, close_c)
         end_re = marker_regex(id_, "END", open_c, close_c)
-        begin_idx = end_idx = None
+        regions = []
+        begin_idx = indent = None
         for i, line in enumerate(lines):
             m = begin_re.match(line)
             if m:
@@ -87,11 +92,11 @@ def find_markers(lines, id_, suffix):
                 indent = m.group("indent")
                 continue
             if begin_idx is not None and end_re.match(line):
-                end_idx = i
-                break
-        if begin_idx is not None and end_idx is not None:
-            return begin_idx, end_idx, indent
-    return None, None, None
+                regions.append((begin_idx, i, indent))
+                begin_idx = indent = None
+        if regions:
+            return regions
+    return []
 
 
 def parse_literate_file(path):
@@ -126,21 +131,29 @@ def render_block(code_lines, indent):
 
 def apply_to_target(target_path, id_, code_lines, write, results):
     lines = target_path.read_text().splitlines()
-    begin_idx, end_idx, indent = find_markers(lines, id_, target_path.suffix)
-    if begin_idx is None:
+    regions = find_marker_regions(lines, id_, target_path.suffix)
+    if not regions:
         results.append((target_path, id_, "MISSING_MARKERS", None))
         return
-    new_block = render_block(code_lines, indent)
-    current_block = lines[begin_idx + 1 : end_idx]
-    if current_block == new_block:
-        results.append((target_path, id_, "OK", None))
-        return
-    if write:
-        new_lines = lines[: begin_idx + 1] + new_block + lines[end_idx:]
-        target_path.write_text("\n".join(new_lines) + "\n")
-        results.append((target_path, id_, "WRITTEN", None))
-    else:
-        results.append((target_path, id_, "DRIFT", (current_block, new_block)))
+
+    changed = False
+    # Apply from the last region backwards so earlier indices stay valid.
+    for region_num, (begin_idx, end_idx, indent) in enumerate(reversed(regions), 1):
+        new_block = render_block(code_lines, indent)
+        current_block = lines[begin_idx + 1 : end_idx]
+        label = f"{id_}" if len(regions) == 1 else f"{id_} (occurrence {len(regions) - region_num + 1}/{len(regions)})"
+        if current_block == new_block:
+            results.append((target_path, label, "OK", None))
+            continue
+        if write:
+            lines = lines[: begin_idx + 1] + new_block + lines[end_idx:]
+            results.append((target_path, label, "WRITTEN", None))
+            changed = True
+        else:
+            results.append((target_path, label, "DRIFT", (current_block, new_block)))
+
+    if write and changed:
+        target_path.write_text("\n".join(lines) + "\n")
 
 
 def main():

@@ -651,10 +651,24 @@ function parseStateRegisters(state, cpusubtype) {
     const cond = (pe_cfg >> 6) & 0xF;
     const nl = (pe_cfg >> 12) & 3;
 
+    // LIT:BEGIN(get_pe_pool_mode_name_v17)
     const poolNames = ["None", "Avg", "Max", "Min"];
-    const opNames = ["Add", "Multiply", "Max", "Min", "Subtract", "SumSqr"];
+    // LIT:END(get_pe_pool_mode_name_v17)
+    // Was ["Add", "Multiply", "Max", "Min", "Subtract", "SumSqr"] -- that's
+    // H13's *different* PE op-mode table (see parseH13Task's peOpNames,
+    // a separate register at H13_PE_BLOCK); this field (H14+ instruction
+    // stream, PE_START+0) uses .m/.py's get_pe_op_mode_name_v17 table
+    // instead. No real .hwx sample exercises op=1/4 to empirically confirm;
+    // fixed based on .m/.py/docs's 3-way agreement.
+    // LIT:BEGIN(get_pe_op_mode_name_v17)
+    const opNames = ["Add", "Mul", "Max", "Min", "SumSqr"];
+    // LIT:END(get_pe_op_mode_name_v17)
+    // LIT:BEGIN(get_pe_condition_name_v17)
     const condNames = ["None", "Abs", "Equal", "Greater", "GreaterEqual", "LessEqual", "Less", "NotEqual"];
+    // LIT:END(get_pe_condition_name_v17)
+    // LIT:BEGIN(get_pe_nl_mode_name_v17)
     const nlNames = ["None", "ReLU", "Clamp", "Abs"];
+    // LIT:END(get_pe_nl_mode_name_v17)
 
     pe.poolMode = poolNames[pool] || "None";
     pe.opMode = opNames[op] || "None";

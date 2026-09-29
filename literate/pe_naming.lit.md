@@ -5,16 +5,26 @@ decode the PE-block register fields (`PE.Cfg`'s pool mode, op mode,
 condition, nonlinearity mode, and two source selectors) and already
 match exactly between `.m` and `.py`.
 
-**Not tangled into `hwx_dump_js/hwx_parser.js`.** JS has its own,
-independent PE decode (`parseStateRegisters`'s `pe` section) with
-different value labels for the same fields — e.g. its inline `opNames`
-is `["Add", "Multiply", "Max", "Min", "Subtract", "SumSqr"]` (6 entries,
-"Multiply"/"Subtract") where `.m`/`.py`'s `get_pe_op_mode_name_v17` is
-`{0: Add, 1: Mul, 2: Max, 3: Min, 4: SumSqr}` (5 entries, "Mul", no
-Subtract). This is a real, unresolved discrepancy between JS and
-`.m`/`.py` for the PE op-mode field — flagged here rather than silently
-tangled over, since tangling would require deciding which is correct
-first (out of scope for this pass; see `literate/README.md`).
+**`pool`/`cond`/`nl` tangled into `hwx_dump_js/hwx_parser.js` too**
+(`parseStateRegisters`'s `pe` section, `poolNames`/`condNames`/`nlNames`)
+— these already matched `.m`/`.py` exactly.
+
+**`op` was a real bug, now fixed.** JS's inline `opNames` was
+`["Add", "Multiply", "Max", "Min", "Subtract", "SumSqr"]` (6 entries) —
+which turns out to be *H13's* PE op-mode table (`parseH13Task`'s own
+`peOpNames`, decoding a completely different register at
+`H13_PE_BLOCK`), apparently copy-pasted into this H14+/instruction-stream
+path by mistake. `.m`, `.py`, and this doc's own general PE_Config
+section (`docs/GUIDE_ANE_HWX_FORMAT.md`, "op" bits `[4:2]`) all agree on
+`{0: Add, 1: Mul, 2: Max, 3: Min, 4: SumSqr}` (5 entries) for this field
+specifically — 3-way documentary convergence against JS's lone,
+suspiciously-H13-shaped outlier. No real `.hwx` sample in this repo
+exercises op=1 or op=4 to empirically confirm the way the int8/uint8 fix
+was confirmed (see `GUIDE_ANE_WINOGRAD.md` §7) — flagged here rather
+than treated as certain.
+
+Still **not tangled**: JS's PE decode has no `src1`/`src2` fields at all
+(a missing-feature gap, not a naming mismatch) — see `literate/README.md`.
 
 <!-- tangle: hwx_dump/hwx_parsing.m#get_pe_op_mode_name_v17 -->
 ```c
@@ -42,6 +52,11 @@ def get_pe_op_mode_name_v17(op):
     return {0: "Add", 1: "Mul", 2: "Max", 3: "Min", 4: "SumSqr"}.get(op, "Unknown")
 ```
 
+<!-- tangle: hwx_dump_js/hwx_parser.js#get_pe_op_mode_name_v17 -->
+```js
+const opNames = ["Add", "Mul", "Max", "Min", "SumSqr"];
+```
+
 <!-- tangle: hwx_dump/hwx_parsing.m#get_pe_pool_mode_name_v17 -->
 ```c
 const char *get_pe_pool_mode_name_v17(uint32_t mode) {
@@ -66,6 +81,11 @@ def get_pe_pool_mode_name_v17(mode):
     return {0: "None", 1: "Avg", 2: "Max", 3: "Min"}.get(mode, "Unknown")
 ```
 
+<!-- tangle: hwx_dump_js/hwx_parser.js#get_pe_pool_mode_name_v17 -->
+```js
+const poolNames = ["None", "Avg", "Max", "Min"];
+```
+
 <!-- tangle: hwx_dump/hwx_parsing.m#get_pe_condition_name_v17 -->
 ```c
 const char *get_pe_condition_name_v17(uint32_t cond) {
@@ -83,6 +103,11 @@ def get_pe_condition_name_v17(cond):
     return labels[cond] if cond < len(labels) else "Unknown"
 ```
 
+<!-- tangle: hwx_dump_js/hwx_parser.js#get_pe_condition_name_v17 -->
+```js
+const condNames = ["None", "Abs", "Equal", "Greater", "GreaterEqual", "LessEqual", "Less", "NotEqual"];
+```
+
 <!-- tangle: hwx_dump/hwx_parsing.m#get_pe_nl_mode_name_v17 -->
 ```c
 const char *get_pe_nl_mode_name_v17(uint32_t mode) {
@@ -96,6 +121,11 @@ const char *get_pe_nl_mode_name_v17(uint32_t mode) {
 def get_pe_nl_mode_name_v17(mode):
     labels = ["None", "ReLU", "Clamp", "Abs"]
     return labels[mode] if mode < len(labels) else "Unknown"
+```
+
+<!-- tangle: hwx_dump_js/hwx_parser.js#get_pe_nl_mode_name_v17 -->
+```js
+const nlNames = ["None", "ReLU", "Clamp", "Abs"];
 ```
 
 <!-- tangle: hwx_dump/hwx_parsing.m#get_pe_src1_name_v17 -->

@@ -599,9 +599,12 @@ function parseStateRegisters(state, cpusubtype) {
   // Bit layout confirmed identical across H16/H17/H18/H19 in
   // hwx_parsing.py's print_common_h16 (both instr_ver branches agree);
   // H14's own layout (print_common_h14) uses different bit positions.
+  // LIT:BEGIN(get_task_type_mapping)
   const task_type_mapped_dict = {0: 0, 1: 2, 2: 6, 3: 5, 4: 7, 5: 4, 6: 3, 7: 0, 8: 1};
+  // LIT:END(get_task_type_mapping)
   const hwTaskTypeNames = {
-    0: "None",
+    0: "None", // JS-only convenience entry; .m/.py special-case 0 -> "((None))" at the call site instead
+    // LIT:BEGIN(get_hw_task_type_name)
     1: "Pooling w/o input ReLU",
     2: "Pooling w/ input ReLU",
     3: "EW w/ Reduction w/o ReLU",
@@ -609,6 +612,7 @@ function parseStateRegisters(state, cpusubtype) {
     5: "EW w/o Reduction w/o ReLU",
     6: "EW w/o Reduction w/ ReLU",
     7: "GOC"
+    // LIT:END(get_hw_task_type_name)
   };
   let activeNE = 0, smallSrc = 0, taskTypeRaw = 0, taskTypeMapped = 0;
   let reluTypeCommon = 0, outTrans = 0, fillLowerNE = 0, traceEn = 0, wino1d = 0;
@@ -731,14 +735,16 @@ function parseStateRegisters(state, cpusubtype) {
   }
 
   const neOpNames = {
+    // LIT:BEGIN(get_ne_op_mode_name)
     0: "Conv",
     1: "ElemWise",
     2: "RCAS",
     3: "EWSqrt",
     4: "Bypass",
     5: "TransposedConv",
-    7: "OptConv (H14)",
-    0xF: "OptConv (H16+)"
+    // LIT:END(get_ne_op_mode_name)
+    7: "OptConv (H14)",       // JS-only: legacy cpusubtype<7 op-mode extension, not in .m/.py's table
+    0xF: "OptConv (H16+)"     // JS-only: same legacy extension
   };
   // hwx_parsing.py leaves NLMode as a raw int for H16+ (it's only 2 bits
   // there, 0-3, and was never independently named) -- this legacy name

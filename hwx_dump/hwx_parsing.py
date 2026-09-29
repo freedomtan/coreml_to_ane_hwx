@@ -525,27 +525,40 @@ def get_l2_dma_fmt_name(fmt_val):
     if fmt_val == 3: return "32b"
     return "??"
 
+# LIT:BEGIN(get_pe_op_mode_name_v17)
 def get_pe_op_mode_name_v17(op):
     return {0: "Add", 1: "Mul", 2: "Max", 3: "Min", 4: "SumSqr"}.get(op, "Unknown")
+# LIT:END(get_pe_op_mode_name_v17)
 
+# LIT:BEGIN(get_pe_pool_mode_name_v17)
 def get_pe_pool_mode_name_v17(mode):
     return {0: "None", 1: "Avg", 2: "Max", 3: "Min"}.get(mode, "Unknown")
+# LIT:END(get_pe_pool_mode_name_v17)
 
+# LIT:BEGIN(get_pe_condition_name_v17)
 def get_pe_condition_name_v17(cond):
     labels = ["None", "Abs", "Equal", "Greater", "GreaterEqual", "LessEqual", "Less", "NotEqual"]
     return labels[cond] if cond < len(labels) else "Unknown"
+# LIT:END(get_pe_condition_name_v17)
 
+# LIT:BEGIN(get_pe_nl_mode_name_v17)
 def get_pe_nl_mode_name_v17(mode):
     labels = ["None", "ReLU", "Clamp", "Abs"]
     return labels[mode] if mode < len(labels) else "Unknown"
+# LIT:END(get_pe_nl_mode_name_v17)
 
+# LIT:BEGIN(get_pe_src1_name_v17)
 def get_pe_src1_name_v17(sel):
     return "PrimarySource" if sel == 0 else "TextureSource" if sel == 1 else "Unknown"
+# LIT:END(get_pe_src1_name_v17)
 
+# LIT:BEGIN(get_pe_src2_name_v17)
 def get_pe_src2_name_v17(sel):
     labels = ["PrimarySource", "TextureSource", "L2Source", "RegSource"]
     return labels[sel] if sel < len(labels) else "Unknown"
+# LIT:END(get_pe_src2_name_v17)
 
+# LIT:BEGIN(get_ne_op_mode_name)
 def get_ne_op_mode_name(mode):
     return {
         0: "Conv",
@@ -555,10 +568,14 @@ def get_ne_op_mode_name(mode):
         4: "Bypass",
         5: "TransposedConv",
     }.get(mode, "Unknown")
+# LIT:END(get_ne_op_mode_name)
 
+# LIT:BEGIN(get_task_type_mapping)
 def get_task_type_mapping(subtype):
     return {0: 0, 1: 2, 2: 6, 3: 5, 4: 7, 5: 4, 6: 3, 7: 0, 8: 1}.get(subtype, 0)
+# LIT:END(get_task_type_mapping)
 
+# LIT:BEGIN(get_hw_task_type_name)
 def get_hw_task_type_name(type_val):
     return {
         1: "Pooling w/o input ReLU",
@@ -569,6 +586,7 @@ def get_hw_task_type_name(type_val):
         6: "EW w/o Reduction w/ ReLU",
         7: "GOC",
     }.get(type_val, "Unknown")
+# LIT:END(get_hw_task_type_name)
 
 def get_texture_mode_name(mode):
     return {0: "Off", 1: "Gather", 2: "Bilinear", 3: "Bicubic", 4: "Nearest"}.get(mode, "Unknown")

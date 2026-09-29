@@ -420,6 +420,7 @@ const char *get_l2_dma_fmt_name(uint32_t fmt) {
   }
 }
 
+// LIT:BEGIN(get_pe_op_mode_name_v17)
 const char *get_pe_op_mode_name_v17(uint32_t op) {
   switch (op) {
   case 0:
@@ -436,7 +437,9 @@ const char *get_pe_op_mode_name_v17(uint32_t op) {
     return "Unknown";
   }
 }
+// LIT:END(get_pe_op_mode_name_v17)
 
+// LIT:BEGIN(get_pe_pool_mode_name_v17)
 const char *get_pe_pool_mode_name_v17(uint32_t mode) {
   switch (mode) {
   case 0:
@@ -451,31 +454,41 @@ const char *get_pe_pool_mode_name_v17(uint32_t mode) {
     return "Unknown";
   }
 }
+// LIT:END(get_pe_pool_mode_name_v17)
 
+// LIT:BEGIN(get_pe_condition_name_v17)
 const char *get_pe_condition_name_v17(uint32_t cond) {
   static const char *labels[] = {"None",    "Abs",          "Equal",
                                  "Greater", "GreaterEqual", "LessEqual",
                                  "Less",    "NotEqual"};
   return (cond < 8) ? labels[cond] : "Unknown";
 }
+// LIT:END(get_pe_condition_name_v17)
 
+// LIT:BEGIN(get_pe_nl_mode_name_v17)
 const char *get_pe_nl_mode_name_v17(uint32_t mode) {
   static const char *labels[] = {"None", "ReLU", "Clamp", "Abs"};
   return (mode < 4) ? labels[mode] : "Unknown";
 }
+// LIT:END(get_pe_nl_mode_name_v17)
 
+// LIT:BEGIN(get_pe_src1_name_v17)
 const char *get_pe_src1_name_v17(uint32_t sel) {
   return (sel == 0)   ? "PrimarySource"
          : (sel == 1) ? "TextureSource"
                       : "Unknown";
 }
+// LIT:END(get_pe_src1_name_v17)
 
+// LIT:BEGIN(get_pe_src2_name_v17)
 const char *get_pe_src2_name_v17(uint32_t sel) {
   static const char *labels[] = {"PrimarySource", "TextureSource", "L2Source",
                                  "RegSource"};
   return (sel < 4) ? labels[sel] : "Unknown";
 }
+// LIT:END(get_pe_src2_name_v17)
 
+// LIT:BEGIN(get_ne_op_mode_name)
 const char *get_ne_op_mode_name(uint32_t mode) {
   switch (mode) {
   case 0:
@@ -494,7 +507,9 @@ const char *get_ne_op_mode_name(uint32_t mode) {
     return "Unknown";
   }
 }
+// LIT:END(get_ne_op_mode_name)
 
+// LIT:BEGIN(get_task_type_mapping)
 uint32_t get_task_type_mapping(uint32_t subtype) {
   switch (subtype) {
   case 0:
@@ -519,7 +534,9 @@ uint32_t get_task_type_mapping(uint32_t subtype) {
     return 0;
   }
 }
+// LIT:END(get_task_type_mapping)
 
+// LIT:BEGIN(get_hw_task_type_name)
 const char *get_hw_task_type_name(uint32_t type) {
   switch (type) {
   case 1:
@@ -540,6 +557,7 @@ const char *get_hw_task_type_name(uint32_t type) {
     return "Unknown";
   }
 }
+// LIT:END(get_hw_task_type_name)
 
 void print_common_h13(const hwx_state_t *state) {
   printf("        --- Common (0x0000) ---\n");

@@ -65,22 +65,26 @@ temporarily swapping `get_ch_fmt_name`'s case 0/1 bodies in `.m` and
 confirming `check` reports a `DRIFT` diff and exits 1; reverted and
 re-confirmed clean.
 
-## Findings (real gaps this surfaced, not fixed on this branch)
+## Findings (real gaps this surfaced — now fixed)
 
-- `hwx_dump/hwx_parsing.py`'s `get_ch_fmt_name()` is used for **both**
-  `ch_fmt` and `kernel_fmt` (see `hwx_parsing.py:1595`), unlike `.m`
-  and `.js` which have two separate functions. Because of that overload,
-  Python's function has an extra `fmt_val in (0, 5)` branch (mapping the
-  `kernel_fmt`-only value 5/E2M1 to `UINT8`) that `.m`/`.js` don't have,
-  and it has no case for `kernel_fmt` values 3 (E4M3) or 4 (INT4) at all
-  — those fall through to `f"Unknown({fmt_val})"` in the Python CLI
-  output today. Not tangled from the pilot source because the shapes
-  genuinely disagree; unifying it (splitting Python's function in two,
-  matching `.m`) is a real, separate bug-fix task, not something to do
-  silently as a side effect of this investigation.
-- `hwx_dump_js/hwx_parser.js`'s `kfmtNames` array (`hwx_parser.js:692`)
-  only covers 4 of `.m`'s 6 `get_kernel_fmt_name` cases (no INT4/E2M1) —
-  same kind of gap, also left unfixed/untangled here for the same reason.
+- `hwx_dump/hwx_parsing.py`'s `get_ch_fmt_name()` was overloaded to decode
+  **both** `ch_fmt` and `kernel_fmt`, unlike `.m`/`.js` which have two
+  separate functions. That overload made two real, reachable raw values
+  print wrong: `kernel_fmt=3` (E4M3, reachable on real H16-H19 hardware
+  since `kernel_fmt` is a 2-bit field) fell through to `Unknown(3)`
+  instead of `E4M3`, and a ch_fmt-only `fmt_val in (0, 5)` branch mapped
+  `kernel_fmt=5` to `UINT8` instead of `E2M1`. **Fixed**: split into
+  `get_ch_fmt_name` (now matches `.m` exactly) and a new
+  `get_kernel_fmt_name` (matches `.m`'s 6-case table), repointed the four
+  kernel-format call sites, and both are now tangled from
+  `literate/format_encoding.lit.md` alongside `.m` and `.js`.
+- `hwx_dump_js/hwx_parser.js`'s `kfmtNames` array only covered 4 of `.m`'s
+  6 `get_kernel_fmt_name` cases (no INT4/E2M1), and its `|| "UINT8"`
+  fallback would have mislabeled an out-of-range value as UINT8 instead
+  of `Unknown(n)`. `kfmt` is masked to 2 bits (max value 3) so INT4/E2M1
+  are unreachable today — same as `.py`'s newly-split function — but both
+  are now tangled from the same literate source as `.m`/`.py` so a future
+  wider field can't silently disagree across the three parsers again.
 
 ## Recommendation
 
@@ -88,9 +92,8 @@ Adopt the scoped marker+tangle approach incrementally, fact by fact, for
 exactly the content that has already drifted or is likely to (format
 encodings, bit-position tables, task-type maps) — not as a wholesale
 rewrite. Suggested next steps if this is picked up:
-1. Fix the two gaps above (make `.py`/`.js` structurally match `.m`),
-   *then* extend `format_encoding.lit.md` to tangle into the
-   now-matching `.py`/`.js` functions too.
+1. ~~Fix the two gaps above~~ — done: `.py`/`.js` now structurally match
+   `.m`, and `format_encoding.lit.md` tangles into all three.
 2. Add `literate/tangle.py check` to CI (or a pre-commit hook) so any
    future edit to a tangled region without updating its `.lit.md` source
    fails immediately, the way this session's bug wouldn't have survived

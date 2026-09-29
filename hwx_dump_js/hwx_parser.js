@@ -693,7 +693,9 @@ function parseStateRegisters(state, cpusubtype) {
   // currently unreachable since kfmt is masked to 2 bits above (matching
   // ane_hwx_regs.h's kernel_fmt:2 field on all real H16-H19 captures), but
   // kept here for parity with .m/.py and forward-compat with a wider field.
+  // LIT:BEGIN(kfmt_names_js)
   const kfmtNames = ["UINT8", "INT8", "FLOAT16", "E4M3", "INT4", "E2M1"];
+  // LIT:END(kfmt_names_js)
   ne.kfmt = kfmtNames[kfmt] !== undefined ? kfmtNames[kfmt] : "Unknown(" + kfmt + ")";
   ne.pen = pen ? "YES" : "NO";
   ne.pbits = pbits;

@@ -71,12 +71,14 @@ function getChFmtName(fmt) {
 }
 ```
 
-## NE.KernelCfg (`get_kernel_fmt_name`) — `.m` only for now
+## NE.KernelCfg (`get_kernel_fmt_name`) — `.m`, `.py`, `.js`
 
-Superset of the ChannelCfg table above (adds INT4/E2M1 for the 3-bit
-H18+ field). `hwx_parsing.py` and `hwx_dump_js/hwx_parser.js` currently
-only decode a 2-4 value subset of this (see Findings) so this block is
-tangled into `.m` alone until those are unified.
+Superset of the ChannelCfg table above (adds INT4/E2M1). `kernel_fmt`
+is currently a 2-bit field on every real H16-H19 capture (see
+`ane_hwx_regs.h`'s `kernel_fmt:2`), so INT4(4)/E2M1(5) are unreachable
+today in practice — they're tangled anyway so all three parsers agree
+the instant a wider field shows up in a real capture, rather than only
+`.m` knowing about them.
 
 <!-- tangle: hwx_dump/hwx_parsing.m#get_kernel_fmt_name -->
 ```c
@@ -98,6 +100,23 @@ const char *get_kernel_fmt_name(uint32_t fmt) {
     return "Unknown";
   }
 }
+```
+
+<!-- tangle: hwx_dump/hwx_parsing.py#get_kernel_fmt_name -->
+```python
+def get_kernel_fmt_name(fmt_val):
+    if fmt_val == 0: return "UINT8"
+    if fmt_val == 1: return "INT8"
+    if fmt_val == 2: return "FLOAT16"
+    if fmt_val == 3: return "E4M3"
+    if fmt_val == 4: return "INT4"
+    if fmt_val == 5: return "E2M1"
+    return f"Unknown({fmt_val})"
+```
+
+<!-- tangle: hwx_dump_js/hwx_parser.js#kfmt_names_js -->
+```js
+const kfmtNames = ["UINT8", "INT8", "FLOAT16", "E4M3", "INT4", "E2M1"];
 ```
 
 ## Doc table (H16+ confirmed raw mapping)

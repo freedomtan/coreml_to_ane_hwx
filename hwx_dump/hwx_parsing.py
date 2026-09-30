@@ -1800,12 +1800,6 @@ def print_l2_h16(state):
     def get_l2_type_str(t):
         return l2_type_names[t] if t < 4 else "Unk"
         
-    def get_l2_dma_fmt_name_h16(fmt_val):
-        if fmt_val == 0: return "8b"
-        if fmt_val == 1: return "16b"
-        if fmt_val == 3: return "32b"
-        return "Unk"
-        
     if state.valid[base]:
         val = state.values[base]
         print(f"        L2_Control: 0x{val:08x} (src1_relu: {val&1}, padding: {(val>>2)&3}, src2_relu: {(val>>4)&1}, barrier_en: {(val>>16)&1}, barrier_idx: {(val>>17)&0x7f})")
@@ -1815,7 +1809,7 @@ def print_l2_h16(state):
         t = s1 & 3
         d = (s1 >> 2) & 3
         fmt = (s1 >> 6) & 3
-        fmt_str = get_l2_dma_fmt_name_h16(fmt)
+        fmt_str = get_l2_dma_fmt_name(fmt)
         intrlv = (s1 >> 8) & 0xF
         comp = (s1 >> 25) & 3
         print(f"        Src1Cfg  : Type={t} ({get_l2_type_str(t)}) Dependent={d} EnRelu={state.values[base]&1} DMAFmt={fmt} ({fmt_str}) Alias(C={(s1>>4)&1},P={(s1>>20)&1},CR={(s1>>5)&1},PR={(s1>>22)&1}) Cmp={comp}")
@@ -1825,7 +1819,7 @@ def print_l2_h16(state):
         t = s2 & 3
         d = (s2 >> 2) & 3
         fmt = (s2 >> 6) & 3
-        fmt_str = get_l2_dma_fmt_name_h16(fmt)
+        fmt_str = get_l2_dma_fmt_name(fmt)
         intrlv = (s2 >> 8) & 0xF
         comp = (s2 >> 25) & 3
         print(f"        Src2Cfg  : Type={t} ({get_l2_type_str(t)}) Dependent={d} EnRelu={(state.values[base]>>4)&1} DMAFmt={fmt} ({fmt_str}) Alias(C={(s2>>4)&1},P={(s2>>20)&1},CR={(s2>>5)&1},PR={(s2>>22)&1}) Cmp={comp}")
@@ -1835,7 +1829,7 @@ def print_l2_h16(state):
         t = sidx & 3
         d = (sidx >> 2) & 3
         fmt = (sidx >> 6) & 3
-        fmt_str = get_l2_dma_fmt_name_h16(fmt)
+        fmt_str = get_l2_dma_fmt_name(fmt)
         print(f"        L2_SrcIdxCfg: Type={t} ({get_l2_type_str(t)}) Dep={d} DMAFmt={fmt} ({fmt_str}) AliasConv(S={(sidx>>4)&1},R={(sidx>>5)&1})")
         print(f"                      AliasPlanar(S={(sidx>>20)&1},R={(sidx>>22)&1}) Bit27={(sidx>>27)&1}")
         
@@ -1855,7 +1849,7 @@ def print_l2_h16(state):
         r = state.values[base + 18]
         t = r & 3
         fmt = (r >> 6) & 3
-        fmt_str = get_l2_dma_fmt_name_h16(fmt)
+        fmt_str = get_l2_dma_fmt_name(fmt)
         intrlv = (r >> 8) & 0xF
         comp = (r >> 25) & 3
         print(f"        L2_ResultCfg: Type={t} ({get_l2_type_str(t)}) DMAFmt={fmt} ({fmt_str}) Intrlv={intrlv} Cmp={comp}")

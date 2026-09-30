@@ -680,8 +680,17 @@ function parseStateRegisters(state, cpusubtype) {
     const nlNames = ["None", "ReLU", "Clamp", "Abs"];
     // LIT:END(get_pe_nl_mode_name_v17)
 
-    pe.poolMode = poolNames[pool] || "None";
-    pe.opMode = opNames[op] || "None";
+    // Matches hwx_parsing.py/.m's pool_str/op_str gating: the raw Pool/Op
+    // fields are only meaningful names for the task categories they
+    // actually apply to (taskTypeMapped 0 or 2 for pooling, 3-6 for
+    // elementwise) -- outside that range the name is forced to "None"
+    // even though the raw bits may be nonzero. Previously JS showed
+    // opNames[op]/poolNames[pool] unconditionally, so a pooling-only task
+    // could show a misleading elementwise op name (or vice versa).
+    const poolNameApplies = taskTypeMapped === 0 || taskTypeMapped === 2;
+    const opNameApplies = taskTypeMapped >= 3 && taskTypeMapped <= 6;
+    pe.poolMode = poolNameApplies ? (poolNames[pool] || "None") : "None";
+    pe.opMode = opNameApplies ? (opNames[op] || "None") : "None";
     pe.lutEn = lut_en ? "YES" : "NO";
     pe.cond = condNames[cond] || "None";
     pe.redIdx = red_idx;

@@ -106,13 +106,12 @@ rewrite. Suggested next steps if this is picked up:
 4. ~~Fix JS's PE op-mode table~~ — done: it was using H13's *different*
    PE op-mode encoding by mistake; now matches `.m`/`.py`/docs.
 5. ~~Add JS's missing PE `RedIdx`/`RedKeep`/`Src1`/`Src2` fields~~ — done.
-6. **Newly found, not yet fixed**: JS's PE decode shows a raw-op-derived
-   name (e.g. `opMode: "Add"`) even when Python would suppress it to
-   `"None"` because the task's mapped type is pooling-only, not
-   elementwise (`.py`'s `print_pe_h16` gates `op_str`/`pool_str` by
-   `task_type_mapped`; JS's `isPEActive` doesn't). A real behavioral gap,
-   not a naming/tangle issue — needs its own fix pass in
-   `hwx_dump_js/hwx_parser.js`'s `isPEActive`/PE-decode block.
+6. ~~JS's PE decode showed a raw-op-derived name even when Python would
+   suppress it to `"None"`~~ — done: added the same `taskTypeMapped`
+   gating (`0`/`2` for pool, `3`-`6` for op) `.m`/`.py` use, verified
+   task-by-task against `resnet50_quant_m4`'s sample (19 active-PE tasks,
+   all now match `hwx_parsing.py -r`'s raw output exactly, including the
+   Pool=Max task that previously showed a spurious `opMode: "Add"`).
 7. Add `literate/tangle.py check` to CI (or a pre-commit hook) so any
    future edit to a tangled region without updating its `.lit.md` source
    fails immediately, the way this session's bug wouldn't have survived

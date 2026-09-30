@@ -13,7 +13,7 @@ and drifted in three of them at once:
 Confirmed (H16+) via `GetHWKernelFormat`/`GetHWChannelFormat` decompiles,
 `ZinKernelFormatGetName`/`ZinTensorFormatToString` string-table decodes,
 and real `.hwx` + MIL cross-checks (full evidence trail in
-[`GUIDE_ANE_WINOGRAD.md` §7](../docs/GUIDE_ANE_WINOGRAD.md)):
+[`GUIDE_ANE_WINOGRAD.md` §4](../docs/GUIDE_ANE_WINOGRAD.md)):
 
 | raw | name    |
 |-----|---------|

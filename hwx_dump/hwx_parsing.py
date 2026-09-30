@@ -1687,12 +1687,7 @@ def print_pe_h16(state):
     pool = pe_cfg & 3
     op = (pe_cfg >> 2) & 7
     lut_en = (pe_cfg >> 5) & 1
-    cond = (pe_cfg >> 6) & 0xF
-    red_idx = (pe_cfg >> 10) & 3  # Wait, in C red_idx is bits [10:9]? Let's check: yes, 2 bits.
-    # Ah! In H16:
-    #   uint32_t red_idx : 2;    // [10:9]
-    # So red_idx = (pe_cfg >> 9) & 3.
-    # Let's fix that!
+    cond = (pe_cfg >> 6) & 7
     red_idx = (pe_cfg >> 9) & 3
     red_keep = (pe_cfg >> 11) & 1
     nl = (pe_cfg >> 12) & 3

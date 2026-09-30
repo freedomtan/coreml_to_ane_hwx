@@ -357,7 +357,7 @@ Here is the exact name-to-index mapping for registers within their respective fu
 #### Data Format Encoding (ChannelCfg Register)
 
 > [!IMPORTANT]
-> **The H16+ raw values below were corrected** after empirical verification against real compiled `.hwx` output cross-checked with known model weight/activation dtypes (see [GUIDE_ANE_WINOGRAD.md §7](GUIDE_ANE_WINOGRAD.md) for the full evidence trail: decompiling `GetHWKernelFormat`/`GetHWChannelFormat`, LLDB-tracing a real compile, and matching raw register values against a model's own MIL source). An earlier pass at this guide (and at `hwx_dump/hwx_parsing.m`/`.py`) had H16+'s raw 0/1 pair backwards. **H14/H15's own raw values below are unverified** — they were never independently re-checked the same way, and may or may not share the same convention.
+> **The H16+ raw values below were corrected** after empirical verification against real compiled `.hwx` output cross-checked with known model weight/activation dtypes (see [GUIDE_ANE_WINOGRAD.md §4](GUIDE_ANE_WINOGRAD.md) for the full evidence trail: decompiling `GetHWKernelFormat`/`GetHWChannelFormat`, LLDB-tracing a real compile, and matching raw register values against a model's own MIL source). An earlier pass at this guide (and at `hwx_dump/hwx_parsing.m`/`.py`) had H16+'s raw 0/1 pair backwards. **H14/H15's own raw values below are unverified** — they were never independently re-checked the same way, and may or may not share the same convention.
 
 The ChannelCfg register encodes data types using 2-bit fields on H14-H17, widening to 3 bits at H18+ (to fit `E4M3`/`INT4`/`E2M1`, added at H18/v20 and the newest known future ISA version respectively — see the Winograd guide for where those values come from):
 
@@ -473,7 +473,7 @@ Below are the exact bitwise equations to unpack crucial ANE registers.
 
 #### A. KernelCfg Register (NE Block + 0)
 Controls the layout, datatype, and density of model weights. This section describes the H16+ layout (`kernel_cfg` in `hwx_parsing.py`'s `print_ne_h16`); H14/H15's `KernelCfg` uses a different, unverified layout (see §5's Data Format Encoding note).
-* **kfmt** (`bits [1:0]` on H16/H17, widened to `bits [2:0]` at H18+): Weight Data Format
+* **kfmt** (`bits [1:0]`, a 2-bit field on every real H16-H19 capture, incl. H18+ — unlike ChannelCfg's `ch_fmt`, which genuinely widens to 3 bits at H18+): Weight Data Format. Values `4`/`5` below are carried by the parsers for forward-compatibility but are unreachable with a 2-bit field; only `0`-`3` occur in practice today.
   * `0`: UINT8 (Unsigned quantized integers)
   * `1`: INT8 (Quantized integers)
   * `2`: FLOAT16 (16-bit floating point precision)

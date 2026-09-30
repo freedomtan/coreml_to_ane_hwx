@@ -132,3 +132,15 @@ rewrite. Suggested next steps if this is picked up:
    for by construction rather than by memory. Verified end-to-end:
    reintroduced the same drift after the fix, and the pre-commit hook
    correctly rejected the commit this time.
+8. Surveyed for more duplicated facts beyond the punch list above. Found
+   and tangled two more (`literate/pe_h17h18_and_tensor_fmt.lit.md`):
+   the H17/H18 Planar Engine op-name table (`.m`/`.py`, 4 occurrences —
+   2 per file, all already agreeing) and `get_hw_tensor_format_name_v17`
+   (a 9-branch mode/mem_fmt/trunc/shift cascade, `.m`/`.py`). Coverage is
+   44 regions as of this pass. Lower-value candidates found but not
+   tangled: `get_l2_dma_fmt_name`/`l2_type_names` (small, stable,
+   `.m`/`.py` agree) and `get_texture_mode_name`/
+   `get_hw_tensor_format_mode_name` (3-5 cases, trivial). Winograd's
+   `wino1d` bit is a single flag with prose centralized in
+   `docs/GUIDE_ANE_WINOGRAD.md`, not a duplicated table — nothing to
+   tangle there.

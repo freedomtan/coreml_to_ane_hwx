@@ -594,6 +594,7 @@ def get_texture_mode_name(mode):
 def get_hw_tensor_format_mode_name(mode):
     return {0: "None", 1: "Cmp", 2: "Lossy"}.get(mode, "Unknown")
 
+# LIT:BEGIN(get_hw_tensor_format_name_v17)
 def get_hw_tensor_format_name_v17(mode, mem_fmt, trunc, shift):
     if mode == 3 and mem_fmt == 3 and shift == 1:
         return "FLOAT32"
@@ -616,6 +617,7 @@ def get_hw_tensor_format_name_v17(mode, mem_fmt, trunc, shift):
         if mem_fmt == 1: return "Y10"
         if mem_fmt == 2: return "RAW10/Y10 (Shared)"
     return "UNKNOWN"
+# LIT:END(get_hw_tensor_format_name_v17)
 
 def fp16_to_fp32(val_u16):
     return struct.unpack('<e', struct.pack('<H', val_u16))[0]
@@ -1740,7 +1742,9 @@ def print_pe_h17(state):
         src1_idx = (pe_cfg >> 16) & 0xF
         src2_idx = (pe_cfg >> 20) & 0xF
         max_idx = (pe_cfg >> 24) & 0xFF
+        # LIT:BEGIN(pe_h17h18_op_names)
         pe_op_names = ["None", "Add", "Mul", "Min", "Max", "5?", "6?", "7?"]
+        # LIT:END(pe_h17h18_op_names)
         print(f"        PE Config : Pool={pool} Op={op}({pe_op_names[op&7]}) LutEn={lut_en} Cond={cond} RedIdx={red_idx} RedKeep={red_keep} NLMode={nl} CtoW={ctow} Src1Idx={src1_idx} Src2Idx={src2_idx} MaxIdx={max_idx}")
         
     if state.valid[base + 1]: print_float_reg("PE Bias", state.values[base + 1])
@@ -1771,7 +1775,9 @@ def print_pe_h18(state):
         src1_idx = (pe_cfg >> 16) & 0xF
         src2_idx = (pe_cfg >> 20) & 0xF
         max_idx = (pe_cfg >> 24) & 0xFF
+        # LIT:BEGIN(pe_h17h18_op_names)
         pe_op_names = ["None", "Add", "Mul", "Min", "Max", "5?", "6?", "7?"]
+        # LIT:END(pe_h17h18_op_names)
         print(f"        PE Config : Pool={pool} Op={op}({pe_op_names[op&7]}) LutEn={lut_en} Cond={cond} RedIdx={red_idx} RedKeep={red_keep} NLMode={nl} CtoW={ctow} Src1Idx={src1_idx} Src2Idx={src2_idx} MaxIdx={max_idx}")
         
     if state.valid[base + 1]: print_float_reg("PE Bias", state.values[base + 1])

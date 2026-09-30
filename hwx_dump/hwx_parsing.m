@@ -340,6 +340,7 @@ static void print_float_reg(const char *name, uint32_t val) {
 }
 
 
+// LIT:BEGIN(get_hw_tensor_format_name_v17)
 const char *get_hw_tensor_format_name_v17(uint32_t mode, uint32_t mem_fmt,
                                           uint32_t trunc, uint32_t shift) {
   if (mode == 3 && mem_fmt == 3 && shift == 1)
@@ -368,6 +369,7 @@ const char *get_hw_tensor_format_name_v17(uint32_t mode, uint32_t mem_fmt,
   }
   return "UNKNOWN";
 }
+// LIT:END(get_hw_tensor_format_name_v17)
 
 // LIT:BEGIN(get_ch_fmt_name)
 const char *get_ch_fmt_name(uint32_t fmt) {
@@ -1739,8 +1741,10 @@ void print_pe_h17(const hwx_state_t *state) {
   printf("        --- Planar Engine (0x4500) [H17] ---\n");
 
   if (state->valid[H16_PE_START / 4]) {
+    // LIT:BEGIN(pe_h17h18_op_names)
     static const char *pe_op_names[] = {"None", "Add", "Mul", "Min",
                                         "Max",  "5?",  "6?",  "7?"};
+    // LIT:END(pe_h17h18_op_names)
     printf("        PE Config : Pool=%u Op=%u(%s) LutEn=%u Cond=%u RedIdx=%u "
            "RedKeep=%u NLMode=%u CtoW=%u Src1Idx=%u Src2Idx=%u MaxIdx=%u\n",
            pe.pe_cfg.pool_mode, pe.pe_cfg.op, pe_op_names[pe.pe_cfg.op & 7],
@@ -1772,8 +1776,10 @@ void print_pe_h18(const hwx_state_t *state) {
   printf("        --- Planar Engine (0x4500) [H18] ---\n");
 
   if (state->valid[H16_PE_START / 4]) {
+    // LIT:BEGIN(pe_h17h18_op_names)
     static const char *pe_op_names[] = {"None", "Add", "Mul", "Min",
                                         "Max",  "5?",  "6?",  "7?"};
+    // LIT:END(pe_h17h18_op_names)
     printf("        PE Config : Pool=%u Op=%u(%s) LutEn=%u Cond=%u RedIdx=%u "
            "RedKeep=%u NLMode=%u CtoW=%u Src1Idx=%u Src2Idx=%u MaxIdx=%u\n",
            pe.pe_cfg.pool_mode, pe.pe_cfg.op, pe_op_names[pe.pe_cfg.op & 7],

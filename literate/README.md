@@ -112,7 +112,23 @@ rewrite. Suggested next steps if this is picked up:
    task-by-task against `resnet50_quant_m4`'s sample (19 active-PE tasks,
    all now match `hwx_parsing.py -r`'s raw output exactly, including the
    Pool=Max task that previously showed a spurious `opMode: "Add"`).
-7. Add `literate/tangle.py check` to CI (or a pre-commit hook) so any
-   future edit to a tangled region without updating its `.lit.md` source
-   fails immediately, the way this session's bug wouldn't have survived
-   five commits' worth of manual re-checking.
+7. ~~Add `literate/tangle.py check` to CI (or a pre-commit hook)~~ — done:
+   `.github/workflows/tangle-check.yml` runs it on every push/PR; a local
+   pre-commit hook (`literate/git-hooks/pre-commit`) is available via
+   `sh literate/install-hooks.sh` (one-time per clone). Both run the same
+   `python3 literate/tangle.py check`.
+
+   Wiring this up immediately caught a real, pre-existing gap: fixing
+   `hwx_dump/hwx_parsing.py`'s `get_ch_fmt_name`/`kernel_fmt` split
+   (`literate/format_encoding.lit.md`) had marked the region with
+   `LIT:BEGIN(id)` but never added a `<!-- tangle: ... -->` directive for
+   it in any `.lit.md` — so `check` silently skipped it, and a
+   deliberately reintroduced bug in that exact function passed clean.
+   Fixed by teaching `tangle.py check` to scan the whole repo for
+   `LIT:BEGIN(id)` markers with no declaring directive (`ORPHAN` in its
+   output, non-zero exit) — a class of gap this project has now hit more
+   than once (the multi-region-per-file bug found while building
+   `literate/common_maccfg.lit.md` was the other), so it's worth checking
+   for by construction rather than by memory. Verified end-to-end:
+   reintroduced the same drift after the fix, and the pre-commit hook
+   correctly rejected the commit this time.

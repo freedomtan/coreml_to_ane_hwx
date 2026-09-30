@@ -33,12 +33,10 @@ field despite overlapping raw values).
 
 ## ChannelCfg (`get_ch_fmt_name`) — shared by .m, .py, .js
 
-`hwx_parsing.m`'s switch and `hwx_dump_js/hwx_parser.js`'s switch are
-structurally identical and both tangle from this block. `hwx_parsing.py`
-is **not** tangled from this block yet: it conflates `ch_fmt` and
-`kernel_fmt` decoding into a single `get_ch_fmt_name()` (see
-`literate/README.md`'s "Findings" section for why that's a real,
-separate gap this investigation surfaced rather than fixed).
+`hwx_parsing.py`'s `get_ch_fmt_name()` used to be overloaded to also
+decode `kernel_fmt` (see `literate/README.md`'s "Findings" — fixed by
+splitting it into this function plus a separate `get_kernel_fmt_name`).
+All three now match `.m`'s switch exactly and tangle from this block.
 
 <!-- tangle: hwx_dump/hwx_parsing.m#get_ch_fmt_name -->
 ```c
@@ -56,6 +54,16 @@ const char *get_ch_fmt_name(uint32_t fmt) {
     return "Unknown";
   }
 }
+```
+
+<!-- tangle: hwx_dump/hwx_parsing.py#get_ch_fmt_name -->
+```python
+def get_ch_fmt_name(fmt_val):
+    if fmt_val == 0: return "UINT8"
+    if fmt_val == 1: return "INT8"
+    if fmt_val == 2: return "FLOAT16"
+    if fmt_val == 4: return "E4M3"
+    return f"Unknown({fmt_val})"
 ```
 
 <!-- tangle: hwx_dump_js/hwx_parser.js#get_ch_fmt_name -->

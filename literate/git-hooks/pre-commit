@@ -1,0 +1,9 @@
+#!/bin/sh
+# Blocks a commit if any hwx_parsing.m/.py/.js/ane_hwx_regs.h/doc region
+# tangled from literate/*.lit.md has drifted out of sync. Install with
+# literate/install-hooks.sh, or symlink manually:
+#   ln -sf ../../literate/git-hooks/pre-commit .git/hooks/pre-commit
+set -e
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+python3 literate/tangle.py check

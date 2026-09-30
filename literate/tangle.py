@@ -156,6 +156,37 @@ def apply_to_target(target_path, id_, code_lines, write, results):
         target_path.write_text("\n".join(lines) + "\n")
 
 
+ORPHAN_SCAN_SUFFIXES = set(MARKER_STYLES)
+# Directories that legitimately contain LIT:BEGIN/END text that isn't a real
+# marker on a real target file (literate/*.lit.md's own directives render as
+# fenced code containing marker syntax as *content*; tangle.py's own
+# docstring/regexes reference the marker syntax literally).
+ORPHAN_SCAN_EXCLUDE_DIRS = {".git", "literate"}
+ANY_MARKER_RE = re.compile(r"LIT:BEGIN\(([A-Za-z0-9_]+)\)")
+
+
+def find_orphan_markers(declared):
+    """Return (file, id) pairs with LIT:BEGIN(id) in a real target file that
+    no literate/*.lit.md declares via a <!-- tangle: path#id --> directive.
+    Catches markers added (e.g. while fixing a function) that were never
+    wired up -- tangle.py can't check what it was never told to check."""
+    orphans = []
+    for path in ROOT.rglob("*"):
+        if path.is_dir() or path.suffix not in ORPHAN_SCAN_SUFFIXES:
+            continue
+        if ORPHAN_SCAN_EXCLUDE_DIRS & set(path.relative_to(ROOT).parts):
+            continue
+        try:
+            text = path.read_text()
+        except (UnicodeDecodeError, OSError):
+            continue
+        rel = str(path.relative_to(ROOT))
+        for m in ANY_MARKER_RE.finditer(text):
+            if (rel, m.group(1)) not in declared:
+                orphans.append((rel, m.group(1)))
+    return orphans
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("mode", choices=["check", "write"])
@@ -173,12 +204,16 @@ def main():
     )
 
     results = []
+    declared = set()
     for lit_file in lit_files:
         for target_rel, id_, code_lines in parse_literate_file(lit_file):
+            declared.add((target_rel, id_))
             target_path = ROOT / target_rel
             apply_to_target(
                 target_path, id_, code_lines, write=(args.mode == "write"), results=results
             )
+
+    orphans = find_orphan_markers(declared) if not args.literate_files else []
 
     drift = [r for r in results if r[2] in ("DRIFT", "MISSING_MARKERS")]
     for target_path, id_, status, extra in results:
@@ -196,9 +231,14 @@ def main():
                 print(f"    - {line}")
             for line in new_block:
                 print(f"    + {line}")
+    for rel, id_ in orphans:
+        print(f"  ORPHAN  {rel}#{id_}: marked with LIT:BEGIN/END but no literate/*.lit.md declares a <!-- tangle: {rel}#{id_} --> for it")
 
-    if drift:
-        print(f"\n{len(drift)} region(s) out of sync with literate source.")
+    if drift or orphans:
+        if drift:
+            print(f"\n{len(drift)} region(s) out of sync with literate source.")
+        if orphans:
+            print(f"{len(orphans)} orphan marker(s) not covered by any literate source.")
         return 1
     print(f"\nAll {len(results)} region(s) in sync.")
     return 0

@@ -549,15 +549,29 @@ The Planar Engine handles elementwise math (addition, multiplication) and poolin
   * `3`: Minimum
   * `4`: Sum of Squares
 * **lut_en** (`bit [5]`): Lookup Table path enable. Used for complex non-linear functions (like Silu, Gelu, or custom activations).
-* **cond** (`bits [8:6]`): Conditional Logic Mask. **Not currently converted to a name by any parser** — `print_pe_h16`/`h17`/`h18` all print this field as a raw integer (`Cond=%u`). `get_pe_condition_name_v17` defines the full 8-value name table below but is dead code (defined, never called) in both `.m` and `.py` as of this writing:
+* **cond** (`bits [8:6]`): Conditional Logic Mask. Resolved to a name via
+  `get_pe_condition_name_v17` in all three parsers' `PE Config` output.
+  **This table was corrected by direct ANECompiler binary disassembly**
+  (full writeup: [`INVESTIGATION_PE_CONDITION_ENCODING.md`](INVESTIGATION_PE_CONDITION_ENCODING.md)) —
+  an earlier hand-guessed table (which all three parsers agreed on, but
+  which was never checked against the actual hardware) had this field
+  wrong in 6 of 8 slots. `ZinAneTd<N>::SetPECondition`'s disassembly
+  proves the raw bits are a non-identity permutation of the compiler's
+  internal `ZinHWPECondition` enum, not a direct index; cross-referencing
+  through `ZinConditionLayerUtils::PredicateOp` (whose names are ground
+  truth from literal debug strings) gives the corrected mapping below.
+  Confidence is highest for `3`/`4` (an unconditional cross-reference
+  anchor independent of any hypothesis), high for the rest, and medium
+  for `7` (`Abs`, the only name left over by elimination, no direct
+  positive evidence):
   * `0`: None
-  * `1`: Abs
-  * `2`: Equal
-  * `3`: Greater
-  * `4`: GreaterEqual
+  * `1`: Less
+  * `2`: Greater
+  * `3`: NotEqual
+  * `4`: Equal
   * `5`: LessEqual
-  * `6`: Less
-  * `7`: NotEqual
+  * `6`: GreaterEqual
+  * `7`: Abs
 * **nl** (`bits [13:12]`): Non-Linear Activation
   * `0`: None
   * `1`: ReLU

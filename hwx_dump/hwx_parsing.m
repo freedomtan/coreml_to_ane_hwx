@@ -460,9 +460,8 @@ const char *get_pe_pool_mode_name_v17(uint32_t mode) {
 
 // LIT:BEGIN(get_pe_condition_name_v17)
 const char *get_pe_condition_name_v17(uint32_t cond) {
-  static const char *labels[] = {"None",    "Abs",          "Equal",
-                                 "Greater", "GreaterEqual", "LessEqual",
-                                 "Less",    "NotEqual"};
+  static const char *labels[] = {"None",     "Less",     "Greater", "NotEqual",
+                                 "Equal", "LessEqual", "GreaterEqual", "Abs"};
   return (cond < 8) ? labels[cond] : "Unknown";
 }
 // LIT:END(get_pe_condition_name_v17)
@@ -1710,18 +1709,20 @@ void print_pe_h16(const hwx_state_t *state) {
       }
     } else if (state->valid[H16_PE_START / 4]) {
       printf("        PE Config : Pool=%u (%s) Op=%u (%s) LutEn=%u Cond=%u "
-             "RedIdx=%u "
+             "(%s) RedIdx=%u "
              "RedKeep=%u NLMode=%u Src1=%u Src2=%u\n",
-             pool, pool_str, op, op_str, lut_en, cond, red_idx, red_keep, nl,
-             src1, src2);
+             pool, pool_str, op, op_str, lut_en, cond,
+             get_pe_condition_name_v17(cond), red_idx, red_keep, nl, src1,
+             src2);
     }
   } else if (state->valid[H16_PE_START / 4]) {
     printf("        PE Config : Pool=%u (%s) Op=%u (%s) LutEn=%u Cond=%u "
-           "RedIdx=%u "
+           "(%s) RedIdx=%u "
            "RedKeep=%u NLMode=%u Src1=%u Src2=%u\n",
            pool, get_pe_pool_mode_name_v17(pool), op,
-           get_pe_op_mode_name_v17(op), lut_en, cond, red_idx, red_keep, nl,
-           src1, src2);
+           get_pe_op_mode_name_v17(op), lut_en, cond,
+           get_pe_condition_name_v17(cond), red_idx, red_keep, nl, src1,
+           src2);
   }
 
   if (state->valid[(H16_PE_START + 0x4) / 4])
@@ -1745,10 +1746,12 @@ void print_pe_h17(const hwx_state_t *state) {
     static const char *pe_op_names[] = {"None", "Add", "Mul", "Min",
                                         "Max",  "5?",  "6?",  "7?"};
     // LIT:END(pe_h17h18_op_names)
-    printf("        PE Config : Pool=%u Op=%u(%s) LutEn=%u Cond=%u RedIdx=%u "
+    printf("        PE Config : Pool=%u Op=%u(%s) LutEn=%u Cond=%u (%s) "
+           "RedIdx=%u "
            "RedKeep=%u NLMode=%u CtoW=%u Src1Idx=%u Src2Idx=%u MaxIdx=%u\n",
            pe.pe_cfg.pool_mode, pe.pe_cfg.op, pe_op_names[pe.pe_cfg.op & 7],
-           pe.pe_cfg.lut_en, pe.pe_cfg.cond, pe.pe_cfg.red_idx,
+           pe.pe_cfg.lut_en, pe.pe_cfg.cond,
+           get_pe_condition_name_v17(pe.pe_cfg.cond), pe.pe_cfg.red_idx,
            pe.pe_cfg.red_keep, pe.pe_cfg.nl_mode, pe.pe_cfg.c_to_w,
            pe.pe_cfg.src1_idx, pe.pe_cfg.src2_idx, pe.pe_cfg.max_idx);
   }
@@ -1780,10 +1783,12 @@ void print_pe_h18(const hwx_state_t *state) {
     static const char *pe_op_names[] = {"None", "Add", "Mul", "Min",
                                         "Max",  "5?",  "6?",  "7?"};
     // LIT:END(pe_h17h18_op_names)
-    printf("        PE Config : Pool=%u Op=%u(%s) LutEn=%u Cond=%u RedIdx=%u "
+    printf("        PE Config : Pool=%u Op=%u(%s) LutEn=%u Cond=%u (%s) "
+           "RedIdx=%u "
            "RedKeep=%u NLMode=%u CtoW=%u Src1Idx=%u Src2Idx=%u MaxIdx=%u\n",
            pe.pe_cfg.pool_mode, pe.pe_cfg.op, pe_op_names[pe.pe_cfg.op & 7],
-           pe.pe_cfg.lut_en, pe.pe_cfg.cond, pe.pe_cfg.red_idx,
+           pe.pe_cfg.lut_en, pe.pe_cfg.cond,
+           get_pe_condition_name_v17(pe.pe_cfg.cond), pe.pe_cfg.red_idx,
            pe.pe_cfg.red_keep, pe.pe_cfg.nl_mode, pe.pe_cfg.c_to_w,
            pe.pe_cfg.src1_idx, pe.pe_cfg.src2_idx, pe.pe_cfg.max_idx);
   }

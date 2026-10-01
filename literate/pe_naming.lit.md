@@ -23,6 +23,23 @@ exercises op=1 or op=4 to empirically confirm the way the int8/uint8 fix
 was confirmed (see `GUIDE_ANE_WINOGRAD.md` §7) — flagged here rather
 than treated as certain.
 
+**`cond` was also a real bug, found and fixed via direct ANECompiler
+binary disassembly** (full writeup:
+`docs/INVESTIGATION_PE_CONDITION_ENCODING.md`), not just cross-file
+comparison — all three parsers had agreed with each other, but all three
+were wrong relative to the hardware. `ZinAneTd<N>::SetPECondition`'s
+disassembly proves the raw register bits are a non-identity permutation
+of the `ZinHWPECondition` enum (not a direct index), and a cross-reference
+through `ZinConditionLayerUtils`'s `PredicateOp` enum (whose names are
+ground truth from literal debug strings in `DumpTDBranchingInfo`) gives a
+corrected, complete bijection: `0:None 1:Less 2:Greater 3:NotEqual
+4:Equal 5:LessEqual 6:GreaterEqual 7:Abs`. Confidence is highest for `3`
+and `4` (an unconditional cross-reference anchor), high for the rest,
+medium for `7` (`Abs`, by elimination only) — see the investigation doc
+for the full chain. The function was dead code (defined, never called)
+before this fix; `cond` is now resolved to a name in the actual
+`PE Config` printf/print statements in all three parsers.
+
 Still **not tangled**: JS's PE decode has no `src1`/`src2` fields at all
 (a missing-feature gap, not a naming mismatch) — see `literate/README.md`.
 
@@ -89,9 +106,8 @@ const poolNames = ["None", "Avg", "Max", "Min"];
 <!-- tangle: hwx_dump/hwx_parsing.m#get_pe_condition_name_v17 -->
 ```c
 const char *get_pe_condition_name_v17(uint32_t cond) {
-  static const char *labels[] = {"None",    "Abs",          "Equal",
-                                 "Greater", "GreaterEqual", "LessEqual",
-                                 "Less",    "NotEqual"};
+  static const char *labels[] = {"None",     "Less",     "Greater", "NotEqual",
+                                 "Equal", "LessEqual", "GreaterEqual", "Abs"};
   return (cond < 8) ? labels[cond] : "Unknown";
 }
 ```
@@ -99,13 +115,13 @@ const char *get_pe_condition_name_v17(uint32_t cond) {
 <!-- tangle: hwx_dump/hwx_parsing.py#get_pe_condition_name_v17 -->
 ```python
 def get_pe_condition_name_v17(cond):
-    labels = ["None", "Abs", "Equal", "Greater", "GreaterEqual", "LessEqual", "Less", "NotEqual"]
+    labels = ["None", "Less", "Greater", "NotEqual", "Equal", "LessEqual", "GreaterEqual", "Abs"]
     return labels[cond] if cond < len(labels) else "Unknown"
 ```
 
 <!-- tangle: hwx_dump_js/hwx_parser.js#get_pe_condition_name_v17 -->
 ```js
-const condNames = ["None", "Abs", "Equal", "Greater", "GreaterEqual", "LessEqual", "Less", "NotEqual"];
+const condNames = ["None", "Less", "Greater", "NotEqual", "Equal", "LessEqual", "GreaterEqual", "Abs"];
 ```
 
 <!-- tangle: hwx_dump/hwx_parsing.m#get_pe_nl_mode_name_v17 -->

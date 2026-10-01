@@ -648,7 +648,7 @@ function parseStateRegisters(state, cpusubtype) {
     const pool = pe_cfg & 3;
     const op = (pe_cfg >> 2) & 7;
     const lut_en = (pe_cfg >> 5) & 1;
-    const cond = (pe_cfg >> 6) & 0xF;
+    const cond = (pe_cfg >> 6) & 7;
     // RedIdx/RedKeep/Src1/Src2 match hwx_parsing.py's print_pe_h16 bit
     // positions exactly (red_idx uses bits [10:9], not [11:9] -- python's
     // own inline comment flags this as a fixed-after-the-fact correction).
@@ -674,7 +674,7 @@ function parseStateRegisters(state, cpusubtype) {
     const opNames = ["Add", "Mul", "Max", "Min", "SumSqr"];
     // LIT:END(get_pe_op_mode_name_v17)
     // LIT:BEGIN(get_pe_condition_name_v17)
-    const condNames = ["None", "Abs", "Equal", "Greater", "GreaterEqual", "LessEqual", "Less", "NotEqual"];
+    const condNames = ["None", "Less", "Greater", "NotEqual", "Equal", "LessEqual", "GreaterEqual", "Abs"];
     // LIT:END(get_pe_condition_name_v17)
     // LIT:BEGIN(get_pe_nl_mode_name_v17)
     const nlNames = ["None", "ReLU", "Clamp", "Abs"];

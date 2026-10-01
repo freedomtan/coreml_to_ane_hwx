@@ -537,7 +537,7 @@ def get_pe_pool_mode_name_v17(mode):
 
 # LIT:BEGIN(get_pe_condition_name_v17)
 def get_pe_condition_name_v17(cond):
-    labels = ["None", "Abs", "Equal", "Greater", "GreaterEqual", "LessEqual", "Less", "NotEqual"]
+    labels = ["None", "Less", "Greater", "NotEqual", "Equal", "LessEqual", "GreaterEqual", "Abs"]
     return labels[cond] if cond < len(labels) else "Unknown"
 # LIT:END(get_pe_condition_name_v17)
 
@@ -1711,9 +1711,9 @@ def print_pe_h16(state):
                 pe_common_cfg = state.values[(H16_COMMON_START + pe_common_cfg_offset) // 4]
                 print(f"        PE Config (GOC) : Cond={(pe_common_cfg>>4)&0x1F} CtoW={(pe_common_cfg>>10)&1} Src1Sel={(pe_common_cfg>>16)&3} Src2Sel={(pe_common_cfg>>18)&3}")
         elif state.valid[base]:
-            print(f"        PE Config : Pool={pool} ({pool_str}) Op={op} ({op_str}) LutEn={lut_en} Cond={cond} RedIdx={red_idx} RedKeep={red_keep} NLMode={nl} Src1={src1} Src2={src2}")
+            print(f"        PE Config : Pool={pool} ({pool_str}) Op={op} ({op_str}) LutEn={lut_en} Cond={cond} ({get_pe_condition_name_v17(cond)}) RedIdx={red_idx} RedKeep={red_keep} NLMode={nl} Src1={src1} Src2={src2}")
     elif state.valid[base]:
-        print(f"        PE Config : Pool={pool} ({get_pe_pool_mode_name_v17(pool)}) Op={op} ({get_pe_op_mode_name_v17(op)}) LutEn={lut_en} Cond={cond} RedIdx={red_idx} RedKeep={red_keep} NLMode={nl} Src1={src1} Src2={src2}")
+        print(f"        PE Config : Pool={pool} ({get_pe_pool_mode_name_v17(pool)}) Op={op} ({get_pe_op_mode_name_v17(op)}) LutEn={lut_en} Cond={cond} ({get_pe_condition_name_v17(cond)}) RedIdx={red_idx} RedKeep={red_keep} NLMode={nl} Src1={src1} Src2={src2}")
         
     if state.valid[base + 1]: print_float_reg("PE Bias", bias)
     if state.valid[base + 2]: print_float_reg("PE Scale", scale)
@@ -1740,7 +1740,7 @@ def print_pe_h17(state):
         # LIT:BEGIN(pe_h17h18_op_names)
         pe_op_names = ["None", "Add", "Mul", "Min", "Max", "5?", "6?", "7?"]
         # LIT:END(pe_h17h18_op_names)
-        print(f"        PE Config : Pool={pool} Op={op}({pe_op_names[op&7]}) LutEn={lut_en} Cond={cond} RedIdx={red_idx} RedKeep={red_keep} NLMode={nl} CtoW={ctow} Src1Idx={src1_idx} Src2Idx={src2_idx} MaxIdx={max_idx}")
+        print(f"        PE Config : Pool={pool} Op={op}({pe_op_names[op&7]}) LutEn={lut_en} Cond={cond} ({get_pe_condition_name_v17(cond)}) RedIdx={red_idx} RedKeep={red_keep} NLMode={nl} CtoW={ctow} Src1Idx={src1_idx} Src2Idx={src2_idx} MaxIdx={max_idx}")
         
     if state.valid[base + 1]: print_float_reg("PE Bias", state.values[base + 1])
     if state.valid[base + 2]: print_float_reg("PE Scale", state.values[base + 2])
@@ -1773,7 +1773,7 @@ def print_pe_h18(state):
         # LIT:BEGIN(pe_h17h18_op_names)
         pe_op_names = ["None", "Add", "Mul", "Min", "Max", "5?", "6?", "7?"]
         # LIT:END(pe_h17h18_op_names)
-        print(f"        PE Config : Pool={pool} Op={op}({pe_op_names[op&7]}) LutEn={lut_en} Cond={cond} RedIdx={red_idx} RedKeep={red_keep} NLMode={nl} CtoW={ctow} Src1Idx={src1_idx} Src2Idx={src2_idx} MaxIdx={max_idx}")
+        print(f"        PE Config : Pool={pool} Op={op}({pe_op_names[op&7]}) LutEn={lut_en} Cond={cond} ({get_pe_condition_name_v17(cond)}) RedIdx={red_idx} RedKeep={red_keep} NLMode={nl} CtoW={ctow} Src1Idx={src1_idx} Src2Idx={src2_idx} MaxIdx={max_idx}")
         
     if state.valid[base + 1]: print_float_reg("PE Bias", state.values[base + 1])
     if state.valid[base + 2]: print_float_reg("PE Scale", state.values[base + 2])

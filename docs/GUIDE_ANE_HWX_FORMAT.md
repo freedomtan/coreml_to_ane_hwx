@@ -649,9 +649,9 @@ Reuses `get_hw_tensor_format_name_v17(mode, mem_fmt, trunc, shift)` (see §6.1.A
 * **trunc** (`bits [6:4]`) → `trunc`.
 * **shift** (`bits [11:8]`) → `shift`.
 * **mem_fmt** (`bits [13:12]`) → `mem_fmt`.
-* **offset_ch** (`bits [18:16]`): Channel offset, sign-extended from 3 bits (`.py` subtracts 8 if ≥ 4).
+* **offset_ch** (`bits [18:16]`): Channel offset — an unsigned 3-bit field (printed as plain `0`-`7`, not sign-extended, despite being formatted with `%d`/`{}` in both `.m` and `.py`).
 * **interleave** (`bits [27:24]`): Channel interleave factor.
-* **cmp_vec** (`bits [31:28]`): Compression vector width, sign-extended from 4 bits (`.py` subtracts 16 if ≥ 8).
+* **cmp_vec** (`bits [31:28]`): Compression vector width — an unsigned 4-bit field (`0`-`15`, same non-sign-extended convention as `offset_ch`).
 
 #### CompInfo / CompSize / CropOffset (Word 30 + 31-33 for Src1, Word 34 + 35-37 for Src2)
 * **compressed_enable** (`bit [0]`): Enable DMA decompression for this source.

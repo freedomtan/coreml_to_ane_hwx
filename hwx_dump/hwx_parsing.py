@@ -1884,13 +1884,6 @@ def print_l2_h16(state):
         
     if state.valid[base + 35]:
         val = state.values[base + 35]
-        t = val & 1
-        m = (val >> 1) & 3
-        b = (val >> 3) & 1
-        max_idx = (val >> 4) & 0xFFF
-        # Wait, get pe index fields layout:
-        # pe_index_cfg: max_index: 16 (bits 15:0), mode: 3 (bits 18:16), broadcast: 2 (bits 25:24), transpose: 1 (bits 26).
-        # Let's extract exactly:
         max_idx = val & 0xFFFF
         m = (val >> 16) & 7
         b = (val >> 24) & 3
@@ -1950,9 +1943,7 @@ def print_tiledmasrc_h16(state):
             
         val = state.values[base_word]
         enable = val & 1
-        dsid = (val >> 5) & 7 # Wait, in C it is written: `src->dmacfg[i].dsid_cache_hint` which is [5:7]. Yes!
-        # wait! It is printed as DSID/Hint in C:
-        # printf("        %sDMAConfig : En=%u (%s) DSID/Hint=%u Tag=%u DepInt=%u DepMode=%u\n", ...)
+        dsid = (val >> 5) & 7  # dsid_cache_hint, bits [7:5]
         tag = (val >> 16) & 0xFF
         dep_int = (val >> 24) & 0xF
         dep_mode = (val >> 28) & 3
@@ -2001,37 +1992,13 @@ def print_tiledmasrc_h16(state):
             shift = (fval >> 8) & 0xF
             mem_fmt = (fval >> 12) & 3
             offset_ch = (fval >> 16) & 7
-            # wait! OffsetCh is printed as signed or unsigned? In C: `src->fmt[i].offset_ch` is printed with `%d`. But since it's 3 bits, it's typically unsigned or signed depending on type. But it's fine.
-            # wait, in get_hw_tensor_format_name_v17(mode, mem_fmt, trunc, shift):
             fmt_str = get_hw_tensor_format_name_v17(mode, mem_fmt, trunc, shift)
             interleave = (fval >> 24) & 0xF
             cmp_vec = (fval >> 28) & 0xF
             print(f"        {src_names[i]}Fmt     : Mode={mode} MemFmt={mem_fmt} Trunc={trunc} Shift={shift} -> {fmt_str}")
-            # wait, is OffsetCh printed as signed? In C offset_ch is declared as `int offset_ch : 3;`?
-            # Let's check `ane_hwx_regs.h` line 682: `uint32_t offset_ch : 3;`.
-            # So it is unsigned in struct, but printed with `%d` in printf. We can print it as signed integer if it is negative?
-            # For 3 bits, unsigned 0..7. If we treat it as unsigned it is fine.
-            # But let's check: if value is > 3 (e.g. 4..7), signed 3-bit would be -4..-1.
-            # Usually offset_ch is small. Let's just print it. If it is 3 bits, we can do:
-            off_ch_val = offset_ch
-            if off_ch_val >= 4: off_ch_val -= 8
-            cmp_vec_val = cmp_vec
-            if cmp_vec_val >= 8: cmp_vec_val -= 16
-            
-            # Wait, in C format:
-            # "                 Intrlv=%u OffCh=%d CmpVec=%d\n"
-            # Let's see if we should sign-extend offset_ch and cmp_vec:
-            # yes, in `ane_hwx_regs.h` it is declared as `int offset_ch : 3;` or `uint32_t`?
-            # Wait! In line 682: `uint32_t offset_ch : 3;`? No, wait: in the C struct definition of `ane_tiledmasrc_h16_t` line 682, it says `uint32_t offset_ch : 3;`.
-            # But in `print_tiledmasrc_h16` it printed with `%d`.
-            # If it's unsigned, then %d will just print it as a positive number.
-            # Wait, let's look at `cmp_vec : 4;`. In line 685: `uint32_t cmp_vec : 4;`.
-            # If it's unsigned, %d prints it positive.
-            # Let's sign-extend them just in case, or print as signed.
-            # Actually, let's check `cmp_vec` and `offset_ch` in standard outputs. In previous python output it printed:
-            # `Intrlv=1 OffCh=0 CmpVec=0` (all 0s).
-            # So let's do:
-            print(f"                 Intrlv={interleave} OffCh={off_ch_val} CmpVec={cmp_vec_val}")
+            # offset_ch/cmp_vec are uint32_t bitfields in ane_hwx_regs.h; .m
+            # prints them unsigned via %d (no sign-extension), so match that.
+            print(f"                 Intrlv={interleave} OffCh={offset_ch} CmpVec={cmp_vec}")
             
         # Compressed Info
         comp_word = base + 30 + i * 4 # word 30 for Src1, word 34 for Src2
@@ -2112,14 +2079,11 @@ def print_tiledmadst_h16(state):
         meta_size = (fmt_mode >> 7) & 0x1FFFFFF
         print(f"        DstMeta   : Addr=0x{m_hi:x}{m_lo:08x} FmtMode={fmt_mode_val} ({get_hw_tensor_format_mode_name(fmt_mode_val)}) Size=0x{meta_size:x}")
         
-    if state.valid[base + 14]: # DstFmt
-        # wait! `dst->dstfmt` starts at base+14 (which is word 14).
-        # Let's check `ane_tiledmadst_h16_t` in `ane_hwx_regs.h` to see fields:
-        # Wait, we can unpack fields of DstFmt:
+    if state.valid[base + 14]: # DstFmt (word 14)
         fval = state.values[base + 14]
         mode = fval & 3
         trunc = (fval >> 4) & 7
-        shift = (fval >> 8) & 0xF
+        shift = (fval >> 8) & 7
         mem_fmt = (fval >> 12) & 3
         offset_ch = (fval >> 16) & 7
         zero_pad_first = (fval >> 20) & 1
@@ -2130,9 +2094,7 @@ def print_tiledmadst_h16(state):
         print(f"        DstFmt: Mode={mode} MemFmt={mem_fmt} Trunc={trunc} Shift={shift} -> {fmt_str}")
         print(f"                OffCh={offset_ch} ZeroPad (F={zero_pad_first}, L={zero_pad_last}) Intrlv={interleave} CmpVec={cmp_vec}")
         
-    if state.valid[base + 16]: # DstComp
-        # wait! DstComp starts at base+16 (word 16).
-        # Let's check `ane_tiledmadst_h16_t` in `ane_hwx_regs.h` to see fields of `dstcompinfo`:
+    if state.valid[base + 16]: # DstComp (word 16)
         cval = state.values[base + 16]
         comp_en = cval & 1
         comp_en_str = "Enabled" if comp_en else "Disabled"

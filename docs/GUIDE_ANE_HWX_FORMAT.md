@@ -746,6 +746,41 @@ Each a small `{en, cache_hint, user_tag}` struct; H16 only decodes `en` (`bit [0
 
 ---
 
+### 7. CacheDMA / Telemetry Block Unpacking (H16+ only, 12 registers at Block Base `0x5900`)
+
+Unlike every other block in this guide, CacheDMA has no H13/H14/H15 equivalent at all (`h13_printers`/`h14_printers` leave `.print_cachedma = NULL`) — it's new hardware starting at H16/H17. Describes `print_cachedma_h16`, shared verbatim by H17/H18/H19.
+
+#### Control (Word 0, `0x5900`)
+* **flush** (`bit [0]`): Flush the cache DMA pipeline.
+* **enable** (`bit [1]`): Enable this block.
+* **task_sync** (`bits [3:2]`): Task-sync mode (`WaitPrev`/`PostDone` per `ane_hwx_regs.h`'s comment).
+* **early_term** (`bits [8:4]`): Early-termination configuration (ET).
+* **footprint_limiter** (`bit [9]`): Enable the memory-footprint limiter (FL).
+* **footprint_threshold** (`bits [31:16]`): Footprint limiter threshold.
+
+#### Pre0 / Pre1 (Words 1-2, `0x5904`-`0x5908`)
+* **Pre0.bandwidth_limit** (`bits [9:0]`), **Pre0.sieve2** (`bits [19:16]`), **Pre0.telemetry_age_out** (`bits [23:20]`).
+* **Pre1.sieve1** (`bits [13:0]`).
+
+#### DSID (Word 6, `0x5918`)
+* **dsid_and_size** (`bits [29:7]`, 23 bits): Dataset ID + size, packed into the middle of the word. `hwx_parsing.m` reads this through the struct's bitfield (which automatically shifts/masks); `hwx_parsing.py` previously printed the whole raw 32-bit word unshifted here — fixed to `(val >> 7) & 0x7FFFFF` to match. No real sample has exercised a nonzero value yet (all observed captures show `0x0`), so this had no visible effect to date.
+
+#### Footprint (Word 7, `0x591C`)
+* **footprint_arg2** (`bits [27:17]`, 11 bits): Same raw-vs-shifted bug as `DSID` existed here too (fixed to `(val >> 17) & 0x7FF`).
+
+#### ET_Args12 / Flush / ET_Args34 (Words 8-10, `0x5920`-`0x5928`)
+* **ET_Args12.arg1** (`bits [15:0]`) / **arg2** (`bits [31:16]`): Two packed 16-bit early-termination arguments.
+* **Flush.flush_arg** (`bits [15:0]`): Flush argument.
+* **ET_Args34.arg3** (`bits [7:0]`) / **arg4** (`bits [23:16]`): Two packed 8-bit early-termination arguments (bits `[15:8]`/`[31:24]` are padding).
+
+#### BackOff (Word 11, `0x592C`)
+* **enable** (`bit [0]`): Enable exponential backoff.
+* **delay** (`bits [7:4]`): Base delay.
+* **min** (`bits [15:8]`) / **max** (`bits [23:16]`): Backoff bounds.
+* **scale** (`bits [31:24]`): Backoff scale factor.
+
+---
+
 ## 7. Advanced Heuristics: Dimensions & Activity Mapping
 
 ### 1. Dimension Extraction & H16 Shifted Heuristic

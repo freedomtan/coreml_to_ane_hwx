@@ -2263,11 +2263,11 @@ def print_cachedma_h16(state):
         print(f"        Pre1: Sieve1={sieve1}")
         
     if state.valid[base + 6]:
-        val = state.values[base + 6]
+        val = (state.values[base + 6] >> 7) & 0x7FFFFF
         print(f"        DSID: DSID_Size=0x{val:x}")
         
     if state.valid[base + 7]:
-        val = state.values[base + 7]
+        val = (state.values[base + 7] >> 17) & 0x7FF
         print(f"        Footprint: Arg2=0x{val:x}")
         
     if state.valid[base + 8]:

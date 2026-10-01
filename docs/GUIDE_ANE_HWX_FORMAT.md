@@ -712,6 +712,40 @@ A raw word; `.py`/`.m` additionally derive `CropY = dstpixeloffset >> 16` for di
 
 ---
 
+### 6. KernelDMA Source Block Unpacking (H16, 72 registers at Block Base `0x5500`)
+
+Streams compressed/sparse weight coefficients, bias, post-scale, palette, and non-linear-LUT data into the NE core. Describes `print_kerneldmasrc_h16`; H17/H18 (`print_kerneldmasrc_h17`/`h18`, same base address) use a visibly different sub-layout for several of the same words (noted inline below) — this is one of the few blocks where H16 and H17+ genuinely diverge in field meaning, not just which generation shares which function pointer.
+
+#### MasterCfg (Word 0, `0x5500`)
+* **group_kernel_reuse** (`bit [4]`): Reuse the previous layer's weight group across this one.
+* **kernel_sparse_fmt** (`bit [5]`): Weights are stored in the sparse (zero-pruned) format.
+* **master_enable** (`bit [6]`): Master enable for the whole KernelDMA block.
+
+#### AlignedCoeffSize (Word 1, `0x5504`)
+Raw 32-bit value (coefficient buffer size, alignment-padded); printed as-is, not bit-decomposed by either parser.
+
+#### Prefetch (Word 2, `0x5508`)
+* **early_term_en** (`bit [0]`): Allow early termination of a prefetch (`H16` prints this as `Early`).
+* **prefetch_rate** (`bits [31:16]`): Prefetch throttling rate (`H16` prints this as `Rate`). H17/H18 print this word raw instead of decoding it.
+
+#### KernelGroupStride / KernelOCGStride (Words 6-7, `0x5518`-`0x551C`)
+Both masked with `& 0x3ffffff` (bits `[25:0]`) by both `.m` and `.py` — note `ane_hwx_regs.h`'s inline comment ("bits 6-31") for these two fields is stale/wrong; the mask both parsers actually apply is the authoritative one. H17/H18 reinterpret these same two words as plain `StrideX`/`StrideY` instead.
+
+#### CoeffCfg[0..15] (Words 8-23, `0x5520`-`0x555C`)
+One config word per coefficient-DMA channel:
+* **en** (`bit [0]`): Enable this channel (H16 only — H17/H18 don't decode `en` here).
+* **dataset_id** (`bits [15:8]`): Dataset ID.
+* **user_tag** (`bits [23:16]`): User tag.
+* H17/H18 instead decode a **cache_hint**-like field at `bits [7:4]` (printed as `Hint`) that H16's decode doesn't surface.
+
+#### CoeffBase[0..15] / CoeffSize[0..15] (Words 24-39, 40-55, `0x5560`-`0x55DC`)
+Per-channel base address (raw) and size (`& 0x3ffffff` on H16; H17/H18 print the raw word unmasked).
+
+#### Bias / PostScale / Palette / NonLinear configs (Words 56, 60, 64, 68)
+Each a small `{en, cache_hint, user_tag}` struct; H16 only decodes `en` (`bit [0]`) and `user_tag` (`bits [23:16]`, printed as `Tag`) for Bias/PostScale, and doesn't decode Palette at all. H17/H18 instead decode `cache_hint` (`bits [7:4]`, printed as `Hint`) for all four, plus `user_tag` for Palette/NonLinear only.
+
+---
+
 ## 7. Advanced Heuristics: Dimensions & Activity Mapping
 
 ### 1. Dimension Extraction & H16 Shifted Heuristic

@@ -458,6 +458,9 @@ Common convolution patterns:
 * **H14 (5 registers)**: `KernelCfg`, `MacCfg`, `NEBias`, `NEPostScale`, `RoundModeCfg`
 * **H16+ (13 registers)**: `KernelCfg`, `MacCfg`, `MatrixVectorBias`, `NEBias`, `PostScale`, `RcasConfig`, `RoundModeCfg`, `SRSeed[0]` through `SRSeed[3]`, `QuantZeroPoint`
 
+#### 5-8. TileDMA Source, TileDMA Destination, KernelDMA Source, CacheDMA
+These four blocks' H16+ register names aren't enumerated here as plain name lists like the blocks above — they're larger (21-81 registers each) and every field each parser actually decodes is already given a full bit-level breakdown in §6.4-§6.7 below (word numbers, bit ranges, and value tables), which is more useful than a bare name list. See §6.4 (TileDMA Source), §6.5 (TileDMA Destination), §6.6 (KernelDMA Source), and §6.7 (CacheDMA).
+
 ---
 
 ## 6. Hardware Register Unpacking & Bitwise Logic
@@ -546,12 +549,15 @@ The Planar Engine handles elementwise math (addition, multiplication) and poolin
   * `3`: Minimum
   * `4`: Sum of Squares
 * **lut_en** (`bit [5]`): Lookup Table path enable. Used for complex non-linear functions (like Silu, Gelu, or custom activations).
-* **cond** (`bits [8:6]`): Conditional Logic Mask
+* **cond** (`bits [8:6]`): Conditional Logic Mask. **Not currently converted to a name by any parser** — `print_pe_h16`/`h17`/`h18` all print this field as a raw integer (`Cond=%u`). `get_pe_condition_name_v17` defines the full 8-value name table below but is dead code (defined, never called) in both `.m` and `.py` as of this writing:
   * `0`: None
-  * `1`: Absolute Value
+  * `1`: Abs
   * `2`: Equal
-  * `3`: Greater Than
-  * `4`: Greater or Equal
+  * `3`: Greater
+  * `4`: GreaterEqual
+  * `5`: LessEqual
+  * `6`: Less
+  * `7`: NotEqual
 * **nl** (`bits [13:12]`): Non-Linear Activation
   * `0`: None
   * `1`: ReLU

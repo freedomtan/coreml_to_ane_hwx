@@ -678,6 +678,40 @@ One raw word per source each; printed as hex, no further decode.
 
 ---
 
+### 5. TileDMA Destination Block Unpacking (H16, 21 registers at Block Base `0x5100`)
+
+Writes tile results from the pipeline back out to DRAM. Only one destination stream (no `Src1`/`Src2` split), so it's much smaller than TileDMA Source. Describes `print_tiledmadst_h16`.
+
+#### DstDMAConfig (Word 0, `0x5100`)
+* **en** (`bit [0]`): Enable the destination DMA.
+* **dataset_id** (`bits [15:8]`): Dataset ID (same concept as TileDMA Source's `dsid_cache_hint`, but a full byte here).
+* **user_tag** (`bits [23:16]`): User-defined tag value.
+
+#### DstStrides (Words 4-7, `0x5110`-`0x511C`)
+`row_stride`/`plane_stride`/`depth_stride`/`group_stride` — plain unshifted byte strides (64B units), printed raw.
+
+#### DstMeta (Words 10-12, `0x5128`-`0x5130`)
+* `dstmeta_lo`/`dstmeta_hi` (Words 10-11): a 64-bit metadata address.
+* **dstfmtmode.format_mode** (`bits [1:0]` of Word 12): `get_hw_tensor_format_mode_name` (`0`=None, `1`=Cmp, `2`=Lossy).
+* **dstfmtmode.metadata_size** (`bits [31:7]` of Word 12): Metadata region size.
+
+#### DstFmt (Word 14, `0x5138`)
+Same `get_hw_tensor_format_name_v17` cascade as TileDMA Source's `Fmt`, but with a narrower `shift` field here:
+* **mode** (`bits [1:0]`), **trunc** (`bits [6:4]`), **mem_fmt** (`bits [13:12]`) → feed `get_hw_tensor_format_name_v17`.
+* **shift** (`bits [10:8]`, only **3 bits** here — narrower than TileDMA Source's 4-bit `shift`) → also feeds `get_hw_tensor_format_name_v17`.
+* **offset_ch** (`bits [18:16]`): unsigned, same non-sign-extended convention as TileDMA Source.
+* **zero_pad_first** (`bit [20]`) / **zero_pad_last** (`bit [21]`): Pad the first/last element of a row with zero instead of a real sample.
+* **interleave** (`bits [27:24]`), **cmp_vec** (`bits [31:28]`): same meaning as TileDMA Source.
+
+#### DstCompInfo (Word 16, `0x5140`)
+* **compressed_enable** (`bit [0]`), **macroblock_size** (`bit [2]`), **packing_format** (`bits [9:4]`), **lossy_mode** (`bit [13]`): same meanings as TileDMA Source's `CompInfo`.
+Followed by `dstcompsize_lo`/`dstcompsize_hi` (Words 18-19, a 64-bit compressed size).
+
+#### DstPixelOffset (Word 20, `0x5150`)
+A raw word; `.py`/`.m` additionally derive `CropY = dstpixeloffset >> 16` for display.
+
+---
+
 ## 7. Advanced Heuristics: Dimensions & Activity Mapping
 
 ### 1. Dimension Extraction & H16 Shifted Heuristic

@@ -623,6 +623,61 @@ Texture-cache crop window for the two sources: **s1x** (`bits [5:0]`), **s1y** (
 
 ---
 
+### 4. TileDMA Source Block Unpacking (H16, 81 registers at Block Base `0x4D00`)
+
+Feeds tile data from DRAM into the Convolution/NE pipeline for up to two sources (`Src1`/`Src2`); word numbers below are relative to the block base and describe `print_tiledmasrc_h16`. Many words in `ane_tiledmasrc_h16_t` are marked `res`/`unk` in the header and are not decoded by any parser (printed as raw hex, if at all) — only fields the parsers actually interpret are listed here.
+
+#### DMAConfig (Words 0-1, one per source)
+* **enable** (`bit [0]`): Enable this source's DMA.
+* **dsid_cache_hint** (`bits [7:5]`): Dataset ID / cache hint selector.
+* **user_tag** (`bits [23:16]`): User-defined tag value.
+* **dependency_interval** (`bits [27:24]`) / **dependency_mode** (`bits [29:28]`): Cross-task dependency throttling.
+
+#### WrapCfg (Words 2-3, one per source)
+* **wrap_cfg_dim** (`bits [10:8]`): Which tensor dimension wraps.
+* **wrap_static** (`bits [31:16]`): Static wrap-length value.
+
+#### Base / Strides (Words 4-9 for Src1, 10-15 for Src2)
+Six raw 32-bit words per source: `base_lo`/`base_hi` (a full 64-bit DRAM address, unlike L2's shifted 17-bit pointers), then `row_stride`/`plane_stride`/`depth_stride`/`group_stride`, each a plain unshifted byte stride.
+
+#### Metadata (Words 16-25)
+Sparse/compression metadata: `src1_meta_addr_{lo,hi}` (16-17), `src2_meta_addr_{lo,hi}` (18-19), `src1_meta_cfg` (20, printed raw), `src1_meta_size` (22), `src2_meta_cfg` (23, printed raw), `src2_meta_size` (25). The `_unk1` words (21, 24) are undecoded.
+
+#### Fmt (Words 26-27, one per source)
+Reuses `get_hw_tensor_format_name_v17(mode, mem_fmt, trunc, shift)` (see §6.1.A):
+* **format_mode** (`bits [1:0]`) → the function's `mode` argument.
+* **trunc** (`bits [6:4]`) → `trunc`.
+* **shift** (`bits [11:8]`) → `shift`.
+* **mem_fmt** (`bits [13:12]`) → `mem_fmt`.
+* **offset_ch** (`bits [18:16]`): Channel offset, sign-extended from 3 bits (`.py` subtracts 8 if ≥ 4).
+* **interleave** (`bits [27:24]`): Channel interleave factor.
+* **cmp_vec** (`bits [31:28]`): Compression vector width, sign-extended from 4 bits (`.py` subtracts 16 if ≥ 8).
+
+#### CompInfo / CompSize / CropOffset (Word 30 + 31-33 for Src1, Word 34 + 35-37 for Src2)
+* **compressed_enable** (`bit [0]`): Enable DMA decompression for this source.
+* **macroblock_size** (`bit [2]`): Macroblock size selector.
+* **packing_format** (`bits [9:4]`): Compression packing format.
+* **lossy_mode** (`bit [13]`): Lossy vs. lossless compression.
+* **md_user_tag** (`bits [31:24]`): Metadata user tag.
+* Followed by `compsize_lo`/`compsize_hi` (a 64-bit compressed size) and a raw `cropoffset` word.
+
+#### WrapDynamic / DependencyOffset (Words 46-47, 48-49)
+One raw word per source each; printed as hex, no further decode.
+
+#### TextureCfg (Word 50) and friends (Words 51-53)
+* **mode** (`bits [2:0]`): Texture sampling mode (`get_texture_mode_name` — Off/Gather/Bilinear/Bicubic/Nearest).
+* **norm1** (`bits [5:3]`) / **norm2** (`bits [8:6]`): Normalization selectors for the two texture axes.
+* **filt** (`bits [14:12]`): Filter mode.
+* **bgen** (`bit [22]`): Background-value enable.
+* **dval** (`bit [23]`): Depth-value enable.
+* **wrap** (`bits [28:24]`): Texture wrap mode.
+* `TextureIdxPerm` (Word 51) / `TextureSrcPerm` (Word 52): index/source permutation masks, printed raw (undecoded).
+
+#### Src1Ephemeral (Word 62)
+* **enable** (`bit [0]`): Mark Src1's buffer as ephemeral (not persisted after this task).
+
+---
+
 ## 7. Advanced Heuristics: Dimensions & Activity Mapping
 
 ### 1. Dimension Extraction & H16 Shifted Heuristic

@@ -562,20 +562,64 @@ The Planar Engine handles elementwise math (addition, multiplication) and poolin
 
 ---
 
-### 3. L2 Cache Address Layout & 4-bit Alignment
+### 3. L2 Cache Block Unpacking (H16+, 41 registers at Block Base `0x4100`)
 
-ANE memory access uses the system L2 cache. The base buffer registers (e.g., `LSrc1Base`, `LSrc2Base`, `LResultBase`) store the locations of input and output tensors in memory.
+The L2 Cache Control block configures up to three DMA source streams (`Src1`, `Src2`, `SrcIdx`) and two result streams (`Result`, `Result2`), plus address-wrapping and PE-index-gather configuration. This section describes the H16 layout (`print_l2_h16` in `hwx_parsing.py`/`.m`); H17/H18 extend it with extra reserved/stride words (see the end of this section) but keep the same field meanings for the words they share. H13/H14/H15 use different, narrower layouts (see §5's register-name lists) and are not decoded field-by-field here.
 
-However, to save bits inside the control registers, addresses are stored as **page pointers shifted right by 4 bits** (which guarantees 16-byte alignment).
+#### L2_Control (Word 0, `0x4100`)
+* **src1_relu** (`bit [0]`): Apply ReLU to Source 1 while reading.
+* **padding_mode** (`bits [3:2]`): `0`=Clamp, `1`=Zero, `2`=Mirror, `3`=Constant.
+* **src2_relu** (`bit [4]`): Apply ReLU to Source 2 while reading.
+* **barrier_enable** (`bit [16]`): Enable a hardware sync barrier before this block's DMA runs.
+* **barrier_idx** (`bits [23:17]`): Which hardware barrier index to wait on/signal.
 
-To reconstruct the actual physical DRAM byte address, extract the register value and shift it left by 4 bits (padding the lowest 4 bits with zeros):
+#### Src1Cfg / Src2Cfg / SrcIdxCfg (Words 1-3, `0x4104`-`0x410C`)
+All three source-config words share the same low-bit layout:
+* **src_type** (`bits [1:0]`): `0`=L2Read, `1`=DmaRead2, `2`=DmaRead, `3`=L2ChainRead.
+* **dependent** (`bits [3:2]`): Dependency/ordering mode relative to another stream.
+* **alias_conv_src** (`bit [4]`) / **alias_conv_rslt** (`bit [5]`): Alias this stream onto the Convolution engine's source/result buffer instead of a fresh L2 fetch.
+* **dma_fmt** (`bits [7:6]`): Element width — `0`=8b, `1`=16b, `3`=32b (`get_l2_dma_fmt_name`'s table; value `2` is unused).
+* **interleave** (`bits [11:8]`): Channel interleave factor.
+* **alias_planar_src** (`bit [20]`) / **alias_planar_rslt** (`bit [22]`): Alias onto the Planar Engine's source/result buffer instead.
+* **compression** (`bits [26:25]`): L2 compression mode for this stream.
+* `SrcIdxCfg` additionally has **bit27** (`bit [27]`, meaning not yet decoded by any parser — printed as a raw bit by `.py`) in place of `Src1Cfg`/`Src2Cfg`'s `compression` field at that position.
+
+#### Src1 / Src2 / SrcIdx tensor-address blocks (Words 4-17, `0x4110`-`0x4144`)
+Each of the three source streams has a `Base`/`ChannelStride`/`RowStride`/`DepthStride`/`GroupStride` quintet (`SrcIdx` omits `RowStride`, so it's a quartet: `Base`/`ChannelStride`/`DepthStride`/`GroupStride`). Every one of these words uses the same **shifted-pointer encoding**: a 17-bit value at `bits [20:4]`, with the low 4 bits always zero (16-byte-aligned) and `bits [3:0]`/`bits [31:21]` unused/reserved:
 
 ```c
-uint32_t get_physical_address(uint32_t register_value) {
-    // Clear any high flag bits and shift alignment
-    return register_value & 0x1FFFF0;
-}
+// Extract a shifted L2 address/stride field from a raw register word:
+uint32_t field = (register_value >> 4) & 0x1FFFF;
+// To reconstruct the actual byte address/stride, shift back left by 4:
+uint32_t byte_value = field << 4;
 ```
+
+#### L2_ResultCfg (Word 18, `0x4148`)
+* **res_type** (`bits [1:0]`): Same `L2Read`/`DmaRead2`/`DmaRead`/`L2ChainRead` table as the source configs.
+* **bfr_mode** (`bit [3]`): Buffer mode (double/single-buffered result).
+* **src_alias** (`bit [4]`) / **result_alias** (`bit [5]`): Alias flags, same meaning as the source configs' `alias_conv_*`.
+* **dma_fmt** (`bits [7:6]`), **interleave** (`bits [11:8]`), **compression** (`bits [26:25]`): Same tables as `Src1Cfg`/`Src2Cfg` above.
+
+Followed by a `Result` tensor-address quintet (Words 19-23, same shifted-pointer encoding as above).
+
+#### Wrap configuration (Words 25-27 + 29, `0x4164`-`0x4174`)
+* **WrapCfg[0..2]** (3 words): **wrap_num_blocks** (`bits [11:0]`) and **wrap_len** (`bits [31:12]`) — configure circular-buffer address wrapping for up to 3 streams.
+* **ResultWrapIdxOff** (Word 29): **wrap_index_mask** (`bits [3:0]`) and **wrap_start_offset** (`bits [15:4]`).
+
+#### Result2 (Words 31-34, `0x417C`-`0x4188`)
+A second result stream's `Base`/`ChannelStride`/`RowStride`/`DepthStride` (no `GroupStride`), same shifted-pointer encoding.
+
+#### PEIndexCfg (Word 35, `0x418C`)
+Configures gather-by-index reads feeding the Planar Engine's `print_pe_index_h16` path:
+* **max_index** (`bits [15:0]`): Upper bound on the gather index.
+* **mode** (`bits [18:16]`): Gather addressing mode.
+* **broadcast** (`bits [25:24]`): Broadcast replication factor.
+* **transpose** (`bit [26]`): Transpose the gathered tile.
+
+#### CropTex (Word 40, `0x41A0`)
+Texture-cache crop window for the two sources: **s1x** (`bits [5:0]`), **s1y** (`bits [12:8]`), **s2x** (`bits [21:16]`), **s2y** (`bits [28:24]`).
+
+> H17/H18 differences: `print_l2_h17`/`print_l2_h18` keep the same `L2_Control`/`Src1Cfg`/`Src2Cfg`/address-block layout for the words they share with H16, but insert extra reserved/stride words further into the block (see `ane_l2_h17_t` in `ane_hwx_regs.h` for the exact word numbering) — treat the field *meanings* above as valid for H17/H18 too, but re-derive word offsets from the header rather than reusing H16's numbering directly.
 
 ---
 

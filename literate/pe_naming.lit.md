@@ -43,6 +43,25 @@ be exactly right in all 8 slots. The function was dead code (defined,
 never called) before this fix; `cond` is now resolved to a name in the
 actual `PE Config` printf/print statements in all three parsers.
 
+**`nl_mode`/`src1`/`src2` investigated but still dead code — negative
+result, empirically confirmed.** Tried to trigger a non-zero PE `nl`
+field via: single standalone MIL activation ops (`relu`, `clip`,
+`relu6`, `abs`, `leaky_relu`, `clamped_relu`, ...), hand-built
+conv+activation fusions (`test_conv_activations.py`), and — the
+strongest check — grepping two real production `.hwx` compiles already
+in this repo (`resnet50_fp16_m4/`, `resnet50_quant_m4/`, both real
+ResNet50 compiles). Across all of these, every single `PE Config` line's
+`nl` field reads `0`. Meanwhile ResNet50's actual conv+ReLU fusion is
+plainly visible — just in a *different*, already-named field: the NE
+block's own `nl_mode_ne` (`NLMode=1` on 69/123 FP16 conv tasks, 43/95
+INT8 conv tasks), with fused elementwise+ReLU (residual add+ReLU)
+carried by `Common.MacCfg`'s `task_type` instead. So `get_pe_nl_mode_name_v17`
+stays unwired — not because it's unimportant, but because no real graph
+found so far reaches it. Same open status for `get_pe_src1_name_v17`/
+`get_pe_src2_name_v17` (never attempted empirically). See
+`docs/GUIDE_ANE_HWX_FORMAT.md`'s PE_Config `nl` bullet for the field-by-field
+writeup.
+
 Still **not tangled**: JS's PE decode has no `src1`/`src2` fields at all
 (a missing-feature gap, not a naming mismatch) — see `literate/README.md`.
 

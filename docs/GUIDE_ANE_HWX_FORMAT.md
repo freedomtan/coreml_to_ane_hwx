@@ -574,6 +574,23 @@ The Planar Engine handles elementwise math (addition, multiplication) and poolin
   * `1`: ReLU
   * `2`: Clamp
   * `3`: Abs
+
+  **Unlike `cond`, this field has never been observed non-zero** —
+  not in any single-op test model, any hand-built conv+activation
+  fusion test, nor in a real production ResNet50 (both FP16 and
+  INT8-quantized full-model `.hwx` compiles checked into this repo).
+  Standard ReLU/Clamp fusion for convolutions is carried instead by
+  the **NE block's own, separate** `nl_mode_ne` field (§6.1 above,
+  byte `0x4904`) — e.g. 69 of 123 conv tasks in the FP16 ResNet50 have
+  `nl_mode_ne=1` while every one of their PE Config `nl` fields reads
+  `0`. Fused elementwise+ReLU (e.g. residual-add-then-ReLU) is carried
+  by `Common.MacCfg`'s `task_type` instead (`EW w/ Reduction w/ ReLU`,
+  etc. — §6.1.C above), not by this PE `nl` field either. The labels
+  above are the disassembly-derived guess, applied in the parsers'
+  dead `get_pe_nl_mode_name_v17` function (never called from the
+  actual `PE Config` print statements, unlike `cond`'s now-wired-up
+  `get_pe_condition_name_v17`) — left unconfirmed and unwired pending
+  a real example that exercises it.
 * **src1** (`bits [17:16]`): First input source selector (`0` = Primary, `1` = Texture cache).
 * **src2** (`bits [19:18]`): Second input source selector (`0` = Primary, `1` = Texture, `2` = L2 source, `3` = Register).
 

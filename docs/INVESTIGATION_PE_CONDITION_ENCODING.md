@@ -297,3 +297,41 @@ in all 8 slots.
 show `Cond=0 (None)` with `Op=2 (Max)`/`Op=3 (Min)` instead -- confirming
 the PE's `cond` mechanism is specific to true comparison/`abs` ops, not
 triggered generically by any binary op.)
+
+## Step 6: follow-up attempt on the PE's `nl` field -- negative result
+
+The same PE Config register has a neighboring `nl` field (bits `[13:12]`,
+decoded by the still-dead `get_pe_nl_mode_name_v17`) with a plausible
+guessed table (`0:None 1:ReLU 2:Clamp 3:Abs`). Tried to confirm it the
+same way `cond` was confirmed, in three escalating steps:
+
+1. Single standalone activation MIL ops (`relu`, `clip`, `relu6`, `abs`,
+   `leaky_relu`, `clamped_relu`) via `test_single_op_full.py` -- none of
+   these even produced a PE task in the compiled `.hwx` (activation
+   folded elsewhere, e.g. L2's `EnRelu` bit for standalone `relu`).
+2. Hand-built conv+activation fusion models (`test_conv_activations.py`:
+   conv followed directly by each of the six activations above) -- PE
+   tasks appeared, but `nl` read `0` in every one, and so did the
+   *other* plausible candidate field, `Common.MacCfg`'s `relu_type`.
+3. Two real production ResNet50 `.hwx` compiles already in this repo
+   (`resnet50_fp16_m4/`, `resnet50_quant_m4/` -- FP16 and INT8-quantized)
+   -- grepping every `PE Config` line across both: `nl` reads `0` in all
+   17 (FP16) and all 18 (INT8) occurrences. ResNet50 unambiguously *does*
+   fuse ReLU after its convolutions, but that fusion shows up in a
+   different, already-named, already-wired field instead: the **NE
+   block's own** `nl_mode_ne` (`NLMode=1` on 69/123 FP16 conv tasks, 43/95
+   INT8 conv tasks -- not the PE block at all), and fused elementwise+ReLU
+   (residual add + ReLU) is carried by `Common.MacCfg`'s `task_type`
+   (`EW w/ Reduction w/ ReLU`, etc.) instead.
+
+**Conclusion: the PE's `nl` field is not reached by any of the common
+fusion patterns tried, including a full real-world CNN.** This is a
+genuine negative result, not just "not yet tested enough" -- three
+independent methodologies (isolated ops, hand-built fusions, real
+production model) all agree it stays `0`. `get_pe_nl_mode_name_v17`
+(and the untouched `src1`/`src2` siblings) remain dead code, left as
+the pre-existing guessed table, pending a real graph that actually
+exercises this specific field -- possibly something outside standard
+CNN activation fusion entirely (e.g. the TD-branching/conditional-layer
+machinery that `cond`'s own derivation chain passed through in Step 2
+above).

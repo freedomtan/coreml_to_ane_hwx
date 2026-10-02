@@ -1,10 +1,15 @@
 # Investigation: validating `get_pe_condition_name_v17`'s raw-bits→name table
 
-**Status: unapplied.** No code or doc changes have been made yet — this is
-a writeup of the reasoning chain for review before deciding whether to
-apply it. Binary: `ANECompiler` (arm64e slice) from the dyld shared cache,
-extracted at `~/work/ios-hacking/disassm/extracted/System/Library/
-PrivateFrameworks/ANECompiler.framework/Versions/A/ANECompiler`.
+**Status: applied and empirically confirmed.** The corrected table below
+(Steps 1-4, derived via binary disassembly) has been wired into
+`hwx_dump/hwx_parsing.m`/`.py`/`hwx_dump_js/hwx_parser.js`'s
+`get_pe_condition_name_v17`/`condNames`, and every one of its 8 entries
+has since been directly confirmed by compiling real MIL ops to HWX on
+real Apple Silicon hardware (Step 5) — not just inferred from
+disassembly. Binary used for Steps 1-4: `ANECompiler` (arm64e slice)
+from the dyld shared cache, extracted at `~/work/ios-hacking/disassm/
+extracted/System/Library/PrivateFrameworks/ANECompiler.framework/
+Versions/A/ANECompiler`.
 
 ## The question
 
@@ -212,7 +217,10 @@ the existing hardcoded table (`0:None 1:Abs 2:Equal 3:Greater
 and `5` (`LessEqual`, a coincidental fixed point of the raw-bit
 permutation) agree. The other six are different.
 
-## Confidence summary
+## Confidence summary (superseded by Step 5 below -- kept for history)
+
+At the time this was written (before compiling real MIL ops), confidence
+varied per entry:
 
 - **Highest** (unconditional, reverse-flag-independent anchor): raw 3 =
   `NotEqual`, raw 4 = `Equal`.
@@ -227,6 +235,11 @@ permutation) agree. The other six are different.
 - **Medium** (pure elimination, no direct positive evidence): raw 7 =
   `Abs`.
 
+**All 8 entries are now empirically confirmed** (see Step 5) by compiling
+the actual named MIL op and reading back the real compiled register
+value -- the disassembly-based derivation above turned out to be exactly
+correct in every slot.
+
 ## What would raise confidence further (not done)
 
 - Finding an actual `PredicateOp → ZinHWPECondition` converter function
@@ -240,3 +253,47 @@ permutation) agree. The other six are different.
   three `blraa` virtual calls preceding the `[x0,#0x80]` read in
   `HandlePEGOCLayer`/`HandlePECommonPostOps`, to confirm what enum that
   field actually is by name rather than by inferred numeric range.
+
+## Step 5: empirical confirmation -- compiling real MIL ops on real hardware
+
+This repo has `mil_to_hwx` (wraps ANECompiler directly, see `mil/README.md`)
+and `test_single_op_full.py` (generates a single-op `.mlpackage` via MIL
+Builder for any op in `SSAOpRegistry`). Run on the actual Apple Silicon
+machine this session has access to (M4 Pro, i.e. H16), these let us
+*directly compile* a real MIL op and inspect the real resulting
+`PE_Config` register -- no disassembly inference needed at all. Pipeline:
+
+```
+python3 test_single_op_full.py <op>
+xcrun coremlcompiler compile test_models/test_<op>.mlpackage /tmp/
+./mil_to_hwx -a h16 test_<op>
+python3 hwx_dump/hwx_parsing.py -r /tmp/hwx_output/test_<op>_h16/model.hwx
+```
+
+Results (raw `PE_Config` word and the `cond` field it decodes to):
+
+| MIL op | raw `PE_Config` | raw `cond` (bits `[8:6]`) | name shown |
+|---|---|---|---|
+| `greater` | `0x000c0080` | 2 | Greater |
+| `less` | `0x000c0040` | 1 | Less |
+| `greater_equal` | `0x000c0180` | 6 | GreaterEqual |
+| `less_equal` | `0x000c0140` | 5 | LessEqual |
+| `equal` | `0x000c0100` | 4 | Equal |
+| `not_equal` | `0x000c00c0` | 3 | NotEqual |
+| `abs` | `0x000001c0` | 7 | Abs |
+
+**Every single value in the derived table (0-7) is now directly
+confirmed** -- `0` (`None`) was already observed in every other real
+`.hwx` sample in this repo (any PE task with no active condition), and
+`1` through `7` are now each confirmed by compiling the exact MIL op
+that name describes and reading back the exact raw bits the real
+ANECompiler produced. This upgrades every entry from "derived via
+disassembly, highest/high/medium confidence" (Steps 1-4 above) to
+"empirically confirmed by direct hardware compilation." The
+disassembly-based derivation in Steps 1-4 turned out to be 100% correct
+in all 8 slots.
+
+(`maximum`/`minimum` were also tested as a sanity check and correctly
+show `Cond=0 (None)` with `Op=2 (Max)`/`Op=3 (Min)` instead -- confirming
+the PE's `cond` mechanism is specific to true comparison/`abs` ops, not
+triggered generically by any binary op.)

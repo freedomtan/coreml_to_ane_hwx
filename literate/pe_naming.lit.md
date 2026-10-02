@@ -23,22 +23,25 @@ exercises op=1 or op=4 to empirically confirm the way the int8/uint8 fix
 was confirmed (see `GUIDE_ANE_WINOGRAD.md` §7) — flagged here rather
 than treated as certain.
 
-**`cond` was also a real bug, found and fixed via direct ANECompiler
-binary disassembly** (full writeup:
-`docs/INVESTIGATION_PE_CONDITION_ENCODING.md`), not just cross-file
-comparison — all three parsers had agreed with each other, but all three
-were wrong relative to the hardware. `ZinAneTd<N>::SetPECondition`'s
-disassembly proves the raw register bits are a non-identity permutation
-of the `ZinHWPECondition` enum (not a direct index), and a cross-reference
-through `ZinConditionLayerUtils`'s `PredicateOp` enum (whose names are
-ground truth from literal debug strings in `DumpTDBranchingInfo`) gives a
-corrected, complete bijection: `0:None 1:Less 2:Greater 3:NotEqual
-4:Equal 5:LessEqual 6:GreaterEqual 7:Abs`. Confidence is highest for `3`
-and `4` (an unconditional cross-reference anchor), high for the rest,
-medium for `7` (`Abs`, by elimination only) — see the investigation doc
-for the full chain. The function was dead code (defined, never called)
-before this fix; `cond` is now resolved to a name in the actual
-`PE Config` printf/print statements in all three parsers.
+**`cond` was also a real bug, found via direct ANECompiler binary
+disassembly and then empirically confirmed on real hardware** (full
+writeup: `docs/INVESTIGATION_PE_CONDITION_ENCODING.md`), not just
+cross-file comparison — all three parsers had agreed with each other,
+but all three were wrong relative to the hardware. `ZinAneTd<N>::
+SetPECondition`'s disassembly proved the raw register bits are a
+non-identity permutation of the `ZinHWPECondition` enum (not a direct
+index), and a cross-reference through `ZinConditionLayerUtils`'s
+`PredicateOp` enum (whose names are ground truth from literal debug
+strings in `DumpTDBranchingInfo`) gave a corrected, complete bijection:
+`0:None 1:Less 2:Greater 3:NotEqual 4:Equal 5:LessEqual 6:GreaterEqual
+7:Abs`. Every one of those 8 values was then independently confirmed by
+compiling the actual named MIL op (`greater`/`less`/`greater_equal`/
+`less_equal`/`equal`/`not_equal`/`abs`) to real H16 `.hwx` via this
+repo's `mil_to_hwx` tool and reading back the exact raw `PE_Config`
+ANECompiler produced — the disassembly-based derivation turned out to
+be exactly right in all 8 slots. The function was dead code (defined,
+never called) before this fix; `cond` is now resolved to a name in the
+actual `PE Config` printf/print statements in all three parsers.
 
 Still **not tangled**: JS's PE decode has no `src1`/`src2` fields at all
 (a missing-feature gap, not a naming mismatch) — see `literate/README.md`.

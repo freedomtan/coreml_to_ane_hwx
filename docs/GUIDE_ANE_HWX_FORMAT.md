@@ -551,19 +551,16 @@ The Planar Engine handles elementwise math (addition, multiplication) and poolin
 * **lut_en** (`bit [5]`): Lookup Table path enable. Used for complex non-linear functions (like Silu, Gelu, or custom activations).
 * **cond** (`bits [8:6]`): Conditional Logic Mask. Resolved to a name via
   `get_pe_condition_name_v17` in all three parsers' `PE Config` output.
-  **This table was corrected by direct ANECompiler binary disassembly**
-  (full writeup: [`INVESTIGATION_PE_CONDITION_ENCODING.md`](INVESTIGATION_PE_CONDITION_ENCODING.md)) —
-  an earlier hand-guessed table (which all three parsers agreed on, but
+  **Every value below is empirically confirmed** — not just derived from
+  binary disassembly, but by actually compiling the named MIL op
+  (`greater`/`less`/`greater_equal`/`less_equal`/`equal`/`not_equal`/`abs`)
+  to real H16 `.hwx` via `mil_to_hwx` on real Apple Silicon hardware and
+  reading back the exact raw `PE_Config` value ANECompiler produced (full
+  writeup, including the disassembly-based derivation that preceded and
+  exactly matched this confirmation: [`INVESTIGATION_PE_CONDITION_ENCODING.md`](INVESTIGATION_PE_CONDITION_ENCODING.md)).
+  An earlier hand-guessed table (which all three parsers agreed on, but
   which was never checked against the actual hardware) had this field
-  wrong in 6 of 8 slots. `ZinAneTd<N>::SetPECondition`'s disassembly
-  proves the raw bits are a non-identity permutation of the compiler's
-  internal `ZinHWPECondition` enum, not a direct index; cross-referencing
-  through `ZinConditionLayerUtils::PredicateOp` (whose names are ground
-  truth from literal debug strings) gives the corrected mapping below.
-  Confidence is highest for `3`/`4` (an unconditional cross-reference
-  anchor independent of any hypothesis), high for the rest, and medium
-  for `7` (`Abs`, the only name left over by elimination, no direct
-  positive evidence):
+  wrong in 6 of 8 slots:
   * `0`: None
   * `1`: Less
   * `2`: Greater

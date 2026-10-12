@@ -64,104 +64,209 @@ int main(int argc, const char *argv[]) {
 
         NSMutableArray *entries = [NSMutableArray array];
 
-        // 1. Activations & Elementwise Math
+        // Helper macro for unary elementwise ops
+        #define ADD_UNARY(op_name, category, sel_call) \
+        [entries addObject:@{ \
+            @"name": @#op_name, \
+            @"cat": @#category, \
+            @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) { \
+                MPSGraphTensor *x = [g placeholderWithShape:s dataType:dt name:@"x"]; \
+                *feeds = @{x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]}; \
+                return [g sel_call]; \
+            } \
+        }]
+
+        // Helper macro for binary elementwise ops
+        #define ADD_BINARY(op_name, category, sel_call) \
+        [entries addObject:@{ \
+            @"name": @#op_name, \
+            @"cat": @#category, \
+            @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) { \
+                MPSGraphTensor *x = [g placeholderWithShape:s dataType:dt name:@"x"]; \
+                MPSGraphTensor *y = [g placeholderWithShape:s dataType:dt name:@"y"]; \
+                *feeds = @{ \
+                    x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt], \
+                    y: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt] \
+                }; \
+                return [g sel_call]; \
+            } \
+        }]
+
+        // 1. Activations
+        ADD_UNARY(reLU, Activation, reLUWithTensor:x name:@"out");
+        ADD_UNARY(sigmoid, Activation, sigmoidWithTensor:x name:@"out");
+        ADD_UNARY(tanh, Activation, tanhWithTensor:x name:@"out");
+        ADD_UNARY(leakyReLU, Activation, leakyReLUWithTensor:x alpha:0.2 name:@"out");
+
+        // 2. Unary Arithmetic & Math
+        ADD_UNARY(absolute, Math, absoluteWithTensor:x name:@"out");
+        ADD_UNARY(negative, Math, negativeWithTensor:x name:@"out");
+        ADD_UNARY(sign, Math, signWithTensor:x name:@"out");
+        ADD_UNARY(square, Math, squareWithTensor:x name:@"out");
+        ADD_UNARY(squareRoot, Math, squareRootWithTensor:x name:@"out");
+        ADD_UNARY(reciprocal, Math, reciprocalWithTensor:x name:@"out");
+        ADD_UNARY(reciprocalSquareRoot, Math, reciprocalSquareRootWithTensor:x name:@"out");
+        ADD_UNARY(exponent, Math, exponentWithTensor:x name:@"out");
+        ADD_UNARY(exponentBase2, Math, exponentBase2WithTensor:x name:@"out");
+        ADD_UNARY(exponentBase10, Math, exponentBase10WithTensor:x name:@"out");
+        ADD_UNARY(logarithm, Math, logarithmWithTensor:x name:@"out");
+        ADD_UNARY(logarithmBase2, Math, logarithmBase2WithTensor:x name:@"out");
+        ADD_UNARY(logarithmBase10, Math, logarithmBase10WithTensor:x name:@"out");
+        ADD_UNARY(floor, Math, floorWithTensor:x name:@"out");
+        ADD_UNARY(ceil, Math, ceilWithTensor:x name:@"out");
+        ADD_UNARY(round, Math, roundWithTensor:x name:@"out");
+        ADD_UNARY(erf, Math, erfWithTensor:x name:@"out");
+
+        // 3. Trigonometric & Hyperbolic
+        ADD_UNARY(sin, Trigonometric, sinWithTensor:x name:@"out");
+        ADD_UNARY(cos, Trigonometric, cosWithTensor:x name:@"out");
+        ADD_UNARY(tan, Trigonometric, tanWithTensor:x name:@"out");
+        ADD_UNARY(asin, Trigonometric, asinWithTensor:x name:@"out");
+        ADD_UNARY(acos, Trigonometric, acosWithTensor:x name:@"out");
+        ADD_UNARY(atan, Trigonometric, atanWithTensor:x name:@"out");
+        ADD_UNARY(sinh, Hyperbolic, sinhWithTensor:x name:@"out");
+        ADD_UNARY(cosh, Hyperbolic, coshWithTensor:x name:@"out");
+        ADD_UNARY(asinh, Hyperbolic, asinhWithTensor:x name:@"out");
+        ADD_UNARY(acosh, Hyperbolic, acoshWithTensor:x name:@"out");
+        ADD_UNARY(atanh, Hyperbolic, atanhWithTensor:x name:@"out");
+
+        // 4. Binary Elementwise Arithmetic
+        ADD_BINARY(addition, BinaryArithmetic, additionWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BINARY(subtraction, BinaryArithmetic, subtractionWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BINARY(multiplication, BinaryArithmetic, multiplicationWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BINARY(division, BinaryArithmetic, divisionWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BINARY(power, BinaryArithmetic, powerWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BINARY(modulo, BinaryArithmetic, moduloWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BINARY(maximum, BinaryArithmetic, maximumWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BINARY(minimum, BinaryArithmetic, minimumWithPrimaryTensor:x secondaryTensor:y name:@"out");
+
+        // 5. Comparison Operations
+        ADD_BINARY(equal, Comparison, equalWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BINARY(notEqual, Comparison, notEqualWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BINARY(lessThan, Comparison, lessThanWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BINARY(lessThanOrEqualTo, Comparison, lessThanOrEqualToWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BINARY(greaterThan, Comparison, greaterThanWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BINARY(greaterThanOrEqualTo, Comparison, greaterThanOrEqualToWithPrimaryTensor:x secondaryTensor:y name:@"out");
+
+        // 6. Logic & Bitwise
+        ADD_UNARY(not, Logic, notWithTensor:x name:@"out");
+        ADD_BINARY(logicalAND, Logic, logicalANDWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BINARY(logicalOR, Logic, logicalORWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BINARY(logicalXOR, Logic, logicalXORWithPrimaryTensor:x secondaryTensor:y name:@"out");
+
+        // Bitwise operations (require Int32 tensors)
+        #define ADD_BITWISE_BINARY(op_name, sel_call) \
+        [entries addObject:@{ \
+            @"name": @#op_name, \
+            @"cat": @"Bitwise", \
+            @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) { \
+                MPSGraphTensor *x = [g placeholderWithShape:s dataType:MPSDataTypeInt32 name:@"x"]; \
+                MPSGraphTensor *y = [g placeholderWithShape:s dataType:MPSDataTypeInt32 name:@"y"]; \
+                *feeds = @{ \
+                    x: [[MPSGraphShapedType alloc] initWithShape:s dataType:MPSDataTypeInt32], \
+                    y: [[MPSGraphShapedType alloc] initWithShape:s dataType:MPSDataTypeInt32] \
+                }; \
+                return [g sel_call]; \
+            } \
+        }]
+        ADD_BITWISE_BINARY(bitwiseAND, bitwiseANDWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BITWISE_BINARY(bitwiseOR, bitwiseORWithPrimaryTensor:x secondaryTensor:y name:@"out");
+        ADD_BITWISE_BINARY(bitwiseXOR, bitwiseXORWithPrimaryTensor:x secondaryTensor:y name:@"out");
         [entries addObject:@{
-            @"name": @"reLU",
-            @"cat": @"Activation",
+            @"name": @"bitwiseNOT",
+            @"cat": @"Bitwise",
+            @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) {
+                MPSGraphTensor *x = [g placeholderWithShape:s dataType:MPSDataTypeInt32 name:@"x"];
+                *feeds = @{x: [[MPSGraphShapedType alloc] initWithShape:s dataType:MPSDataTypeInt32]};
+                return [g bitwiseNOTWithTensor:x name:@"out"];
+            }
+        }];
+
+        // 7. Reductions
+        [entries addObject:@{
+            @"name": @"reductionSum",
+            @"cat": @"Reduction",
             @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) {
                 MPSGraphTensor *x = [g placeholderWithShape:s dataType:dt name:@"x"];
                 *feeds = @{x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]};
-                return [g reLUWithTensor:x name:@"out"];
+                return [g reductionSumWithTensor:x axis:1 name:@"out"];
             }
         }];
-
         [entries addObject:@{
-            @"name": @"sigmoid",
-            @"cat": @"Activation",
+            @"name": @"reductionMean",
+            @"cat": @"Reduction",
             @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) {
                 MPSGraphTensor *x = [g placeholderWithShape:s dataType:dt name:@"x"];
                 *feeds = @{x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]};
-                return [g sigmoidWithTensor:x name:@"out"];
+                return [g meanOfTensor:x axes:@[@(1)] name:@"out"];
             }
         }];
-
         [entries addObject:@{
-            @"name": @"tanh",
-            @"cat": @"Activation",
+            @"name": @"reductionMaximum",
+            @"cat": @"Reduction",
             @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) {
                 MPSGraphTensor *x = [g placeholderWithShape:s dataType:dt name:@"x"];
                 *feeds = @{x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]};
-                return [g tanhWithTensor:x name:@"out"];
+                return [g reductionMaximumWithTensor:x axis:1 name:@"out"];
             }
         }];
-
         [entries addObject:@{
-            @"name": @"leakyReLU",
-            @"cat": @"Activation",
+            @"name": @"reductionMinimum",
+            @"cat": @"Reduction",
             @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) {
                 MPSGraphTensor *x = [g placeholderWithShape:s dataType:dt name:@"x"];
                 *feeds = @{x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]};
-                return [g leakyReLUWithTensor:x alpha:0.2 name:@"out"];
+                return [g reductionMinimumWithTensor:x axis:1 name:@"out"];
             }
         }];
-
         [entries addObject:@{
-            @"name": @"addition",
-            @"cat": @"Binary Elementwise",
+            @"name": @"reductionProduct",
+            @"cat": @"Reduction",
             @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) {
                 MPSGraphTensor *x = [g placeholderWithShape:s dataType:dt name:@"x"];
-                MPSGraphTensor *y = [g placeholderWithShape:s dataType:dt name:@"y"];
-                *feeds = @{
-                    x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt],
-                    y: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]
-                };
-                return [g additionWithPrimaryTensor:x secondaryTensor:y name:@"out"];
+                *feeds = @{x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]};
+                return [g reductionProductWithTensor:x axis:1 name:@"out"];
             }
         }];
-
         [entries addObject:@{
-            @"name": @"multiplication",
-            @"cat": @"Binary Elementwise",
+            @"name": @"cumulativeSum",
+            @"cat": @"Reduction",
             @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) {
                 MPSGraphTensor *x = [g placeholderWithShape:s dataType:dt name:@"x"];
-                MPSGraphTensor *y = [g placeholderWithShape:s dataType:dt name:@"y"];
-                *feeds = @{
-                    x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt],
-                    y: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]
-                };
-                return [g multiplicationWithPrimaryTensor:x secondaryTensor:y name:@"out"];
+                *feeds = @{x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]};
+                return [g cumulativeSumWithTensor:x axis:1 name:@"out"];
             }
         }];
 
+        // 8. Pooling
         [entries addObject:@{
-            @"name": @"subtraction",
-            @"cat": @"Binary Elementwise",
+            @"name": @"maxPooling2D",
+            @"cat": @"Pooling",
             @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) {
                 MPSGraphTensor *x = [g placeholderWithShape:s dataType:dt name:@"x"];
-                MPSGraphTensor *y = [g placeholderWithShape:s dataType:dt name:@"y"];
-                *feeds = @{
-                    x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt],
-                    y: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]
-                };
-                return [g subtractionWithPrimaryTensor:x secondaryTensor:y name:@"out"];
+                *feeds = @{x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]};
+                MPSGraphPooling2DOpDescriptor *d = [MPSGraphPooling2DOpDescriptor
+                    descriptorWithKernelWidth:2 kernelHeight:2 strideInX:2 strideInY:2
+                                 paddingStyle:MPSGraphPaddingStyleTF_SAME
+                                   dataLayout:MPSGraphTensorNamedDataLayoutNCHW];
+                return [g maxPooling2DWithSourceTensor:x descriptor:d name:@"out"];
             }
         }];
-
         [entries addObject:@{
-            @"name": @"division",
-            @"cat": @"Binary Elementwise",
+            @"name": @"avgPooling2D",
+            @"cat": @"Pooling",
             @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) {
                 MPSGraphTensor *x = [g placeholderWithShape:s dataType:dt name:@"x"];
-                MPSGraphTensor *y = [g placeholderWithShape:s dataType:dt name:@"y"];
-                *feeds = @{
-                    x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt],
-                    y: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]
-                };
-                return [g divisionWithPrimaryTensor:x secondaryTensor:y name:@"out"];
+                *feeds = @{x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]};
+                MPSGraphPooling2DOpDescriptor *d = [MPSGraphPooling2DOpDescriptor
+                    descriptorWithKernelWidth:2 kernelHeight:2 strideInX:2 strideInY:2
+                                 paddingStyle:MPSGraphPaddingStyleTF_SAME
+                                   dataLayout:MPSGraphTensorNamedDataLayoutNCHW];
+                return [g avgPooling2DWithSourceTensor:x descriptor:d name:@"out"];
             }
         }];
 
-        // 2. Convolution (Constant weights as required by ANE)
+        // 9. Spatial / Convolutions (Constant weights as required by ANE)
         [entries addObject:@{
             @"name": @"convolution2D",
             @"cat": @"Spatial / Conv",
@@ -184,7 +289,30 @@ int main(int argc, const char *argv[]) {
             }
         }];
 
-        // 3. Matrix Multiplication
+        [entries addObject:@{
+            @"name": @"depthwiseConvolution2D",
+            @"cat": @"Spatial / Conv",
+            @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) {
+                MPSGraphTensor *x = [g placeholderWithShape:s dataType:dt name:@"x"];
+                *feeds = @{x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]};
+                
+                NSArray *wShape = @[@(1), @(16), @(3), @(3)];
+                NSMutableData *wData = [NSMutableData dataWithLength:1 * 16 * 3 * 3 * sizeof(uint16_t)];
+                uint16_t *p = (uint16_t *)wData.mutableBytes;
+                for (int i = 0; i < 16 * 9; i++) p[i] = 0x3c00;
+                MPSGraphTensor *w = [g constantWithData:wData shape:wShape dataType:dt];
+
+                MPSGraphDepthwiseConvolution2DOpDescriptor *cd = [MPSGraphDepthwiseConvolution2DOpDescriptor
+                    descriptorWithDataLayout:MPSGraphTensorNamedDataLayoutNCHW
+                               weightsLayout:MPSGraphTensorNamedDataLayoutOIHW];
+                cd.strideInX = 1;
+                cd.strideInY = 1;
+                cd.paddingStyle = MPSGraphPaddingStyleTF_SAME;
+                return [g depthwiseConvolution2DWithSourceTensor:x weightsTensor:w descriptor:cd name:@"out"];
+            }
+        }];
+
+        // 10. Linear Algebra & Normalization
         [entries addObject:@{
             @"name": @"matrixMultiplication",
             @"cat": @"Linear Algebra",
@@ -200,7 +328,6 @@ int main(int argc, const char *argv[]) {
             }
         }];
 
-        // 4. Normalization & Softmax
         [entries addObject:@{
             @"name": @"softMax",
             @"cat": @"Normalization",
@@ -211,7 +338,7 @@ int main(int argc, const char *argv[]) {
             }
         }];
 
-        // 5. Quantization (INT8)
+        // 11. Quantization (INT8 & FP8 E4M3)
         [entries addObject:@{
             @"name": @"quantizeTensor_INT8",
             @"cat": @"Quantization",
@@ -232,7 +359,6 @@ int main(int argc, const char *argv[]) {
             }
         }];
 
-        // 6. Quantization (FP8 E4M3)
         [entries addObject:@{
             @"name": @"quantizeTensor_FP8",
             @"cat": @"Quantization",
@@ -253,7 +379,7 @@ int main(int argc, const char *argv[]) {
             }
         }];
 
-        // 7. Attention
+        // 12. Attention
         [entries addObject:@{
             @"name": @"scaledDotProductAttention",
             @"cat": @"Attention",
@@ -271,7 +397,7 @@ int main(int argc, const char *argv[]) {
             }
         }];
 
-        // 8. Shape Ops
+        // 13. Shape Ops & Tensor Manipulation
         [entries addObject:@{
             @"name": @"reshapeTensor",
             @"cat": @"Tensor Manipulation",
@@ -289,6 +415,30 @@ int main(int argc, const char *argv[]) {
                 MPSGraphTensor *x = [g placeholderWithShape:s dataType:dt name:@"x"];
                 *feeds = @{x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]};
                 return [g transposeTensor:x permutation:@[@(0), @(1), @(3), @(2)] name:@"out"];
+            }
+        }];
+
+        [entries addObject:@{
+            @"name": @"sliceTensor",
+            @"cat": @"Tensor Manipulation",
+            @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) {
+                MPSGraphTensor *x = [g placeholderWithShape:s dataType:dt name:@"x"];
+                *feeds = @{x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]};
+                return [g sliceTensor:x dimension:1 start:0 length:8 name:@"out"];
+            }
+        }];
+
+        [entries addObject:@{
+            @"name": @"concatTensors",
+            @"cat": @"Tensor Manipulation",
+            @"block": ^MPSGraphTensor *(MPSGraph *g, NSArray *s, MPSDataType dt, NSDictionary **feeds) {
+                MPSGraphTensor *x = [g placeholderWithShape:s dataType:dt name:@"x"];
+                MPSGraphTensor *y = [g placeholderWithShape:s dataType:dt name:@"y"];
+                *feeds = @{
+                    x: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt],
+                    y: [[MPSGraphShapedType alloc] initWithShape:s dataType:dt]
+                };
+                return [g concatTensors:@[x, y] dimension:1 name:@"out"];
             }
         }];
 

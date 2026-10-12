@@ -78,50 +78,43 @@ Using private SPI properties in MPSGraph:
 
 ### 3.2 Verification Benchmark
 
-Running `./test_mpsgraph_ops --arch h18p`:
+Running `./test_mpsgraph_ops --arch h18p` across **75 systematic operations**:
 
-```
-=================================================================
-    MPSGraph Op Support & HWX Generation Benchmark on ANE       
-=================================================================
-Target Architecture: h18p (iPhone 17 Pro / A19 Pro)
+| Category | Succeeded on ANE (Generates `binary_0.hwx`) | Fallback to GPU (No `.hwx`) | Notes |
+| :--- | :--- | :--- | :--- |
+| **Activations (4)** | `reLU`, `sigmoid`, `tanh`, `leakyReLU` | None | Lowers to PE Activation LUT / piecewise config. |
+| **Math / Unary (17)** | `absolute`, `negative`, `sign`, `square`, `squareRoot`, `reciprocal`, `reciprocalSquareRoot`, `exponent`, `exponentBase2`, `logarithm`, `logarithmBase2`, `floor`, `ceil`, `round`, `erf` | `exponentBase10`, `logarithmBase10` | Base-2 and natural exp/log are native in PE; Base-10 falls back to GPU. |
+| **Trigonometric (6)** | `sin`, `cos`, `atan` | `tan`, `asin`, `acos` | `sin`/`cos`/`atan` have direct hardware LUT approximation; reciprocal trig falls back. |
+| **Hyperbolic (5)** | `tanh` (in Activations) | `sinh`, `cosh`, `asinh`, `acosh`, `atanh` | Hyperbolics fall back to GPU shaders on ANE. |
+| **Binary Arithmetic (8)** | `addition`, `subtraction`, `multiplication`, `division`, `power`, `maximum`, `minimum` | `modulo` | Integer/float remainder `modulo` falls back to GPU. |
+| **Comparison (6)** | `equal`, `notEqual`, `lessThan`, `lessThanOrEqualTo`, `greaterThan`, `greaterThanOrEqualTo` | None | Fully native; lowers to PE `Cond=1..6` comparison opcodes. |
+| **Logic & Bitwise (8)** | `not` | `logicalAND`, `logicalOR`, `logicalXOR`, `bitwiseAND`, `bitwiseOR`, `bitwiseXOR`, `bitwiseNOT` | MPSGraph boolean/bitwise MLIR lowering directly targets GPU kernels unless lowered via CoreML MIL De Morgan passes. |
+| **Reductions (6)** | `reductionSum`, `reductionMean`, `reductionMaximum`, `reductionMinimum` | `reductionProduct`, `cumulativeSum` | Reductions lower to `Common.MacCfg TaskType=4/5`. Product and prefix-sum fall back. |
+| **Pooling (2)** | `maxPooling2D`, `avgPooling2D` | None | Native 2D pooling via spatial window generator. |
+| **Convolutions (2)** | `convolution2D`, `depthwiseConvolution2D` | None | Native ANE convolution array; requires weights as constants. |
+| **Linear Algebra & Norm (2)** | `matrixMultiplication`, `softMax` | None | Native batched GEMM & channel softmax. |
+| **Quantization (4)** | `quantizeTensor_INT8`, `dequantizeTensor_INT8`, `quantizeTensor_FP8`, `dequantizeTensor_FP8` | None | Full INT8 and FP8 E4M3 QDQ hardware acceleration. |
+| **Attention (1)** | `scaledDotProductAttention` | None | 14 hardware tasks compiled across QK^T, softmax, and AV. |
+| **Tensor Manipulation (4)** | `reshapeTensor`, `transposeTensor`, `sliceTensor`, `concatTensors` | None | Native memory view operations & DMA concatenation. |
 
-Operation Name                 | Category             | Result          | HWX Generated
----------------------------------------------------------------------------------------------
-reLU                           | Activation           | ✅ ANE Succeeded | YES (binary_0.hwx)
-sigmoid                        | Activation           | ✅ ANE Succeeded | YES (binary_0.hwx)
-tanh                           | Activation           | ✅ ANE Succeeded | YES (binary_0.hwx)
-leakyReLU                      | Activation           | ✅ ANE Succeeded | YES (binary_0.hwx)
-addition                       | Binary Elementwise   | ✅ ANE Succeeded | YES (binary_0.hwx)
-multiplication                 | Binary Elementwise   | ✅ ANE Succeeded | YES (binary_0.hwx)
-subtraction                    | Binary Elementwise   | ✅ ANE Succeeded | YES (binary_0.hwx)
-division                       | Binary Elementwise   | ✅ ANE Succeeded | YES (binary_0.hwx)
-convolution2D                  | Spatial / Conv       | ✅ ANE Succeeded | YES (binary_0.hwx)
-matrixMultiplication           | Linear Algebra       | ✅ ANE Succeeded | YES (binary_0.hwx)
-softMax                        | Normalization        | ✅ ANE Succeeded | YES (binary_0.hwx)
-quantizeTensor_INT8            | Quantization         | ✅ ANE Succeeded | YES (binary_0.hwx)
-dequantizeTensor_INT8          | Quantization         | ✅ ANE Succeeded | YES (binary_0.hwx)
-quantizeTensor_FP8             | Quantization         | ✅ ANE Succeeded | YES (binary_0.hwx)
-dequantizeTensor_FP8           | Quantization         | ✅ ANE Succeeded | YES (binary_0.hwx)
-scaledDotProductAttention      | Attention            | ✅ ANE Succeeded | YES (binary_0.hwx)
-reshapeTensor                  | Tensor Manipulation  | ✅ ANE Succeeded | YES (binary_0.hwx)
-transposeTensor                | Tensor Manipulation  | ✅ ANE Succeeded | YES (binary_0.hwx)
----------------------------------------------------------------------------------------------
-Summary: Total Tested: 18 | Succeeded on ANE: 18 | Fallback/Failed: 0
-```
+**Overall MPSGraph Sweep**: **75 Ops Tested | 55 Succeeded on ANE | 20 Fallback to GPU | 0 Fatal Compiler Errors**.
 
 ### 3.3 Critical Technical Findings for MPSGraph on ANE
 
 1. **Convolution Weights Must Be Constant**:
-   - In `convolution2DWithSourceTensor:weightsTensor:descriptor:`, passing `weightsTensor` as an input placeholder causes the compiler to fall back to GPU shaders. Weights MUST be supplied via `[graph constantWithData:shape:dataType:]`.
-2. **SDPA Compilation & Task Breakdown**:
+   - In both `convolution2DWithSourceTensor:weightsTensor:descriptor:` and `depthwiseConvolution2DWithSourceTensor:weightsTensor:descriptor:`, passing `weightsTensor` as an input placeholder causes the compiler to fall back to GPU shaders. Weights MUST be supplied via `[graph constantWithData:shape:dataType:]`.
+2. **Trigonometric Acceleration in MPSGraph**:
+   - Interestingly, while CoreML's `ANECompiler` rejects standalone `sin` and `cos` ops, MPSGraph's MLIR lowering emits piecewise polynomial / LUT expansions that **successfully compile to native ANE tasks** for `sin`, `cos`, and `atan`.
+3. **Logic & Bitwise Lowering**:
+   - `not` compiles natively on ANE. However, `logicalAND`, `logicalOR`, and `logicalXOR` in MPSGraph default to integer MLIR bitwise representations which trigger GPU fallback on ANE. In contrast, CoreML MIL lowers `logical_and` natively via float min/comparison instructions.
+4. **SDPA Compilation & Task Breakdown**:
    - Compiling `scaledDotProductAttentionWithQueryTensor:keyTensor:valueTensor:scale:` generates **14 ANE tasks** (`ANE Task 0` through `ANE Task 13`).
    - Task pipeline includes:
      - Input projection transposes (`TSR: 1`, `OutTrans=1`)
      - Batched MatMul QK^T across 4 heads (`MacCfg TaskType=0`, `ActiveNE=4`)
      - Scale multiplication and row-wise softmax reduction (`TaskType=4 EW w/ Reduction w/ ReLU`)
      - Attention-value MatMul (AV) projection
-3. **Quantization Support**:
+5. **Quantization Support**:
    - `quantizeTensor:scale:zeroPoint:dataType:` supports both `MPSDataTypeInt8` and `MPSDataTypeFloat8e4m3` (`E4M3`), natively compiled to A19 Pro without CPU fallback.
 
 ---

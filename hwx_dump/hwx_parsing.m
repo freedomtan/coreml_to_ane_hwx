@@ -2939,10 +2939,11 @@ void decode_ane_td_m4(const uint8_t *ptr, size_t total_len, uint32_t subtype,
              "0x%04x\n",
              m4h->tid, m4h->task_size, m4h->exe_cycles, m4h->ctrl_flags.ene,
              m4h->dtid);
-      printf("        LogEvents: 0x%06x Exceptions: 0x%06x\n", m4h->log_events,
-             m4h->exceptions);
-      printf("        LiveOuts: 0x%08x TSR: %d TDE: %d\n", m4h->live_outs,
-             m4h->ctrl_flags.tsr, m4h->ctrl_flags.tde);
+// LIT:BEGIN(td_header_h16_print)
+printf("        LogEvents: 0x%06x DebugLogEvents: 0x%06x DramLogEvents: 0x%06x Exceptions: 0x%06x\n",
+       m4h->log_events, m4h->debug_log_events, m4h->dram_log_events, m4h->exceptions);
+printf("        TSR: %d TDE: %d\n", m4h->ctrl_flags.tsr, m4h->ctrl_flags.tde);
+      // LIT:END(td_header_h16_print)
     } else {
       task_idx++;
     }

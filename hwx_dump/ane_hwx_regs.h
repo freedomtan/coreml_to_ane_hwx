@@ -149,21 +149,22 @@ typedef struct __attribute__((packed)) {
   } kbase;  // 0x024
 } ane_header_h13_t;
 
+// LIT:BEGIN(ane_header_h16)
 typedef struct __attribute__((packed)) {
   uint16_t tid;             // 0x000 (Header[0] 0-15)
   uint32_t task_size : 11;  // 0x002 bits 0-10 (Header[0] 16-26)
   uint32_t pad0 : 5;        // 0x002 bits 11-15 (Header[0] 27-31)
   uint16_t exe_cycles;      // 0x004 (Header[1] 0-15)
-  uint16_t pad1;
-  uint32_t log_events : 24;  // 0x008 (Header[2])
+  uint16_t pad1;            // 0x006 (Header[1] 16-31)
+  uint32_t log_events : 24; // 0x008 (Header[2])
   uint32_t pad2 : 8;
-  uint32_t exceptions : 24;  // 0x00c (Header[3])
+  uint32_t exceptions : 24; // 0x00c (Header[3])
   uint32_t pad3 : 8;
   uint32_t debug_log_events : 24;  // 0x010 (Header[4])
   uint32_t pad4 : 8;
   uint32_t debug_exceptions : 24;  // 0x014 (Header[5])
   uint32_t pad5 : 8;
-  uint32_t live_outs : 24;  // 0x018 (Header[6] 0-23)
+  uint32_t dram_log_events : 24;   // 0x018 (Header[6] 0-23, hw.td_header6.dram_log_events)
   uint32_t pad_lo : 8;
   uint32_t unknown_flags;  // 0x01c (Header[7])
   struct {
@@ -176,8 +177,9 @@ typedef struct __attribute__((packed)) {
     uint32_t pad1 : 13;    // 0x020 bits 19-31
   } ctrl_flags;            // 0x020 (Header[8])
   uint16_t dtid;           // 0x024 (Header[9] 0-15)
-  uint16_t pad8;
+  uint16_t pad8;           // 0x026 (Header[9] 16-31)
 } ane_header_h16_t;
+// LIT:END(ane_header_h16)
 
 typedef struct {
   struct {

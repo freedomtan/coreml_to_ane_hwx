@@ -157,38 +157,40 @@ If your parser reads Word 0 of a task block and finds `task_size === 0`, it mean
 ### 1. H14+ Task Descriptor Header (32 or 36 bytes)
 The header size depends on the hardware generation:
 * **H14 / H15**: 32 bytes (8 words). Does not contain the `dtid` field.
-* **H16+**: 36 bytes (9 words). Includes the `dtid` field at the end.
+* **H16+**: 40 bytes (10 words). Includes the `dtid` field at the end.
 
 #### C Structural Representation:
-```c
+<!-- LIT:BEGIN(ane_header_h16_doc) -->
 typedef struct __attribute__((packed)) {
-    uint16_t tid;             // Task ID
-    uint32_t task_size : 11;  // Total size of task in 32-bit words
-    uint32_t pad0 : 5;        // Alignment padding
-    uint16_t exe_cycles;      // Expected execution cycles
-    uint16_t pad1;            // Alignment padding
-    uint32_t log_events : 24; // Hardware logging events
+    uint16_t tid;             // Task ID (0x000 Header[0] 0-15)
+    uint32_t task_size : 11;  // Total size of task in 32-bit words (0x002 bits 0-10)
+    uint32_t pad0 : 5;        // Alignment padding (0x002 bits 11-15)
+    uint16_t exe_cycles;      // Expected execution cycles (0x004 Header[1] 0-15)
+    uint16_t pad1;            // Alignment padding (0x006 Header[1] 16-31)
+    uint32_t log_events : 24; // Hardware sequencer logging events (0x008 Header[2])
     uint32_t pad2 : 8;
-    uint32_t exceptions : 24; // Exceptions mask
+    uint32_t exceptions : 24; // Exceptions mask (0x00c Header[3])
     uint32_t pad3 : 8;
-    uint32_t debug_log_events : 24;
+    uint32_t debug_log_events : 24;  // Debug logging events mask (0x010 Header[4])
     uint32_t pad4 : 8;
-    uint32_t debug_exceptions : 24;
+    uint32_t debug_exceptions : 24;  // Debug exceptions mask (0x014 Header[5])
     uint32_t pad5 : 8;
-    uint32_t live_outs : 24;  // Active outputs map
+    uint32_t dram_log_events : 24;   // DRAM event ring buffer mask (0x018 Header[6])
     uint32_t pad_lo : 8;
-    uint32_t unknown_flags;   // Reserved
+    uint32_t unknown_flags;   // Reserved hardware flags (0x01c Header[7])
     struct {
-        uint32_t tsr : 1;      // Task Status Register Enable
-        uint32_t tde : 1;      // Task Debug Enable
-        uint32_t pad : 14;
-        uint32_t ene : 3;      // Execution Node Enables
-        uint32_t pad1 : 13;
-    } ctrl_flags;
-    uint16_t dtid;            // Dependent Task ID (H16+ only)
-    uint16_t pad8;            // Alignment padding
+        uint32_t tsr : 1;      // Task Status Register Enable (0x020 bit 0)
+        uint32_t tde : 1;      // Task Debug Enable (0x020 bit 1)
+        uint32_t pad : 1;      // 0x020 bit 2
+        uint32_t unknown : 1;  // 0x020 bit 3
+        uint32_t pad0 : 12;    // 0x020 bits 4-15
+        uint32_t ene : 3;      // Execution Node Enables (0x020 bits 16-18)
+        uint32_t pad1 : 13;    // 0x020 bits 19-31
+    } ctrl_flags;             // 0x020 Header[8]
+    uint16_t dtid;            // Dependent Task ID (0x024 Header[9] 0-15)
+    uint16_t pad8;            // Alignment padding (0x026 Header[9] 16-31)
 } ane_header_h16_t;
-```
+<!-- LIT:END(ane_header_h16_doc) -->
 
 > [!NOTE]
 > `dtid` (Dependent Task ID) is reserved for task dependency synchronization. However, in typical compiled CoreML models, this field is seldom used (or set to `0` or `0x0001` without active hardware blocking), meaning it can usually be ignored in high-level visualizations.

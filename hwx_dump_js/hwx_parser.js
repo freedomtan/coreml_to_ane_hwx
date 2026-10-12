@@ -253,16 +253,18 @@ function decodeInstructionStream(view, taskOffset, taskSizeWords, cpusubtype) {
     subtype: cpusubtype
   };
 
-  // Read Universal Header (first 36 bytes)
+  // Read Universal Header (first 40 bytes)
+  // LIT:BEGIN(td_header_h16_read)
   const tid_and_size = view.getUint32(taskOffset + 0, true);
   const exe_cycles_raw = view.getUint32(taskOffset + 4, true);
   const log_events = view.getUint32(taskOffset + 8, true);
   const exceptions = view.getUint32(taskOffset + 12, true);
   const debug_log_events = view.getUint32(taskOffset + 16, true);
   const debug_exceptions = view.getUint32(taskOffset + 20, true);
-  const live_outs = view.getUint32(taskOffset + 24, true);
-  const ctrl_flags = view.getUint32(taskOffset + 28, true);
-  const dtid_raw = view.getUint32(taskOffset + 32, true);
+  const dram_log_events = view.getUint32(taskOffset + 24, true);
+  const unknown_flags = view.getUint32(taskOffset + 28, true);
+  const ctrl_flags = view.getUint32(taskOffset + 32, true);
+  const dtid_raw = view.getUint32(taskOffset + 36, true);
 
   const tid = tid_and_size & 0xFFFF;
   const task_size = (tid_and_size >> 16) & 0x7FF;
@@ -271,6 +273,7 @@ function decodeInstructionStream(view, taskOffset, taskSizeWords, cpusubtype) {
   const tde = (ctrl_flags >> 1) & 0x1;
   const ene = (ctrl_flags >> 16) & 0x7;
   const dtid = dtid_raw & 0xFFFF;
+  // LIT:END(td_header_h16_read)
 
   // Starting word index for instruction stream
   // H14 (5), H15 (6) -> word 8 (offset 0x20)
@@ -326,7 +329,8 @@ function decodeInstructionStream(view, taskOffset, taskSizeWords, cpusubtype) {
       exceptions,
       debug_log_events,
       debug_exceptions,
-      live_outs,
+      dram_log_events,
+      unknown_flags,
       ctrl_flags,
       tsr,
       tde,

@@ -124,20 +124,21 @@ Immediately following the header (at offset `0x28`) is the register stream. Each
 
 M4 uses an **Aligned Array** task structure with a **Dense Instruction** format (Burst/Scatter).
 
-### Header: `ane_header_h16_t` (0x24 bytes)
+### Header: `ane_header_h16_t` (0x28 bytes / 40 bytes)
 ```c
 typedef struct {
-  uint16_t tid;             // 0x000
-  uint32_t task_size : 11;  // 0x002
-  uint16_t exe_cycles;      // 0x004
-  uint32_t log_events : 24; // 0x008
-  uint32_t exceptions : 24; // 0x00c
-  uint32_t debug_log_events:24; // 0x010
-  uint32_t debug_exceptions:24; // 0x014
-  uint32_t live_outs;       // 0x018
-  uint32_t tsr_tde_ene;     // 0x01c
-  uint16_t tdid;            // 0x020
-  uint16_t pad;             // 0x022
+  uint16_t tid;             // 0x000 (Header[0] 0-15)
+  uint32_t task_size : 11;  // 0x002 bits 0-10 (Header[0] 16-26)
+  uint16_t exe_cycles;      // 0x004 (Header[1] 0-15)
+  uint32_t log_events : 24; // 0x008 (Header[2])
+  uint32_t exceptions : 24; // 0x00c (Header[3])
+  uint32_t debug_log_events : 24;  // 0x010 (Header[4])
+  uint32_t debug_exceptions : 24;  // 0x014 (Header[5])
+  uint32_t dram_log_events : 24;   // 0x018 (Header[6], dram event ring buffer)
+  uint32_t unknown_flags;   // 0x01c (Header[7])
+  uint32_t ctrl_flags;      // 0x020 (Header[8]: tsr, tde, ene)
+  uint16_t dtid;            // 0x024 (Header[9] 0-15)
+  uint16_t pad8;            // 0x026 (Header[9] 16-31)
 } ane_header_h16_t;
 ```
 Tasks are 16-byte aligned. If `task_size` is 0, the parser skips to the next alignment boundary.

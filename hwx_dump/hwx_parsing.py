@@ -2534,21 +2534,24 @@ def decode_ane_td_m4(section_data, subtype, dump_reg_blocks, dump_json):
     # sizeof(ane_header_h16_t) is 40 bytes (0x28)
     # Header format: tid(2B), task_size_n_flags(2B), exe_cycles(2B), pad1(2B),
     # log_events(4B), exceptions(4B), debug_log_events(4B), debug_exceptions(4B),
-    # live_outs(4B), unknown_flags(4B), ctrl_flags(4B), dtid(2B), pad8(2B)
+    # dram_log_events(4B), unknown_flags(4B), ctrl_flags(4B), dtid(2B), pad8(2B)
     while offset + 40 <= total_len:
         h = struct.unpack_from("<4H 6I I 2H", section_data, offset)
+        # LIT:BEGIN(td_header_h16_unpack)
         tid = h[0]
         # h[1] is task_size and pad0.
         task_size = h[1] & 0x7FF
         exe_cycles = h[2]
         log_events = h[4] & 0xFFFFFF
         exceptions = h[5] & 0xFFFFFF
-        live_outs = h[8] & 0xFFFFFF
+        debug_log_events = h[6] & 0xFFFFFF
+        dram_log_events = h[8] & 0xFFFFFF
         ctrl_flags = h[10]
         tsr = ctrl_flags & 1
         tde = (ctrl_flags >> 1) & 1
         ene = (ctrl_flags >> 16) & 7
         dtid = h[11]
+        # LIT:END(td_header_h16_unpack)
         
         if task_size == 0:
             offset += 16
@@ -2572,8 +2575,10 @@ def decode_ane_td_m4(section_data, subtype, dump_reg_blocks, dump_json):
         if not dump_json:
             print(f"      [ANE Task {task_idx} @ 0x{offset:x}] (Size: 0x{size_bytes:x} bytes)")
             print(f"        TID: 0x{tid:04x} TaskSize: 0x{task_size:x} ExeCycles: {exe_cycles} ENE: {ene} DTID: 0x{dtid:04x}")
-            print(f"        LogEvents: 0x{log_events:06x} Exceptions: 0x{exceptions:06x}")
-            print(f"        LiveOuts: 0x{live_outs:08x} TSR: {tsr} TDE: {tde}")
+            # LIT:BEGIN(td_header_h16_print)
+            print(f"        LogEvents: 0x{log_events:06x} DebugLogEvents: 0x{debug_log_events:06x} DramLogEvents: 0x{dram_log_events:06x} Exceptions: 0x{exceptions:06x}")
+            print(f"        TSR: {tsr} TDE: {tde}")
+            # LIT:END(td_header_h16_print)
             task_idx += 1
         else:
             task_idx += 1

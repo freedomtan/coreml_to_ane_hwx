@@ -3,7 +3,7 @@ CFLAGS=-Wall -O2
 
 FRAMEWORKS=-framework CoreML -framework Foundation -F /System/Library/PrivateFrameworks -framework ANECompiler -framework Espresso
 
-TARGETS=coreml2hwx mlmodelc2hwx espressonet2hwx
+TARGETS=coreml2hwx mlmodelc2hwx espressonet2hwx test_mpsgraph_ops
 
 all: ${TARGETS} mil_to_hwx
 
@@ -21,6 +21,9 @@ mlmodelc2hwx: mlmodelc2hwx.o coreml_util.o
 
 espressonet2hwx: espressonet2hwx.o coreml_util.o
 	${CC} -o $@ $^ ${FRAMEWORKS} ${LIBS}
+
+test_mpsgraph_ops: test_mpsgraph_ops.m
+	${CC} ${CFLAGS} -fobjc-arc -o $@ $^ -framework Foundation -framework Metal -framework MetalPerformanceShadersGraph
 
 ane_hwx.pdf: ane_hwx.tex
 	pdflatex $^

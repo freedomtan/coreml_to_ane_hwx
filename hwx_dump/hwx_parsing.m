@@ -495,15 +495,15 @@ const char *get_ne_op_mode_name(uint32_t mode) {
   case 0:
     return "Conv";
   case 1:
-    return "ElemWise";
+    return "EWSqr";
   case 2:
-    return "RCAS";
+    return "EWMul";
   case 3:
-    return "EWSqrt";
+    return "Pool";
   case 4:
     return "Bypass";
   case 5:
-    return "TransposedConv";
+    return "RCAS";
   default:
     return "Unknown";
   }

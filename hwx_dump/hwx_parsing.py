@@ -562,11 +562,11 @@ def get_pe_src2_name_v17(sel):
 def get_ne_op_mode_name(mode):
     return {
         0: "Conv",
-        1: "ElemWise",
-        2: "RCAS",
-        3: "EWSqrt",
+        1: "EWSqr",
+        2: "EWMul",
+        3: "Pool",
         4: "Bypass",
-        5: "TransposedConv",
+        5: "RCAS",
     }.get(mode, "Unknown")
 # LIT:END(get_ne_op_mode_name)
 

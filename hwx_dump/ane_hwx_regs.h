@@ -1020,8 +1020,8 @@ typedef struct {
     uint32_t pad2 : 7;
   } kernel_cfg;
   struct {
-    // | **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0:Conv, 1:EW,
-    // 2:RCAS, 3:EWSqrt, 4:Bypass, 5:Transconv), **KMode**: 3, **BiasEn**: 4,
+    // | **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0:Conv, 1:EWSqr,
+    // 2:EWMul, 3:Pool, 4:Bypass, 5:RCAS), **KMode**: 3, **BiasEn**: 4,
     // **PassEn**: 5, **MVBiasEn**: 6, **BinPoint**: 8-13, **PostEn**: 14,
     // **NLMode**: 16-17, **MaxPoolEn**: 19, **ArgSel**: 20-23,
     // **DoubleInt8En**: 26. |

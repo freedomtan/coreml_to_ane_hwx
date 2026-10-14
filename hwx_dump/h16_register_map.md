@@ -363,7 +363,7 @@ Reference table for `Src1Fmt` and `Src2Fmt` bitfields.
 | HW Addr | Offset (`this`) | Register Name | Bit-Field Mapping |
 | :--- | :--- | :--- | :--- |
 | **0x4900** | `+0x498` | **KernelCfg** | **Fmt**: 0-1, **PalettizedEn**: 2, **PalBits**: 4-7, **SparseEn**: 8, **Reuse**: 10, **SparseBinary**: 15, **Align**: 16, **BlockSize**: 21-23, **AsymQuantEn**: 24. *(No DetectZeros bit: `ZinAneTd<17u>::SetKernelDetectZeros` asserts on H16; that bit (28) first becomes real on H17.)* |
-| **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0:Conv, 1:EW, 2:RCAS, 3:EWSqrt, 4:Bypass, 5:Transconv), **KMode**: 3, **BiasEn**: 4, **PassEn**: 5, **MVBiasEn**: 6, **BinPoint**: 8-13, **PostEn**: 14, **NLMode**: 16-17, **MaxPoolEn**: 19, **ArgSel**: 20-23, **DoubleInt8En**: 26. *(H16 is the first generation where DoubleInt8En is real; H14/H13 share a reject stub.)* |
+| **0x4904** | `+0x49c` | **MacCfg** | **OpMode**: 0-2 (0:Conv, 1:EWSqr, 2:EWMul, 3:Pool, 4:Bypass, 5:RCAS), **KMode**: 3, **BiasEn**: 4, **PassEn**: 5, **MVBiasEn**: 6, **BinPoint**: 8-13, **PostEn**: 14, **NLMode**: 16-17, **MaxPoolEn**: 19, **ArgSel**: 20-23, **DoubleInt8En**: 26. *(H16 is the first generation where DoubleInt8En is real; H14/H13 share a reject stub.)* |
 | **0x4908** | `+0x4a0` | **MatrixVectorBias**| **Bias**: 0-15. |
 | **0x490C** | `+0x4a4` | **NEBias** | **BiasVal**: 0-15, **ExpIdx**: 16-20. |
 | **0x4910** | `+0x4a8` | **NEPostScale** | **ScaleVal**: 0-15, **ExpIdx**: 16-20 (Negated). |

@@ -497,11 +497,11 @@ Controls the layout, datatype, and density of model weights. This section descri
 Determines what mathematical operation the core execution units perform:
 * **op** (`bits [2:0]`): Core Operation
   * `0`: Conv
-  * `1`: ElemWise
-  * `2`: RCAS
-  * `3`: EWSqrt
+  * `1`: EWSqr (ElementWise Square)
+  * `2`: EWMul (ElementWise Multiply)
+  * `3`: Pool (NE Pooling / Subsampling)
   * `4`: Bypass
-  * `5`: TransposedConv
+  * `5`: RCAS (Row-Column Align & Shift)
 * **km** (`bit [3]`): Kernel Mode. `0` = Kernel (normal weighted conv), `1` = Unity (identity/passthrough kernel).
 * **bias_en** (`bit [4]`): If `1`, adds a bias tensor to the MAC output.
 * **pass_en** (`bit [5]`): If `1`, bypasses the activation path (runs direct pooling/pooling bypass).

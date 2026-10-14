@@ -782,11 +782,11 @@ function parseStateRegisters(state, cpusubtype) {
   const neOpNames = {
     // LIT:BEGIN(get_ne_op_mode_name)
     0: "Conv",
-    1: "ElemWise",
-    2: "RCAS",
-    3: "EWSqrt",
+    1: "EWSqr",
+    2: "EWMul",
+    3: "Pool",
     4: "Bypass",
-    5: "TransposedConv",
+    5: "RCAS",
     // LIT:END(get_ne_op_mode_name)
     7: "OptConv (H14)",       // JS-only: legacy cpusubtype<7 op-mode extension, not in .m/.py's table
     0xF: "OptConv (H16+)"     // JS-only: same legacy extension
